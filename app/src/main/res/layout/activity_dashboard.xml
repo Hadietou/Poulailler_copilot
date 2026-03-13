@@ -1,0 +1,249 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.drawerlayout.widget.DrawerLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/drawerLayout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".ui.DashboardActivity">
+
+    <androidx.coordinatorlayout.widget.CoordinatorLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <com.google.android.material.appbar.AppBarLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <com.google.android.material.appbar.MaterialToolbar
+                android:id="@+id/toolbar"
+                android:layout_width="match_parent"
+                android:layout_height="?attr/actionBarSize"
+                android:background="?attr/colorPrimary"
+                app:title="Tableau de Bord"
+                app:titleTextColor="@color/white"
+                app:navigationIcon="@android:drawable/ic_menu_sort_by_size" />
+        </com.google.android.material.appbar.AppBarLayout>
+
+        <androidx.core.widget.NestedScrollView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            app:layout_behavior="@string/appbar_scrolling_view_behavior">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <!-- Statistiques Troupeau -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Troupeau et Santé"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:layout_marginBottom="8dp"/>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginEnd="8dp"
+                        app:cardCornerRadius="12dp"
+                        app:cardElevation="4dp">
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:padding="16dp"
+                            android:gravity="center">
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Poules"
+                                android:textSize="12sp"/>
+                            <TextView
+                                android:id="@+id/tvHensCount"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="--"
+                                android:textSize="24sp"
+                                android:textStyle="bold"
+                                android:textColor="#FFB300"/>
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="8dp"
+                        app:cardCornerRadius="12dp"
+                        app:cardElevation="4dp">
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:padding="16dp"
+                            android:gravity="center">
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Âge (Sem)"
+                                android:textSize="12sp"/>
+                            <TextView
+                                android:id="@+id/tvHensAge"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="--"
+                                android:textSize="24sp"
+                                android:textStyle="bold"
+                                android:textColor="#4CAF50"/>
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+                </LinearLayout>
+
+                <!-- Statistiques Production -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Production d'Œufs"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:layout_marginTop="24dp"
+                    android:layout_marginBottom="8dp"/>
+
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:cardCornerRadius="12dp"
+                    app:cardElevation="4dp">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="16dp">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Production du jour"
+                            android:textSize="14sp"/>
+                        <TextView
+                            android:id="@+id/tvTodayEggs"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="0 œufs"
+                            android:textSize="28sp"
+                            android:textStyle="bold"
+                            android:textColor="#FFB300"/>
+
+                        <View
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:background="#EEEEEE"
+                            android:layout_marginVertical="16dp"/>
+
+                        <com.github.mikephil.charting.charts.LineChart
+                            android:id="@+id/productionChart"
+                            android:layout_width="match_parent"
+                            android:layout_height="200dp" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Statistiques Financières -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Résumé Financier"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:layout_marginTop="24dp"
+                    android:layout_marginBottom="8dp"/>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginEnd="8dp"
+                        app:cardCornerRadius="12dp"
+                        app:cardElevation="4dp">
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:padding="16dp">
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Ventes"
+                                android:textSize="12sp"/>
+                            <TextView
+                                android:id="@+id/tvSalesRevenue"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="0.00 $"
+                                android:textSize="18sp"
+                                android:textStyle="bold"
+                                android:textColor="#4CAF50"/>
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="8dp"
+                        app:cardCornerRadius="12dp"
+                        app:cardElevation="4dp">
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:padding="16dp">
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Dépenses"
+                                android:textSize="12sp"/>
+                            <TextView
+                                android:id="@+id/tvTotalExpenses"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="0.00 $"
+                                android:textSize="18sp"
+                                android:textStyle="bold"
+                                android:textColor="#F44336"/>
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+                </LinearLayout>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="80dp"/> <!-- Espace en bas -->
+
+            </LinearLayout>
+        </androidx.core.widget.NestedScrollView>
+
+    </androidx.coordinatorlayout.widget.CoordinatorLayout>
+
+    <!-- Navigation Drawer -->
+    <com.google.android.material.navigation.NavigationView
+        android:id="@+id/navigationView"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:layout_gravity="start"
+        app:headerLayout="@layout/nav_header"
+        app:menu="@menu/drawer_menu" />
+
+</androidx.drawerlayout.widget.DrawerLayout>

@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true"
+    android:background="#F7F9F9">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_horizontal"
+        android:orientation="vertical"
+        android:padding="24dp">
+
+        <!-- Logo Section -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="140dp"
+            android:layout_height="140dp"
+            android:layout_marginTop="48dp"
+            app:cardCornerRadius="70dp"
+            app:cardElevation="6dp"
+            app:strokeColor="#FFB300"
+            app:strokeWidth="3dp">
+
+            <ImageView
+                android:id="@+id/ivHen"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="centerCrop"
+                android:src="@drawable/poule_pondeuse"
+                android:contentDescription="Logo" />
+        </com.google.android.material.card.MaterialCardView>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="POULAILLER PRO"
+            android:textColor="#FFB300"
+            android:textSize="32sp"
+            android:fontFamily="sans-serif-black"
+            android:letterSpacing="0.05" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="40dp"
+            android:text="Gestion automatisée - Poules Pondeuses"
+            android:textColor="#546E7A"
+            android:textSize="14sp"
+            android:textStyle="italic" />
+
+        <!-- Login Card -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="10dp"
+            app:cardUseCompatPadding="true">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="28dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Connexion"
+                    android:textSize="22sp"
+                    android:textStyle="bold"
+                    android:textColor="#263238"
+                    android:layout_marginBottom="24dp"/>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Nom d'utilisateur"
+                    app:startIconDrawable="@android:drawable/ic_menu_myplaces"
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etUsername"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="text" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:hint="Mot de passe"
+                    app:startIconDrawable="@android:drawable/ic_lock_idle_lock"
+                    app:passwordToggleEnabled="true"
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etPassword"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="textPassword" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnLogin"
+                    android:layout_width="match_parent"
+                    android:layout_height="64dp"
+                    android:layout_marginTop="32dp"
+                    android:text="Se connecter"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    app:cornerRadius="12dp"
+                    android:backgroundTint="#FFB300"
+                    android:elevation="4dp" />
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="© 2024 Gestion Avicole Intelligente"
+            android:textSize="12sp"
+            android:textColor="#90A4AE" />
+
+    </LinearLayout>
+</ScrollView>

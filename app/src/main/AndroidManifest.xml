@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.example.poulailler_copilot">
+
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="Poulailler_copilot"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.Poulailler_copilot">
+
+        <activity
+            android:name=".ui.DashboardActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ui.SalesActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ui.ExpensesActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ui.AgentActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ui.ResponsableActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ui.VaccineActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ui.LoginActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+
+</manifest>

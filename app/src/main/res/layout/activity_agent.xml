@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <TextView
+        android:text="Saisie quotidienne"
+        android:textStyle="bold"
+        android:textSize="18sp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"/>
+
+    <Button
+        android:id="@+id/btnSelectDate"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Date: Aujourd'hui"
+        style="@style/Widget.MaterialComponents.Button.OutlinedButton"/>
+
+    <EditText
+        android:id="@+id/etEggsCount"
+        android:hint="Nombre d'œufs collectés"
+        android:inputType="number"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"/>
+
+    <EditText
+        android:id="@+id/etBrokenEggsCount"
+        android:hint="Nombre d'œufs cassés"
+        android:inputType="number"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"/>
+
+    <EditText
+        android:id="@+id/etRemarks"
+        android:hint="Remarques (poules malades, etc.)"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"/>
+
+    <Button
+        android:id="@+id/btnAddEntry"
+        android:text="Enregistrer la collecte"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"/>
+
+    <TextView
+        android:text="Historique de mes saisies"
+        android:textStyle="bold"
+        android:layout_marginTop="24dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"/>
+
+    <ListView
+        android:id="@+id/lvEntries"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:layout_marginTop="8dp"/>
+
+</LinearLayout>

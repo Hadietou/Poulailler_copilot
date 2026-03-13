@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="24dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Enregistrer une Vente"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:textColor="@color/black"
+        android:layout_marginBottom="32dp"/>
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Nombre d'œufs vendus"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/etQuantity"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="number" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:hint="Prix unitaire ($)"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/etUnitPrice"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="numberDecimal" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:hint="Nom du client (Optionnel)"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/etBuyer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="textPersonName" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnSaveSale"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:layout_marginTop="32dp"
+        android:text="VALIDER LA VENTE"
+        android:backgroundTint="#4CAF50"
+        app:cornerRadius="8dp" />
+
+</LinearLayout>

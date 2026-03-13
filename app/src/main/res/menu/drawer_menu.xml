@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <group android:checkableBehavior="single">
+        <item
+            android:id="@+id/nav_dashboard"
+            android:icon="@android:drawable/ic_menu_today"
+            android:title="Tableau de Bord" />
+
+        <item
+            android:id="@+id/nav_users"
+            android:icon="@android:drawable/ic_menu_myplaces"
+            android:title="Gestion des Agents" />
+
+        <item
+            android:id="@+id/nav_expenses"
+            android:icon="@android:drawable/ic_menu_save"
+            android:title="Dépenses" />
+
+        <item
+            android:id="@+id/nav_vaccines"
+            android:icon="@android:drawable/ic_menu_info_details"
+            android:title="Vaccins / Médicaments" />
+
+        <item
+            android:id="@+id/nav_collect"
+            android:icon="@android:drawable/ic_input_add"
+            android:title="Saisie Collecte" />
+
+        <item
+            android:id="@+id/nav_sales"
+            android:icon="@android:drawable/ic_menu_send"
+            android:title="Ventes d'Œufs" />
+    </group>
+
+    <item android:title="Compte">
+        <menu>
+            <item
+                android:id="@+id/nav_logout"
+                android:icon="@android:drawable/ic_lock_power_off"
+                android:title="Déconnexion" />
+        </menu>
+    </item>
+
+</menu>

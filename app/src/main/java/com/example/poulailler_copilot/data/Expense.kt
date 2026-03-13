@@ -1,0 +1,13 @@
+package com.example.poulailler_copilot.data
+
+import androidx.room.Entity
+import androidx.room.PrimaryKey
+
+@Entity(tableName = "expenses")
+data class Expense(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val date: Long,
+    val category: String, // "Alimentation", "Santé", "Main d'œuvre", "Autre"
+    val amount: Double,
+    val description: String? = null
+)

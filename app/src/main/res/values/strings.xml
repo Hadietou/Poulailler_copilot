@@ -1,0 +1,13 @@
+<resources>
+    <string name="app_name">Poulailler Copilot</string>
+    <string name="navigation_drawer_open">Ouvrir le menu</string>
+    <string name="navigation_drawer_close">Fermer le menu</string>
+
+    <!-- Dashboard -->
+    <string name="dashboard_title">Tableau de Bord</string>
+    <string name="hens_label">Poules</string>
+    <string name="age_label">Âge (Sem)</string>
+    <string name="eggs_today_label">Production du jour</string>
+    <string name="sales_label">Ventes</string>
+    <string name="expenses_label">Dépenses</string>
+</resources>
