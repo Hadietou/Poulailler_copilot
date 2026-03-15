@@ -14,4 +14,15 @@ interface ExpenseDao {
 
     @Query("SELECT SUM(amount) FROM expenses")
     suspend fun getTotalExpenses(): Double?
+
+    @Query("SELECT category, SUM(amount) as totalAmount FROM expenses GROUP BY category")
+    suspend fun getExpensesByCategory(): List<CategoryExpense>
+
+    @Query("SELECT SUM(quantityKg) FROM expenses WHERE category = 'Aliment'")
+    suspend fun getTotalFeedQuantity(): Double?
 }
+
+data class CategoryExpense(
+    val category: String,
+    val totalAmount: Double
+)

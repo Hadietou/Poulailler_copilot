@@ -8,6 +8,11 @@
             android:title="Tableau de Bord" />
 
         <item
+            android:id="@+id/nav_farm_info"
+            android:icon="@android:drawable/ic_menu_gallery"
+            android:title="Information Ferme" />
+
+        <item
             android:id="@+id/nav_users"
             android:icon="@android:drawable/ic_menu_myplaces"
             android:title="Gestion des Agents" />
@@ -25,12 +30,12 @@
         <item
             android:id="@+id/nav_collect"
             android:icon="@android:drawable/ic_input_add"
-            android:title="Saisie Collecte" />
+            android:title="Collecte des Oeufs" />
 
         <item
             android:id="@+id/nav_sales"
             android:icon="@android:drawable/ic_menu_send"
-            android:title="Ventes d'Œufs" />
+            android:title="Vente des Oeufs" />
     </group>
 
     <item android:title="Compte">

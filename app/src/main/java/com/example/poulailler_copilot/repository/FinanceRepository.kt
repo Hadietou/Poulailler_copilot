@@ -9,9 +9,17 @@ class FinanceRepository(
     private val eggSaleDao: EggSaleDao,
     private val expenseDao: ExpenseDao
 ) {
-    suspend fun addSale(date: Long, quantity: Int, pricePerUnit: Double, buyer: String?) {
+    suspend fun addSale(userId: Long, date: Long, quantity: Int, pricePerUnit: Double, buyer: String?, phoneNumber: String?) {
         val totalPrice = quantity * pricePerUnit
-        eggSaleDao.insert(EggSale(date = date, quantity = quantity, pricePerUnit = pricePerUnit, totalPrice = totalPrice, buyer = buyer))
+        eggSaleDao.insert(EggSale(
+            userId = userId,
+            date = date, 
+            quantity = quantity, 
+            pricePerUnit = pricePerUnit, 
+            totalPrice = totalPrice, 
+            buyer = buyer,
+            phoneNumber = phoneNumber
+        ))
     }
 
     suspend fun addExpense(date: Long, category: String, amount: Double, description: String?) {

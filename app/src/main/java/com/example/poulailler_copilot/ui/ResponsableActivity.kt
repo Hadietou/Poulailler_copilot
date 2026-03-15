@@ -5,8 +5,15 @@ import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
+import com.example.poulailler_copilot.data.AppDatabase
 import com.example.poulailler_copilot.data.User
 import com.example.poulailler_copilot.databinding.ActivityResponsableBinding
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.text.SimpleDateFormat
+import java.util.*
 
 class ResponsableActivity : AppCompatActivity() {
 
@@ -26,12 +33,8 @@ class ResponsableActivity : AppCompatActivity() {
             binding.lvAgents.adapter = ArrayAdapter(this, android.R.layout.simple_list_item_single_choice, names)
         }
 
-        vm.totalEggs.observe(this) { total ->
-            binding.tvStats.text = "Total œufs: $total"
-        }
-
         vm.loadAgents()
-        vm.refreshStats()
+        loadLoginHistory()
 
         binding.btnCreateAgent.setOnClickListener {
             val username = binding.etAgentUsername.text.toString().trim()
@@ -67,20 +70,23 @@ class ResponsableActivity : AppCompatActivity() {
             vm.resetPassword(agent.id, "1234")
             Toast.makeText(this, "Mot de passe réinitialisé à 1234", Toast.LENGTH_SHORT).show()
         }
+    }
 
-        binding.btnSaveFarmInfo.setOnClickListener {
-            val hens = binding.etHensCount.text.toString().toIntOrNull() ?: 0
-            val feed = binding.etFeedInfo.text.toString()
-            val mort = binding.etMortality.text.toString().toIntOrNull() ?: 0
-            val exp = binding.etExpenses.text.toString().toDoubleOrNull() ?: 0.0
-
-            vm.saveFarmInfo(hens, feed, mort, exp) {
-                Toast.makeText(this, "Infos poulailler enregistrées", Toast.LENGTH_SHORT).show()
+    private fun loadLoginHistory() {
+        lifecycleScope.launch(Dispatchers.IO) {
+            val db = AppDatabase.getInstance(this@ResponsableActivity)
+            val logins = db.loginDao().getAll()
+            
+            val displayList = logins.map { entry ->
+                val user = db.userDao().getById(entry.userId)
+                val username = user?.username ?: "Inconnu"
+                val sdf = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+                "Connexion: $username le ${sdf.format(Date(entry.timestamp))}"
             }
-        }
 
-        binding.btnRefreshStats.setOnClickListener {
-            vm.refreshStats()
+            withContext(Dispatchers.Main) {
+                binding.lvGlobalHistory.adapter = ArrayAdapter(this@ResponsableActivity, android.R.layout.simple_list_item_1, displayList)
+            }
         }
     }
 }

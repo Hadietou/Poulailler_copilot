@@ -11,6 +11,9 @@ interface EggSaleDao {
     @Query("SELECT * FROM egg_sales ORDER BY date DESC")
     fun getAll(): Flow<List<EggSale>>
 
+    @Query("SELECT * FROM egg_sales WHERE userId = :userId ORDER BY date DESC")
+    fun getByUser(userId: Long): Flow<List<EggSale>>
+
     @Query("SELECT SUM(totalPrice) FROM egg_sales")
     suspend fun getTotalSalesRevenue(): Double?
 

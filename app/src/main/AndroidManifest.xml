@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.example.poulailler_copilot">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <application
         android:allowBackup="true"
@@ -27,6 +26,9 @@
             android:exported="false" />
         <activity
             android:name=".ui.VaccineActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ui.FarmInfoActivity"
             android:exported="false" />
         <activity
             android:name=".ui.LoginActivity"

@@ -5,7 +5,12 @@ import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
+import com.example.poulailler_copilot.data.AppDatabase
+import com.example.poulailler_copilot.data.LoginEntry
 import com.example.poulailler_copilot.databinding.ActivityLoginBinding
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class LoginActivity : AppCompatActivity() {
 
@@ -30,14 +35,18 @@ class LoginActivity : AppCompatActivity() {
                 if (!success) {
                     Toast.makeText(this, "Identifiants invalides ou compte inactif", Toast.LENGTH_SHORT).show()
                 } else {
-                    // Une fois connecté, on va toujours vers le Dashboard
-                    // Le Dashboard filtrera le menu selon le rôle
+                    // Enregistrer la connexion dans l'historique
+                    lifecycleScope.launch(Dispatchers.IO) {
+                        val db = AppDatabase.getInstance(this@LoginActivity)
+                        db.loginDao().insert(LoginEntry(userId = userId, timestamp = System.currentTimeMillis()))
+                    }
+
                     val intent = Intent(this, DashboardActivity::class.java)
                     intent.putExtra("role", role)
                     intent.putExtra("username", username)
                     intent.putExtra("userId", userId)
                     startActivity(intent)
-                    finish() // On ferme le login
+                    finish()
                 }
             }
         }

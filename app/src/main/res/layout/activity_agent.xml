@@ -6,12 +6,16 @@
     android:layout_height="match_parent">
 
     <TextView
-        android:text="Saisie quotidienne"
+        android:id="@+id/tvPageTitle"
+        android:text="Collecte des Oeufs"
         android:textStyle="bold"
-        android:textSize="18sp"
-        android:layout_width="wrap_content"
+        android:textSize="22sp"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="8dp"/>
+        android:layout_marginBottom="16dp"
+        android:background="#1E90FF"
+        android:padding="8dp"
+        android:textColor="#000000"/>
 
     <Button
         android:id="@+id/btnSelectDate"
@@ -51,11 +55,15 @@
         android:layout_marginTop="16dp"/>
 
     <TextView
-        android:text="Historique de mes saisies"
+        android:id="@+id/tvHistoryTitle"
+        android:text="Historique des collectes"
         android:textStyle="bold"
         android:layout_marginTop="24dp"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"/>
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#87CEEB"
+        android:padding="8dp"
+        android:textColor="#000000"/>
 
     <ListView
         android:id="@+id/lvEntries"
