@@ -243,8 +243,8 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:stretchColumns="0,1,2,3,4,5"
-                            android:padding="1dp"
-                            android:background="#CCCCCC">
+                            android:padding="1dp" >
+                            //android:background="#ff000000">
                         </TableLayout>
 
                         <View
@@ -366,6 +366,7 @@
                                 android:layout_height="wrap_content"
                                 android:text="Stock Aliment"
                                 android:textSize="12sp"/>
+
                             <TextView
                                 android:id="@+id/tvTotalFeed"
                                 android:layout_width="wrap_content"
@@ -378,7 +379,8 @@
                             <com.github.mikephil.charting.charts.BarChart
                                 android:id="@+id/expensesBarChart"
                                 android:layout_width="match_parent"
-                                android:layout_height="250dp" />
+                                android:layout_height="250dp"
+                                android:textColor="#FF9800" />
                         </LinearLayout>
                     </com.google.android.material.card.MaterialCardView>
                 </LinearLayout>

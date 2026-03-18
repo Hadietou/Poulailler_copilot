@@ -3,6 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/black"
     android:padding="16dp">
 
     <LinearLayout
@@ -11,98 +12,200 @@
         android:orientation="vertical">
 
         <TextView
-            android:layout_width="wrap_content"
+            android:id="@+id/tvPageTitle"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Informations de la Ferme"
+            android:text="Information Ferme"
             android:textSize="22sp"
             android:textStyle="bold"
-            android:layout_marginBottom="24dp"
-            android:textColor="@color/black"/>
+            android:background="#1E90FF"
+            android:textColor="#000000"
+            android:padding="8dp"
+            android:layout_marginBottom="24dp"/>
 
-        <com.google.android.material.textfield.TextInputLayout
+        <!-- Mode Affichage -->
+        <LinearLayout
+            android:id="@+id/layoutDisplayInfo"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Nom de la ferme"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-            android:layout_marginBottom="12dp">
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/etFarmName"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content" />
-        </com.google.android.material.textfield.TextInputLayout>
+            android:orientation="vertical"
+            android:visibility="gone">
 
-        <com.google.android.material.textfield.TextInputLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="Nombre de poules"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-            android:layout_marginBottom="12dp">
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/etHensCount"
+            <TextView
+                android:id="@+id/tvFarmDetails"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="number" />
-        </com.google.android.material.textfield.TextInputLayout>
+                android:textColor="@color/white"
+                android:textSize="16sp"
+                android:lineSpacingExtra="8dp"
+                android:padding="16dp"
+                android:background="#333333"/>
 
-        <com.google.android.material.textfield.TextInputLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="Race des poules"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-            android:layout_marginBottom="12dp">
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/etHenBreed"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content" />
-        </com.google.android.material.textfield.TextInputLayout>
-
-        <com.google.android.material.textfield.TextInputLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="Date d'arrivée (JJ/MM/AAAA)"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-            android:layout_marginBottom="12dp">
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/etArrivalDate"
+            <Button
+                android:id="@+id/btnEditInfo"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:focusable="false"
-                android:clickable="true" />
-        </com.google.android.material.textfield.TextInputLayout>
+                android:text="MODIFIER LES INFORMATIONS"
+                android:layout_marginTop="16dp"
+                app:cornerRadius="8dp" />
 
-        <com.google.android.material.textfield.TextInputLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="Date de naissance des poussins"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-            android:layout_marginBottom="12dp">
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/etBirthDate"
+            <!-- Section Mortalité -->
+            <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:focusable="false"
-                android:clickable="true" />
-        </com.google.android.material.textfield.TextInputLayout>
+                android:text="Saisir une Mortalité"
+                android:textStyle="bold"
+                android:background="#87CEEB"
+                android:textColor="#000000"
+                android:padding="8dp"
+                android:layout_marginTop="24dp"
+                android:layout_marginBottom="8dp"/>
 
-        <com.google.android.material.textfield.TextInputLayout
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Nombre de poules mortes"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                app:hintTextColor="@color/white"
+                app:boxStrokeColor="@color/white">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etMortalityInput"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="number"
+                    android:textColor="@color/white" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <Button
+                android:id="@+id/btnSaveMortality"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="ENREGISTRER MORTALITÉ"
+                android:backgroundTint="#F44336"
+                android:layout_marginTop="8dp"
+                app:cornerRadius="8dp" />
+        </LinearLayout>
+
+        <!-- Mode Saisie/Modification -->
+        <LinearLayout
+            android:id="@+id/layoutEditInfo"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Type d'aliment"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-            android:layout_marginBottom="24dp">
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/etFeedInfo"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content" />
-        </com.google.android.material.textfield.TextInputLayout>
+            android:orientation="vertical">
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnSaveFarmInfo"
-            android:layout_width="match_parent"
-            android:layout_height="60dp"
-            android:text="ENREGISTRER LES INFORMATIONS"
-            android:backgroundTint="?attr/colorPrimary"
-            app:cornerRadius="8dp" />
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Nom de la ferme"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                android:layout_marginBottom="12dp"
+                app:hintTextColor="@color/white"
+                app:boxStrokeColor="@color/white">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etFarmName"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/white" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Nombre de poules au depart"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                android:layout_marginBottom="12dp"
+                app:hintTextColor="@color/white"
+                app:boxStrokeColor="@color/white">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etHensCount"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="number"
+                    android:textColor="@color/white" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Race des poules"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                android:layout_marginBottom="12dp"
+                app:hintTextColor="@color/white"
+                app:boxStrokeColor="@color/white">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etHenBreed"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/white" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Date d'arrivée (JJ/MM/AAAA)"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                android:layout_marginBottom="12dp"
+                app:hintTextColor="@color/white"
+                app:boxStrokeColor="@color/white">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etArrivalDate"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:focusable="false"
+                    android:clickable="true"
+                    android:textColor="@color/white" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Date de naissance des poussins"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                android:layout_marginBottom="12dp"
+                app:hintTextColor="@color/white"
+                app:boxStrokeColor="@color/white">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etBirthDate"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:focusable="false"
+                    android:clickable="true"
+                    android:textColor="@color/white" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Type d'aliment"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                android:layout_marginBottom="24dp"
+                app:hintTextColor="@color/white"
+                app:boxStrokeColor="@color/white">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etFeedInfo"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/white" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnSaveFarmInfo"
+                android:layout_width="match_parent"
+                android:layout_height="60dp"
+                android:text="ENREGISTRER LES INFORMATIONS"
+                android:backgroundTint="?attr/colorPrimary"
+                app:cornerRadius="8dp" />
+
+            <Button
+                android:id="@+id/btnCancelEdit"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="ANNULER"
+                android:layout_marginTop="8dp"
+                android:visibility="gone"
+                style="@style/Widget.MaterialComponents.Button.TextButton"
+                android:textColor="@color/white"/>
+        </LinearLayout>
 
     </LinearLayout>
 </ScrollView>
