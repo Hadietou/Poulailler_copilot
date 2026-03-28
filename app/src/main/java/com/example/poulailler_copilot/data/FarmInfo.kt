@@ -14,5 +14,6 @@ data class FarmInfo(
     val setupDate: Long = System.currentTimeMillis(),
     val feedInfo: String = "",
     val mortality: Int = 0,
-    val expenses: Double = 0.0
+    val expenses: Double = 0.0,
+    val currency: String = "MRU" // Default currency
 )

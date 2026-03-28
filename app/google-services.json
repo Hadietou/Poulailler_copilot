@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "139978881247",
+    "project_id": "pondeuses-eec3f",
+    "storage_bucket": "pondeuses-eec3f.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:139978881247:android:a43551f8ef0ca3db72d16a",
+        "android_client_info": {
+          "package_name": "com.example.poulailler_copilot"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBEBf8kKaoEw3yzVIscIWdzGr3mioWfnPs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -6,7 +6,6 @@ import android.os.Bundle
 import android.view.Gravity
 import android.view.MenuItem
 import android.view.View
-import android.widget.ArrayAdapter
 import android.widget.TableRow
 import android.widget.TextView
 import android.widget.Toast
@@ -20,13 +19,18 @@ import com.example.poulailler_copilot.data.AppDatabase
 import com.example.poulailler_copilot.data.EggEntry
 import com.example.poulailler_copilot.data.FarmInfo
 import com.example.poulailler_copilot.databinding.ActivityDashboardBinding
+import com.example.poulailler_copilot.repository.FirebaseRepository
+import com.github.mikephil.charting.components.XAxis
 import com.github.mikephil.charting.data.*
 import com.github.mikephil.charting.formatter.IndexAxisValueFormatter
+import com.github.mikephil.charting.formatter.ValueFormatter
 import com.github.mikephil.charting.utils.ColorTemplate
 import com.google.android.material.navigation.NavigationView
+import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -37,7 +41,10 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
     private lateinit var binding: ActivityDashboardBinding
     private val viewModel: DashboardViewModel by viewModels()
     private var userRole: String = "AGENT"
-    private var userId: Long = -1
+    private var userId: String? = null
+    private val numberFormat = NumberFormat.getInstance(Locale.getDefault())
+    private var currency: String = "MRU"
+    private val firebaseRepo = FirebaseRepository()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -45,11 +52,12 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
         setContentView(binding.root)
 
         userRole = intent.getStringExtra("role") ?: "AGENT"
-        userId = intent.getLongExtra("userId", -1)
+        userId = intent.getStringExtra("userIdString") ?: FirebaseAuth.getInstance().currentUser?.uid
 
         setupNavigation()
         updateUIBasedOnRole()
         observeViewModel()
+        setupClickListeners()
         
         checkFirstLogin()
         
@@ -58,14 +66,50 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
         }
     }
 
+    private fun formatNumber(number: Any): String {
+        return numberFormat.format(number)
+    }
+
+    private fun setupClickListeners() {
+        binding.cardMortality.setOnClickListener {
+            startActivity(Intent(this, MortalityHistoryActivity::class.java))
+        }
+
+        binding.cardStockFeed.setOnClickListener {
+            startActivity(Intent(this, ExpenseHistoryActivity::class.java))
+        }
+
+        binding.layoutTotalCollected.setOnClickListener {
+            startActivity(Intent(this, CollectionHistoryActivity::class.java))
+        }
+
+        binding.layoutTotalBroken.setOnClickListener {
+            startActivity(Intent(this, CollectionHistoryActivity::class.java))
+        }
+
+        binding.layoutTotalSold.setOnClickListener {
+            startActivity(Intent(this, SalesHistoryActivity::class.java))
+        }
+
+        binding.cardSalesRevenue.setOnClickListener {
+            startActivity(Intent(this, SalesHistoryActivity::class.java))
+        }
+
+        binding.cardTotalExpenses.setOnClickListener {
+            startActivity(Intent(this, ExpenseHistoryActivity::class.java))
+        }
+    }
+
     private fun checkFirstLogin() {
         if (userRole == "RESPONSABLE") {
-            lifecycleScope.launch(Dispatchers.IO) {
-                val db = AppDatabase.getInstance(this@DashboardActivity)
-                val info = db.farmInfoDao().getInfo()
+            lifecycleScope.launch {
+                val info = firebaseRepo.getFarmInfo()
                 if (info == null || info.farmName.isEmpty()) {
                     withContext(Dispatchers.Main) {
-                        startActivity(Intent(this@DashboardActivity, FarmInfoActivity::class.java))
+                        val intent = Intent(this@DashboardActivity, FarmInfoActivity::class.java)
+                        intent.putExtra("role", userRole)
+                        intent.putExtra("userIdString", userId)
+                        startActivity(intent)
                     }
                 }
             }
@@ -85,7 +129,7 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
 
             for (i in 0 until 10) {
                 val entry = EggEntry(
-                    userId = userId,
+                    userId = 0, // Fallback for local DB
                     date = calendar.timeInMillis,
                     eggsCount = currentEggs.toInt(),
                     brokenEggsCount = (currentEggs * 0.02).toInt(),
@@ -106,6 +150,7 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
     override fun onResume() {
         super.onResume()
         viewModel.loadData()
+        updateNavHeader()
     }
 
     private fun setupNavigation() {
@@ -118,6 +163,24 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
         toggle.syncState()
 
         binding.navigationView.setNavigationItemSelectedListener(this)
+        updateNavHeader()
+    }
+
+    private fun updateNavHeader() {
+        val headerView = binding.navigationView.getHeaderView(0)
+        val tvUsername = headerView.findViewById<TextView>(R.id.tvUsername)
+        val tvUserRole = headerView.findViewById<TextView>(R.id.tvUserRole)
+
+        lifecycleScope.launch {
+            val uid = userId ?: FirebaseAuth.getInstance().currentUser?.uid
+            if (uid != null) {
+                val profile = firebaseRepo.getUserProfile(uid)
+                withContext(Dispatchers.Main) {
+                    tvUsername.text = profile?.username ?: "Utilisateur"
+                    tvUserRole.text = userRole
+                }
+            }
+        }
     }
 
     private fun updateUIBasedOnRole() {
@@ -125,19 +188,33 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
         menu.findItem(R.id.nav_users).isVisible = userRole == "RESPONSABLE"
         menu.findItem(R.id.nav_expenses).isVisible = userRole == "RESPONSABLE"
         menu.findItem(R.id.nav_vaccines).isVisible = userRole == "RESPONSABLE"
-        menu.findItem(R.id.nav_farm_info)?.isVisible = userRole == "RESPONSABLE"
+        menu.findItem(R.id.nav_farm_info).isVisible = userRole == "RESPONSABLE"
         
         binding.layoutFinanceSummary.visibility = if (userRole == "RESPONSABLE") View.VISIBLE else View.GONE
+        binding.cardStockFeed.visibility = if (userRole == "RESPONSABLE") View.VISIBLE else View.GONE
     }
 
     private fun observeViewModel() {
         viewModel.farmInfo.observe(this) { info ->
-            binding.tvHensCount.text = info?.hensCount?.toString() ?: "--"
             binding.tvHensAge.text = info?.let { viewModel.calculateWeeksAge(it.chickBirthDate).toString() } ?: "--"
+            currency = info?.currency ?: "MRU"
+            // Update UI with new currency
+            viewModel.totalSales.value?.let { binding.tvSalesRevenue.text = "${formatNumber(it)} $currency" }
+            viewModel.totalExpenses.value?.let { binding.tvTotalExpenses.text = "${formatNumber(it)} $currency" }
+            viewModel.expensesByCategory.value?.let { updateExpensesBarChart(it) }
+        }
+
+        viewModel.effectiveHensCount.observe(this) { count ->
+            binding.tvHensCount.text = formatNumber(count)
+            viewModel.last5DaysEntries.value?.let { updateLast5DaysTable(it) }
+        }
+
+        viewModel.totalMortalityCount.observe(this) { count ->
+            binding.tvTotalMortality.text = formatNumber(count)
         }
 
         viewModel.todayEggs.observe(this) { count ->
-            binding.tvTodayEggs.text = "$count œufs"
+            binding.tvTodayEggs.text = "${formatNumber(count)} œufs"
         }
 
         viewModel.layingRate.observe(this) { rate ->
@@ -145,19 +222,19 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
         }
 
         viewModel.totalCollected.observe(this) { count ->
-            binding.tvTotalCollected.text = count.toString()
+            binding.tvTotalCollected.text = formatNumber(count)
         }
 
         viewModel.totalBroken.observe(this) { count ->
-            binding.tvTotalBroken.text = count.toString()
+            binding.tvTotalBroken.text = formatNumber(count)
         }
 
         viewModel.totalSold.observe(this) { count ->
-            binding.tvTotalSold.text = count.toString()
+            binding.tvTotalSold.text = formatNumber(count)
         }
 
         viewModel.totalRemaining.observe(this) { count ->
-            binding.tvTotalRemaining.text = count.toString()
+            binding.tvTotalRemaining.text = formatNumber(count)
         }
 
         viewModel.layingRate5d.observe(this) { rate ->
@@ -165,11 +242,11 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
         }
 
         viewModel.totalSales.observe(this) { amount ->
-            binding.tvSalesRevenue.text = String.format(Locale.getDefault(), "%.2f $", amount)
+            binding.tvSalesRevenue.text = "${formatNumber(amount)} $currency"
         }
 
         viewModel.totalExpenses.observe(this) { amount ->
-            binding.tvTotalExpenses.text = String.format(Locale.getDefault(), "%.2f $", amount)
+            binding.tvTotalExpenses.text = "${formatNumber(amount)} $currency"
         }
 
         viewModel.last5DaysEntries.observe(this) { entries ->
@@ -181,67 +258,137 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
         }
 
         viewModel.totalFeedKg.observe(this) { qty ->
-            binding.tvTotalFeed.text = String.format(Locale.getDefault(), "%.1f kg", qty)
+            binding.tvTotalFeed.text = "${formatNumber(qty)} kg"
         }
 
         viewModel.expensesByCategory.observe(this) { data ->
             updateExpensesBarChart(data)
         }
 
-        viewModel.lastVaccines.observe(this) { vaccines ->
-            val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-            val displayList = vaccines.map { "${sdf.format(Date(it.date))} - ${it.name}" }
-            binding.lvRecentVaccines.adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, displayList)
+        viewModel.cumulativeMortalityRate.observe(this) { rate ->
+            binding.tvCumulativeMortalityRate.text = String.format(Locale.getDefault(), "%.1f%%", rate)
+            if (rate > 5.0) {
+                binding.tvCumulativeMortalityRate.setTextColor(Color.RED)
+            } else {
+                binding.tvCumulativeMortalityRate.setTextColor(Color.WHITE)
+            }
+        }
+
+        viewModel.brokenRate.observe(this) { rate ->
+            binding.tvBrokenRate.text = String.format(Locale.getDefault(), "%.1f%%", rate)
+        }
+
+        viewModel.nextVaccine.observe(this) { vaccine ->
+            binding.tvNextVaccine.text = vaccine
+        }
+
+        viewModel.feedAutonomyDays.observe(this) { days ->
+            binding.tvFeedAutonomy.text = "$days jours restants"
+            if (days < 3) {
+                binding.tvFeedAutonomy.setTextColor(Color.RED)
+            } else {
+                binding.tvFeedAutonomy.setTextColor(Color.WHITE)
+            }
         }
     }
 
     private fun updateProductionChart(data: List<Pair<Long, Int>>) {
         val entries = data.mapIndexed { index, pair -> Entry(index.toFloat(), pair.second.toFloat()) }
         val dataSet = LineDataSet(entries, "Collecte d'œufs").apply {
-            color = Color.BLUE
-            setCircleColor(Color.BLUE)
-            lineWidth = 2f
-            circleRadius = 4f
+            color = Color.parseColor("#1E90FF")
+            setCircleColor(Color.parseColor("#1E90FF"))
+            lineWidth = 3f
+            circleRadius = 5f
             setDrawValues(true)
-            valueTextColor = Color.WHITE
+            valueTextColor = Color.parseColor("#757575")
             valueTextSize = 10f
+            valueFormatter = object : ValueFormatter() {
+                override fun getFormattedValue(value: Float): String {
+                    return formatNumber(value.toInt())
+                }
+            }
+            setDrawFilled(true)
+            fillColor = Color.parseColor("#1E90FF")
+            fillAlpha = 40
+            mode = LineDataSet.Mode.CUBIC_BEZIER
         }
 
         val dates = data.map { SimpleDateFormat("dd/MM", Locale.getDefault()).format(Date(it.first)) }
         binding.productionChart.apply {
             this.data = LineData(dataSet)
             xAxis.valueFormatter = IndexAxisValueFormatter(dates)
-            xAxis.position = com.github.mikephil.charting.components.XAxis.XAxisPosition.BOTTOM
-            xAxis.textColor = Color.WHITE
-            axisLeft.textColor = Color.WHITE
-            axisRight.textColor = Color.WHITE
-            legend.textColor = Color.WHITE
+            xAxis.position = XAxis.XAxisPosition.BOTTOM
+            xAxis.setDrawGridLines(false)
+            xAxis.granularity = 1f
+            xAxis.textColor = Color.parseColor("#757575")
+            
+            axisLeft.setDrawGridLines(true)
+            axisLeft.gridColor = Color.parseColor("#DDDDDD")
+            axisLeft.textColor = Color.parseColor("#757575")
+            axisLeft.valueFormatter = object : ValueFormatter() {
+                override fun getFormattedValue(value: Float): String {
+                    return formatNumber(value.toInt())
+                }
+            }
+            
+            axisRight.isEnabled = false
             description.isEnabled = false
+            legend.textColor = Color.parseColor("#757575")
             animateX(1000)
             invalidate()
         }
     }
 
     private fun updateExpensesBarChart(data: List<com.example.poulailler_copilot.data.CategoryExpense>) {
-        val entries = data.mapIndexed { index, item -> BarEntry(index.toFloat(), item.totalAmount.toFloat()) }
-        val dataSet = BarDataSet(entries, "Montant par catégorie").apply {
-            colors = ColorTemplate.JOYFUL_COLORS.toList()
-            valueTextColor = Color.BLACK
-            valueTextSize = 12f
+        if (data.isEmpty()) {
+            binding.expensesBarChart.clear()
+            return
         }
 
-        val categories = data.map { it.category }
+        val sortedData = data.sortedByDescending { it.totalAmount }
+        val total = sortedData.sumOf { it.totalAmount }
+
+        val entries = sortedData.mapIndexed { index, item -> BarEntry(index.toFloat(), item.totalAmount.toFloat()) }
+        val dataSet = BarDataSet(entries, "Dépenses").apply {
+            colors = ColorTemplate.VORDIPLOM_COLORS.toList()
+            valueTextSize = 11f
+            valueTextColor = Color.parseColor("#616161")
+            valueFormatter = object : ValueFormatter() {
+                override fun getFormattedValue(value: Float): String {
+                    val percentage = (value / total * 100).toInt()
+                    return "${formatNumber(value.toInt())} $currency ($percentage%)"
+                }
+            }
+        }
+
+        val categories = sortedData.map { it.category }
         binding.expensesBarChart.apply {
-            this.data = BarData(dataSet)
+            this.data = BarData(dataSet).apply {
+                barWidth = 0.5f
+            }
             xAxis.valueFormatter = IndexAxisValueFormatter(categories)
-            xAxis.position = com.github.mikephil.charting.components.XAxis.XAxisPosition.BOTTOM
+            xAxis.position = XAxis.XAxisPosition.BOTTOM
             xAxis.granularity = 1f
             xAxis.isGranularityEnabled = true
-            xAxis.textColor = Color.BLACK
-            axisLeft.textColor = Color.BLACK
-            axisRight.textColor = Color.BLACK
+            xAxis.setDrawGridLines(false)
+            xAxis.textColor = Color.parseColor("#757575")
+            xAxis.labelRotationAngle = -30f
+            
+            axisLeft.setDrawGridLines(true)
+            axisLeft.gridColor = Color.parseColor("#EEEEEE")
+            axisLeft.textColor = Color.parseColor("#757575")
+            axisLeft.axisMinimum = 0f
+            axisLeft.valueFormatter = object : ValueFormatter() {
+                override fun getFormattedValue(value: Float): String {
+                    return formatNumber(value.toInt())
+                }
+            }
+            
+            axisRight.isEnabled = false
             description.isEnabled = false
             legend.isEnabled = false
+            
+            setFitBars(true)
             animateY(1000)
             invalidate()
         }
@@ -251,7 +398,7 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
         binding.tableLast5Days.removeAllViews()
         if (entries.isEmpty()) return
 
-        val hensCount = viewModel.farmInfo.value?.hensCount ?: 1
+        val hensCount = viewModel.effectiveHensCount.value ?: 1
         val sdf = SimpleDateFormat("dd/MM", Locale.getDefault())
         val sortedEntries = entries.sortedBy { it.date }.takeLast(5)
 
@@ -265,14 +412,15 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
         val rowEggs = TableRow(this)
         rowEggs.addView(createCell("Œufs", true))
         for (entry in sortedEntries) {
-            rowEggs.addView(createCell(entry.eggsCount.toString(), false))
+            rowEggs.addView(createCell(formatNumber(entry.eggsCount), false))
         }
         binding.tableLast5Days.addView(rowEggs)
 
         val rowRates = TableRow(this)
         rowRates.addView(createCell("Taux %", true))
         for (entry in sortedEntries) {
-            val rate = (entry.eggsCount.toDouble() / hensCount.toDouble()) * 100
+            val divisor = if (hensCount > 0) hensCount else 1
+            val rate = (entry.eggsCount.toDouble() / divisor.toDouble()) * 100
             rowRates.addView(createCell(String.format(Locale.getDefault(), "%.1f%%", rate), false))
         }
         binding.tableLast5Days.addView(rowRates)
@@ -295,23 +443,49 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
-            R.id.nav_users -> startActivity(Intent(this, ResponsableActivity::class.java))
-            R.id.nav_farm_info -> startActivity(Intent(this, FarmInfoActivity::class.java))
+            R.id.nav_dashboard -> {} // Already here
+            R.id.nav_users -> {
+                val intent = Intent(this, ResponsableActivity::class.java)
+                intent.putExtra("role", userRole)
+                intent.putExtra("userIdString", userId)
+                startActivity(intent)
+            }
+            R.id.nav_farm_info -> {
+                val intent = Intent(this, FarmInfoActivity::class.java)
+                intent.putExtra("role", userRole)
+                intent.putExtra("userIdString", userId)
+                startActivity(intent)
+            }
             R.id.nav_collect -> {
                 val intent = Intent(this, AgentActivity::class.java)
-                intent.putExtra("userId", userId)
+                intent.putExtra("userIdString", userId)
                 intent.putExtra("role", userRole)
                 startActivity(intent)
             }
-            R.id.nav_vaccines -> startActivity(Intent(this, VaccineActivity::class.java))
-            R.id.nav_expenses -> startActivity(Intent(this, ExpensesActivity::class.java))
+            R.id.nav_vaccines -> {
+                val intent = Intent(this, VaccineActivity::class.java)
+                intent.putExtra("role", userRole)
+                intent.putExtra("userIdString", userId)
+                startActivity(intent)
+            }
+            R.id.nav_expenses -> {
+                val intent = Intent(this, ExpensesActivity::class.java)
+                intent.putExtra("role", userRole)
+                intent.putExtra("userIdString", userId)
+                startActivity(intent)
+            }
             R.id.nav_sales -> {
                 val intent = Intent(this, SalesActivity::class.java)
-                intent.putExtra("userId", userId)
+                intent.putExtra("userIdString", userId)
                 intent.putExtra("role", userRole)
                 startActivity(intent)
             }
-            R.id.nav_logout -> finish()
+            R.id.nav_logout -> {
+                val intent = Intent(this, LoginActivity::class.java)
+                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                startActivity(intent)
+                finish()
+            }
         }
         binding.drawerLayout.closeDrawer(GravityCompat.START)
         return true

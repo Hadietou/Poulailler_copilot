@@ -1,6 +1,7 @@
 package com.example.poulailler_copilot.data
 
 import androidx.room.*
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface EggEntryDao {
@@ -9,6 +10,9 @@ interface EggEntryDao {
 
     @Query("SELECT * FROM egg_entries ORDER BY date DESC")
     suspend fun getAll(): List<EggEntry>
+
+    @Query("SELECT * FROM egg_entries ORDER BY date DESC")
+    fun getAllFlow(): Flow<List<EggEntry>>
 
     @Query("SELECT * FROM egg_entries WHERE userId = :userId ORDER BY date DESC")
     suspend fun getByUser(userId: Long): List<EggEntry>

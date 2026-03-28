@@ -10,7 +10,7 @@
         <item
             android:id="@+id/nav_farm_info"
             android:icon="@android:drawable/ic_menu_gallery"
-            android:title="Information Ferme" />
+            android:title="Informations sur la ferme" />
 
         <item
             android:id="@+id/nav_users"
@@ -20,7 +20,7 @@
         <item
             android:id="@+id/nav_expenses"
             android:icon="@android:drawable/ic_menu_save"
-            android:title="Dépenses" />
+            android:title="Saisie des dépenses" />
 
         <item
             android:id="@+id/nav_vaccines"

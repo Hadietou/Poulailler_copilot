@@ -1,107 +1,188 @@
 package com.example.poulailler_copilot.ui
 
 import android.app.DatePickerDialog
+import android.content.Intent
 import android.os.Bundle
-import android.view.View
-import android.widget.ArrayAdapter
+import android.view.MenuItem
+import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.viewModels
+import androidx.appcompat.app.ActionBarDrawerToggle
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.GravityCompat
 import androidx.lifecycle.lifecycleScope
-import com.example.poulailler_copilot.data.AppDatabase
-import com.example.poulailler_copilot.data.EggEntry
+import com.example.poulailler_copilot.R
 import com.example.poulailler_copilot.databinding.ActivityAgentBinding
+import com.example.poulailler_copilot.repository.FirebaseRepository
+import com.google.android.material.navigation.NavigationView
+import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.*
 
-class AgentActivity : AppCompatActivity() {
+class AgentActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelectedListener {
 
     private lateinit var binding: ActivityAgentBinding
-    private val vm: AgentViewModel by viewModels()
-    private var userId: Long = -1
+    private val viewModel: AgentViewModel by viewModels()
+    private val calendar = Calendar.getInstance()
+    private var selectedDateMs: Long = System.currentTimeMillis()
+    private var userId: String? = null
     private var userRole: String = "AGENT"
-    
-    private var selectedDate = Calendar.getInstance()
-    private val dateFormatter = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+    private val firebaseRepo = FirebaseRepository()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityAgentBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        userId = intent.getLongExtra("userId", -1)
+        userId = intent.getStringExtra("userIdString") ?: FirebaseAuth.getInstance().currentUser?.uid
         userRole = intent.getStringExtra("role") ?: "AGENT"
 
-        if (userId == -1L) {
-            Toast.makeText(this, "Erreur utilisateur", Toast.LENGTH_SHORT).show()
-            finish()
-            return
-        }
-
-        updateDateButton()
+        setupNavigation()
 
         binding.btnSelectDate.setOnClickListener {
-            val dpd = DatePickerDialog(this, { _, year, month, dayOfMonth ->
-                selectedDate.set(year, month, dayOfMonth)
-                updateDateButton()
-            }, selectedDate.get(Calendar.YEAR), selectedDate.get(Calendar.MONTH), selectedDate.get(Calendar.DAY_OF_MONTH))
-            dpd.show()
-        }
-
-        if (userRole == "RESPONSABLE") {
-            loadGlobalHistory()
-        } else {
-            vm.entries.observe(this) { list ->
-                val items = list.map { e ->
-                    val dateStr = dateFormatter.format(Date(e.date))
-                    "Date: $dateStr - Récoltés: ${e.eggsCount} - Cassés: ${e.brokenEggsCount}\n${e.remarks ?: ""}"
-                }
-                binding.lvEntries.adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, items)
-            }
-            vm.loadEntries(userId)
+            showDatePicker()
         }
 
         binding.btnAddEntry.setOnClickListener {
-            val eggs = binding.etEggsCount.text.toString().toIntOrNull()
+            val count = binding.etEggsCount.text.toString().toIntOrNull() ?: 0
             val broken = binding.etBrokenEggsCount.text.toString().toIntOrNull() ?: 0
             val remarks = binding.etRemarks.text.toString()
 
-            if (eggs == null) {
-                Toast.makeText(this, "Nombre d'œufs récoltés invalide", Toast.LENGTH_SHORT).show()
+            if (count == 0 && broken == 0) {
+                Toast.makeText(this, "Veuillez saisir au moins une donnée", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
-            vm.addEntry(userId, selectedDate.timeInMillis, eggs, broken, if (remarks.isBlank()) null else remarks) {
-                Toast.makeText(this, "Saisie enregistrée", Toast.LENGTH_SHORT).show()
-                binding.etEggsCount.text.clear()
-                binding.etBrokenEggsCount.text.clear()
-                binding.etRemarks.text.clear()
-                if (userRole == "RESPONSABLE") loadGlobalHistory()
+            viewModel.addEntry(
+                userId = 0L, // Fallback for local Room
+                date = selectedDateMs,
+                eggs = count,
+                broken = broken,
+                remarks = remarks,
+                onDone = {
+                    Toast.makeText(this@AgentActivity, "Collecte enregistrée", Toast.LENGTH_SHORT).show()
+                    binding.etEggsCount.setText("")
+                    binding.etBrokenEggsCount.setText("")
+                    binding.etRemarks.setText("")
+                }
+            )
+        }
+
+        binding.btnViewCollectionHistory.setOnClickListener {
+            startActivity(Intent(this, CollectionHistoryActivity::class.java))
+        }
+    }
+
+    private fun setupNavigation() {
+        setSupportActionBar(binding.toolbar)
+        val toggle = ActionBarDrawerToggle(
+            this, binding.drawerLayout, binding.toolbar,
+            R.string.navigation_drawer_open, R.string.navigation_drawer_close
+        )
+        binding.drawerLayout.addDrawerListener(toggle)
+        toggle.syncState()
+
+        binding.navigationView.setNavigationItemSelectedListener(this)
+        
+        val menu = binding.navigationView.menu
+        menu.findItem(R.id.nav_users).isVisible = userRole == "RESPONSABLE"
+        menu.findItem(R.id.nav_expenses).isVisible = userRole == "RESPONSABLE"
+        menu.findItem(R.id.nav_vaccines).isVisible = userRole == "RESPONSABLE"
+        menu.findItem(R.id.nav_farm_info).isVisible = userRole == "RESPONSABLE"
+
+        updateNavHeader()
+    }
+
+    private fun updateNavHeader() {
+        val headerView = binding.navigationView.getHeaderView(0)
+        val tvUsername = headerView.findViewById<TextView>(R.id.tvUsername)
+        val tvUserRole = headerView.findViewById<TextView>(R.id.tvUserRole)
+
+        lifecycleScope.launch {
+            val uid = userId ?: FirebaseAuth.getInstance().currentUser?.uid
+            if (uid != null) {
+                val profile = firebaseRepo.getUserProfile(uid)
+                withContext(Dispatchers.Main) {
+                    tvUsername.text = profile?.username ?: "Utilisateur"
+                    tvUserRole.text = userRole
+                }
             }
         }
     }
 
-    private fun loadGlobalHistory() {
-        lifecycleScope.launch(Dispatchers.IO) {
-            val db = AppDatabase.getInstance(this@AgentActivity)
-            val entries = db.eggEntryDao().getAll()
-            val displayList = entries.map { entry ->
-                val user = db.userDao().getById(entry.userId)
-                val username = user?.username ?: "Inconnu"
-                val dateStr = dateFormatter.format(Date(entry.date))
-                "$dateStr - $username: ${entry.eggsCount} œufs (Cassés: ${entry.brokenEggsCount})"
-            }
-            withContext(Dispatchers.Main) {
-                binding.tvHistoryTitle.text = "Historique global des collectes"
-                binding.lvEntries.adapter = ArrayAdapter(this@AgentActivity, android.R.layout.simple_list_item_1, displayList)
-            }
-        }
+    private fun showDatePicker() {
+        DatePickerDialog(this, { _, year, month, dayOfMonth ->
+            calendar.set(year, month, dayOfMonth)
+            selectedDateMs = calendar.timeInMillis
+            val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+            binding.btnSelectDate.text = "Date: ${sdf.format(calendar.time)}"
+        }, calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH), calendar.get(Calendar.DAY_OF_MONTH)).show()
     }
 
-    private fun updateDateButton() {
-        binding.btnSelectDate.text = "Date: ${dateFormatter.format(selectedDate.time)}"
+    override fun onNavigationItemSelected(item: MenuItem): Boolean {
+        when (item.itemId) {
+            R.id.nav_dashboard -> {
+                val intent = Intent(this, DashboardActivity::class.java)
+                intent.putExtra("role", userRole)
+                intent.putExtra("userIdString", userId)
+                startActivity(intent)
+                finish()
+            }
+            R.id.nav_users -> {
+                val intent = Intent(this, ResponsableActivity::class.java)
+                intent.putExtra("role", userRole)
+                intent.putExtra("userIdString", userId)
+                startActivity(intent)
+            }
+            R.id.nav_farm_info -> {
+                val intent = Intent(this, FarmInfoActivity::class.java)
+                intent.putExtra("role", userRole)
+                intent.putExtra("userIdString", userId)
+                startActivity(intent)
+            }
+            R.id.nav_collect -> {} // Already here
+            R.id.nav_vaccines -> {
+                val intent = Intent(this, VaccineActivity::class.java)
+                intent.putExtra("role", userRole)
+                intent.putExtra("userIdString", userId)
+                startActivity(intent)
+            }
+            R.id.nav_expenses -> {
+                val intent = Intent(this, ExpensesActivity::class.java)
+                intent.putExtra("role", userRole)
+                intent.putExtra("userIdString", userId)
+                startActivity(intent)
+            }
+            R.id.nav_sales -> {
+                val intent = Intent(this, SalesActivity::class.java)
+                intent.putExtra("role", userRole)
+                intent.putExtra("userIdString", userId)
+                startActivity(intent)
+            }
+            R.id.nav_logout -> {
+                val intent = Intent(this, LoginActivity::class.java)
+                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                startActivity(intent)
+                finish()
+            }
+        }
+        binding.drawerLayout.closeDrawer(GravityCompat.START)
+        return true
+    }
+
+    override fun onResume() {
+        super.onResume()
+        updateNavHeader()
+    }
+
+    override fun onBackPressed() {
+        if (binding.drawerLayout.isDrawerOpen(GravityCompat.START)) {
+            binding.drawerLayout.closeDrawer(GravityCompat.START)
+        } else {
+            super.onBackPressed()
+        }
     }
 }

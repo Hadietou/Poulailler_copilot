@@ -4,12 +4,19 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
-import androidx.room.migration.Migration
-import androidx.sqlite.db.SupportSQLiteDatabase
 
 @Database(
-    entities = [User::class, EggEntry::class, FarmInfo::class, EggSale::class, Expense::class, VaccineEntry::class, LoginEntry::class],
-    version = 6,
+    entities = [
+        User::class, 
+        EggEntry::class, 
+        FarmInfo::class, 
+        EggSale::class, 
+        Expense::class, 
+        VaccineEntry::class, 
+        LoginEntry::class,
+        Mortality::class
+    ],
+    version = 8,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -20,6 +27,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun expenseDao(): ExpenseDao
     abstract fun vaccineEntryDao(): VaccineEntryDao
     abstract fun loginDao(): LoginDao
+    abstract fun mortalityDao(): MortalityDao
 
     companion object {
         @Volatile

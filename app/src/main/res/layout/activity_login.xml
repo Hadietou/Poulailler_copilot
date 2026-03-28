@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:fillViewport="true"
-    android:background="#F7F9F9">
+    android:background="@color/background">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -20,7 +20,7 @@
             android:layout_marginTop="48dp"
             app:cardCornerRadius="70dp"
             app:cardElevation="6dp"
-            app:strokeColor="#FFB300"
+            app:strokeColor="@color/accent_amber"
             app:strokeWidth="3dp">
 
             <ImageView
@@ -37,7 +37,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="24dp"
             android:text="POULAILLER PRO"
-            android:textColor="#FFB300"
+            android:textColor="@color/accent_amber"
             android:textSize="32sp"
             android:fontFamily="sans-serif-black"
             android:letterSpacing="0.05" />
@@ -46,8 +46,8 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginBottom="40dp"
-            android:text="Gestion automatisée - Poules Pondeuses"
-            android:textColor="#546E7A"
+            android:text="Gestion Collaborative Temps Réel"
+            android:textColor="@color/text_secondary"
             android:textSize="14sp"
             android:textStyle="italic" />
 
@@ -55,9 +55,7 @@
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:cardCornerRadius="20dp"
-            app:cardElevation="10dp"
-            app:cardUseCompatPadding="true">
+            style="@style/Widget.App.CardView">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -71,21 +69,21 @@
                     android:text="Connexion"
                     android:textSize="22sp"
                     android:textStyle="bold"
-                    android:textColor="#263238"
+                    android:textColor="@color/text_primary"
                     android:layout_marginBottom="24dp"/>
 
                 <com.google.android.material.textfield.TextInputLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Nom d'utilisateur"
-                    app:startIconDrawable="@android:drawable/ic_menu_myplaces"
+                    android:hint="Email"
+                    app:startIconDrawable="@android:drawable/ic_dialog_email"
                     style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
 
                     <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/etUsername"
+                        android:id="@+id/etEmail"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:inputType="text" />
+                        android:inputType="textEmailAddress" />
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <com.google.android.material.textfield.TextInputLayout
@@ -113,7 +111,8 @@
                     android:textSize="16sp"
                     android:textStyle="bold"
                     app:cornerRadius="12dp"
-                    android:backgroundTint="#FFB300"
+                    android:backgroundTint="@color/accent_amber"
+                    android:textColor="@color/black"
                     android:elevation="4dp" />
 
             </LinearLayout>
@@ -123,9 +122,9 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="24dp"
-            android:text="© 2024 Gestion Avicole Intelligente"
+            android:text="Synchronisation Cloud Activée"
             android:textSize="12sp"
-            android:textColor="#90A4AE" />
+            android:textColor="@color/text_secondary" />
 
     </LinearLayout>
 </ScrollView>

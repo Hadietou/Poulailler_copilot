@@ -3,6 +3,7 @@ package com.example.poulailler_copilot.data
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.Query
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface ExpenseDao {
@@ -11,6 +12,9 @@ interface ExpenseDao {
 
     @Query("SELECT * FROM expenses ORDER BY date DESC")
     suspend fun getAll(): List<Expense>
+
+    @Query("SELECT * FROM expenses ORDER BY date DESC")
+    fun getAllFlow(): Flow<List<Expense>>
 
     @Query("SELECT SUM(amount) FROM expenses")
     suspend fun getTotalExpenses(): Double?

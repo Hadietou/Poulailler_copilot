@@ -12,20 +12,24 @@
         android:layout_width="64dp"
         android:layout_height="64dp"
         android:src="@drawable/poule_pondeuse"
-        android:scaleType="centerCrop" />
-
-    <TextView
-        android:id="@+id/tvUserRole"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:paddingTop="8dp"
-        android:text="Responsable"
-        android:textAppearance="@style/TextAppearance.AppCompat.Body1"
-        android:textStyle="bold" />
+        android:scaleType="centerCrop"
+        android:contentDescription="Photo de profil" />
 
     <TextView
         android:id="@+id/tvUsername"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingTop="8dp"
+        android:text="Chargement..."
+        android:textAppearance="@style/TextAppearance.AppCompat.Body1"
+        android:textSize="18sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/tvUserRole"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="admin" />
+        android:text="Rôle"
+        android:alpha="0.8"
+        android:textSize="14sp" />
 </LinearLayout>

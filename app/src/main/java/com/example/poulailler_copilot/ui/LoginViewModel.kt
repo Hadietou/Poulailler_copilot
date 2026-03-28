@@ -3,36 +3,38 @@ package com.example.poulailler_copilot.ui
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.poulailler_copilot.data.AppDatabase
-import com.example.poulailler_copilot.repository.UserRepository
-import kotlinx.coroutines.Dispatchers
+import com.example.poulailler_copilot.repository.FirebaseRepository
+import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.tasks.await
 
 class LoginViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val db = AppDatabase.getInstance(application)
-    private val userRepo = UserRepository(db.userDao())
-
-    init {
-        viewModelScope.launch(Dispatchers.IO) {
-            userRepo.createResponsableIfNotExists()
-        }
-    }
+    private val auth = FirebaseAuth.getInstance()
+    private val firebaseRepo = FirebaseRepository()
 
     fun login(
-        username: String,
+        email: String, // Firebase utilise l'email, on adaptera l'UI
         password: String,
-        onResult: (Boolean, String, Long) -> Unit
+        onResult: (Boolean, String, String) -> Unit // success, role, uid
     ) {
-        viewModelScope.launch(Dispatchers.IO) {
-            val user = userRepo.login(username, password)
-            withContext(Dispatchers.Main) {
+        viewModelScope.launch {
+            try {
+                val result = auth.signInWithEmailAndPassword(email, password).await()
+                val user = result.user
                 if (user != null) {
-                    onResult(true, user.role, user.id)
+                    val profile = firebaseRepo.getUserProfile(user.uid)
+                    if (profile != null && profile.active) {
+                        onResult(true, profile.role, user.uid)
+                    } else {
+                        auth.signOut()
+                        onResult(false, "", "")
+                    }
                 } else {
-                    onResult(false, "", -1)
+                    onResult(false, "", "")
                 }
+            } catch (e: Exception) {
+                onResult(false, "", "")
             }
         }
     }

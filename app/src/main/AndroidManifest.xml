@@ -31,6 +31,24 @@
             android:name=".ui.FarmInfoActivity"
             android:exported="false" />
         <activity
+            android:name=".ui.MortalityHistoryActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ui.LoginHistoryActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ui.CollectionHistoryActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ui.ExpenseHistoryActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ui.VaccineHistoryActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ui.SalesHistoryActivity"
+            android:exported="false" />
+        <activity
             android:name=".ui.LoginActivity"
             android:exported="true">
             <intent-filter>

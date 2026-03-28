@@ -1,114 +1,208 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.drawerlayout.widget.DrawerLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/drawerLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:padding="16dp">
+    android:background="@color/black">
 
-    <TextView
+    <androidx.coordinatorlayout.widget.CoordinatorLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Saisie des Dépenses"
-        android:textSize="24sp"
-        android:textStyle="bold"
-        android:textColor="#000000"
-        android:background="#1E90FF"
-        android:padding="8dp"
-        android:layout_marginBottom="16dp"/>
+        android:layout_height="match_parent">
 
-    <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/tilDate"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="Date"
-        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-        android:layout_marginBottom="8dp">
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/etExpenseDate"
+        <com.google.android.material.appbar.AppBarLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:focusable="false"
-            android:clickable="true" />
-    </com.google.android.material.textfield.TextInputLayout>
+            android:background="@color/black">
+            <com.google.android.material.appbar.MaterialToolbar
+                android:id="@+id/toolbar"
+                android:layout_width="match_parent"
+                android:layout_height="?attr/actionBarSize"
+                app:title="Saisie des Dépenses"
+                app:titleTextColor="@color/white"
+                app:navigationIcon="@android:drawable/ic_menu_sort_by_size"
+                app:navigationIconTint="@color/white" />
+        </com.google.android.material.appbar.AppBarLayout>
 
-    <com.google.android.material.textfield.TextInputLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="Catégorie"
-        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
-        android:layout_marginBottom="8dp">
-        <AutoCompleteTextView
-            android:id="@+id/autoCompleteCategory"
+        <ScrollView
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:inputType="none" />
-    </com.google.android.material.textfield.TextInputLayout>
+            android:layout_height="match_parent"
+            app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
-    <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/tilQuantityKg"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="Quantité (kg)"
-        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-        android:layout_marginBottom="8dp"
-        android:visibility="gone">
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/etQuantityKg"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:inputType="numberDecimal" />
-    </com.google.android.material.textfield.TextInputLayout>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
 
-    <com.google.android.material.textfield.TextInputLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="Montant ($)"
-        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-        android:layout_marginBottom="8dp">
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/etAmount"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:inputType="numberDecimal" />
-    </com.google.android.material.textfield.TextInputLayout>
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:cardBackgroundColor="#1A1A1A"
+                    app:cardCornerRadius="12dp"
+                    app:strokeColor="#F44336"
+                    app:strokeWidth="1dp">
 
-    <com.google.android.material.textfield.TextInputLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="Description / Notes"
-        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-        android:layout_marginBottom="16dp">
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/etDescription"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:inputType="textLongMessage" />
-    </com.google.android.material.textfield.TextInputLayout>
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="16dp">
 
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btnSaveExpense"
-        android:layout_width="match_parent"
-        android:layout_height="50dp"
-        android:text="ENREGISTRER LA DÉPENSE"
-        android:backgroundTint="#F44336"
-        app:cornerRadius="8dp" />
+                        <com.google.android.material.textfield.TextInputLayout
+                            android:id="@+id/tilDate"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:hint="Date"
+                            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                            android:layout_marginBottom="12dp"
+                            app:hintTextColor="#B0B0B0"
+                            app:boxStrokeColor="#1E90FF"
+                            app:startIconDrawable="@android:drawable/ic_menu_my_calendar"
+                            app:startIconTint="#1E90FF">
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/etExpenseDate"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:focusable="false"
+                                android:clickable="true"
+                                android:textColor="@color/white" />
+                        </com.google.android.material.textfield.TextInputLayout>
 
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Historique des dépenses"
-        android:textStyle="bold"
-        android:background="#87CEEB"
-        android:textColor="#000000"
-        android:padding="8dp"
-        android:layout_marginTop="16dp"
-        android:layout_marginBottom="4dp"/>
+                        <com.google.android.material.textfield.TextInputLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:hint="Catégorie"
+                            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+                            android:layout_marginBottom="12dp"
+                            app:hintTextColor="#B0B0B0"
+                            app:boxStrokeColor="#1E90FF"
+                            app:startIconDrawable="@android:drawable/ic_menu_sort_by_size"
+                            app:startIconTint="#1E90FF">
+                            <AutoCompleteTextView
+                                android:id="@+id/autoCompleteCategory"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:inputType="none"
+                                android:textColor="@color/white" />
+                        </com.google.android.material.textfield.TextInputLayout>
 
-    <ListView
-        android:id="@+id/lvExpenses"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1" />
+                        <com.google.android.material.textfield.TextInputLayout
+                            android:id="@+id/tilQuantityKg"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:hint="Quantité (kg)"
+                            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                            android:layout_marginBottom="12dp"
+                            android:visibility="gone"
+                            app:hintTextColor="#B0B0B0"
+                            app:boxStrokeColor="#1E90FF">
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/etQuantityKg"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:inputType="numberDecimal"
+                                android:textColor="@color/white" />
+                        </com.google.android.material.textfield.TextInputLayout>
 
-</LinearLayout>
+                        <com.google.android.material.textfield.TextInputLayout
+                            android:id="@+id/tilAmount"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:hint="Montant ($)"
+                            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                            android:layout_marginBottom="12dp"
+                            app:hintTextColor="#B0B0B0"
+                            app:boxStrokeColor="#1E90FF"
+                            app:startIconDrawable="@android:drawable/ic_menu_agenda"
+                            app:startIconTint="#4CAF50">
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/etAmount"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:inputType="numberDecimal"
+                                android:textColor="@color/white" />
+                        </com.google.android.material.textfield.TextInputLayout>
+
+                        <com.google.android.material.textfield.TextInputLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:hint="Description / Notes"
+                            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                            android:layout_marginBottom="24dp"
+                            app:hintTextColor="#B0B0B0"
+                            app:boxStrokeColor="#1E90FF">
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/etDescription"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:inputType="textLongMessage"
+                                android:textColor="@color/white" />
+                        </com.google.android.material.textfield.TextInputLayout>
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnSaveExpense"
+                            android:layout_width="match_parent"
+                            android:layout_height="60dp"
+                            android:text="ENREGISTRER LA DÉPENSE"
+                            android:backgroundTint="#F44336"
+                            app:cornerRadius="8dp"
+                            app:icon="@android:drawable/ic_menu_save" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Section Historique -->
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="32dp"
+                    app:cardBackgroundColor="#1A1A1A"
+                    app:cardCornerRadius="12dp"
+                    app:strokeColor="#87CEEB"
+                    app:strokeWidth="1dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="16dp">
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Historique des Dépenses"
+                            android:textSize="18sp"
+                            android:textStyle="bold"
+                            android:textColor="#87CEEB"
+                            android:layout_marginBottom="16dp"/>
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnViewExpenseHistory"
+                            android:layout_width="match_parent"
+                            android:layout_height="56dp"
+                            android:text="AFFICHER L'HISTORIQUE"
+                            app:cornerRadius="8dp"
+                            app:icon="@android:drawable/ic_menu_recent_history"
+                            style="@style/Widget.MaterialComponents.Button.TextButton"
+                            android:textColor="#87CEEB"/>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Hidden for VM compatibility -->
+                <ListView android:id="@+id/lvExpenses" android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone"/>
+
+            </LinearLayout>
+        </ScrollView>
+    </androidx.coordinatorlayout.widget.CoordinatorLayout>
+
+    <com.google.android.material.navigation.NavigationView
+        android:id="@+id/navigationView"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:layout_gravity="start"
+        app:headerLayout="@layout/nav_header"
+        app:itemIconTint="@color/accent_blue"
+        app:itemTextColor="@color/white"
+        app:menu="@menu/drawer_menu" />
+
+</androidx.drawerlayout.widget.DrawerLayout>

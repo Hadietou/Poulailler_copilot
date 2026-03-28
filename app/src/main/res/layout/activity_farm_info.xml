@@ -1,211 +1,367 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.drawerlayout.widget.DrawerLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/drawerLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/black"
-    android:padding="16dp">
+    android:background="@color/black">
 
-    <LinearLayout
+    <androidx.coordinatorlayout.widget.CoordinatorLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:layout_height="match_parent">
 
-        <TextView
-            android:id="@+id/tvPageTitle"
+        <com.google.android.material.appbar.AppBarLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Information Ferme"
-            android:textSize="22sp"
-            android:textStyle="bold"
-            android:background="#1E90FF"
-            android:textColor="#000000"
-            android:padding="8dp"
-            android:layout_marginBottom="24dp"/>
+            android:background="@color/black">
+            <com.google.android.material.appbar.MaterialToolbar
+                android:id="@+id/toolbar"
+                android:layout_width="match_parent"
+                android:layout_height="?attr/actionBarSize"
+                app:title="Ma Ferme"
+                app:titleTextColor="@color/white"
+                app:navigationIcon="@android:drawable/ic_menu_sort_by_size"
+                app:navigationIconTint="@color/white" />
+        </com.google.android.material.appbar.AppBarLayout>
 
-        <!-- Mode Affichage -->
-        <LinearLayout
-            android:id="@+id/layoutDisplayInfo"
+        <ScrollView
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:visibility="gone">
+            android:layout_height="match_parent"
+            app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
-            <TextView
-                android:id="@+id/tvFarmDetails"
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:textColor="@color/white"
-                android:textSize="16sp"
-                android:lineSpacingExtra="8dp"
-                android:padding="16dp"
-                android:background="#333333"/>
+                android:orientation="vertical"
+                android:padding="16dp">
 
-            <Button
-                android:id="@+id/btnEditInfo"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="MODIFIER LES INFORMATIONS"
-                android:layout_marginTop="16dp"
-                app:cornerRadius="8dp" />
-
-            <!-- Section Mortalité -->
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Saisir une Mortalité"
-                android:textStyle="bold"
-                android:background="#87CEEB"
-                android:textColor="#000000"
-                android:padding="8dp"
-                android:layout_marginTop="24dp"
-                android:layout_marginBottom="8dp"/>
-
-            <com.google.android.material.textfield.TextInputLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:hint="Nombre de poules mortes"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-                app:hintTextColor="@color/white"
-                app:boxStrokeColor="@color/white">
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/etMortalityInput"
+                <!-- Mode Affichage Amélioré -->
+                <LinearLayout
+                    android:id="@+id/layoutDisplayInfo"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:inputType="number"
-                    android:textColor="@color/white" />
-            </com.google.android.material.textfield.TextInputLayout>
+                    android:orientation="vertical"
+                    android:visibility="gone">
 
-            <Button
-                android:id="@+id/btnSaveMortality"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="ENREGISTRER MORTALITÉ"
-                android:backgroundTint="#F44336"
-                android:layout_marginTop="8dp"
-                app:cornerRadius="8dp" />
-        </LinearLayout>
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        app:cardBackgroundColor="#1A1A1A"
+                        app:cardCornerRadius="12dp"
+                        app:strokeColor="#1E90FF"
+                        app:strokeWidth="1dp">
 
-        <!-- Mode Saisie/Modification -->
-        <LinearLayout
-            android:id="@+id/layoutEditInfo"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical">
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:padding="16dp">
 
-            <com.google.android.material.textfield.TextInputLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:hint="Nom de la ferme"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-                android:layout_marginBottom="12dp"
-                app:hintTextColor="@color/white"
-                app:boxStrokeColor="@color/white">
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/etFarmName"
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Résumé de l'exploitation"
+                                android:textColor="#1E90FF"
+                                android:textSize="18sp"
+                                android:textStyle="bold"
+                                android:layout_marginBottom="16dp"/>
+
+                            <!-- Farm Name -->
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="horizontal"
+                                android:layout_marginBottom="8dp">
+                                <ImageView
+                                    android:layout_width="24dp"
+                                    android:layout_height="24dp"
+                                    android:src="@android:drawable/ic_menu_my_calendar"
+                                    app:tint="#1E90FF"
+                                    android:contentDescription="Icône ferme" />
+                                <TextView
+                                    android:id="@+id/tvDisplayFarmName"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:textColor="@color/white"
+                                    android:textSize="16sp"
+                                    android:layout_marginStart="12dp"
+                                    android:textStyle="bold"
+                                    android:text="Nom de la ferme"/>
+                            </LinearLayout>
+
+                            <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#333333" android:layout_marginVertical="8dp"/>
+
+                            <!-- Hens Count & Breed -->
+                            <GridLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:columnCount="2">
+                                <LinearLayout android:orientation="vertical" android:layout_columnWeight="1" android:layout_width="0dp" android:layout_height="wrap_content">
+                                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Effectif initial" android:textColor="#B0B0B0" android:textSize="12sp"/>
+                                    <TextView android:id="@+id/tvDisplayHensCount" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="@color/white" android:textSize="16sp" android:textStyle="bold"/>
+                                </LinearLayout>
+                                <LinearLayout android:orientation="vertical" android:layout_columnWeight="1" android:layout_width="0dp" android:layout_height="wrap_content">
+                                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Race" android:textColor="#B0B0B0" android:textSize="12sp"/>
+                                    <TextView android:id="@+id/tvDisplayBreed" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="@color/white" android:textSize="16sp" android:textStyle="bold"/>
+                                </LinearLayout>
+                            </GridLayout>
+
+                            <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#333333" android:layout_marginVertical="8dp"/>
+
+                            <!-- Dates -->
+                            <GridLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:columnCount="2">
+                                <LinearLayout android:orientation="vertical" android:layout_columnWeight="1" android:layout_width="0dp" android:layout_height="wrap_content">
+                                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Arrivée" android:textColor="#B0B0B0" android:textSize="12sp"/>
+                                    <TextView android:id="@+id/tvDisplayArrival" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="@color/white" android:textSize="14sp"/>
+                                </LinearLayout>
+                                <LinearLayout android:orientation="vertical" android:layout_columnWeight="1" android:layout_width="0dp" android:layout_height="wrap_content">
+                                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Naissance" android:textColor="#B0B0B0" android:textSize="12sp"/>
+                                    <TextView android:id="@+id/tvDisplayBirth" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="@color/white" android:textSize="14sp"/>
+                                </LinearLayout>
+                            </GridLayout>
+
+                            <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#333333" android:layout_marginVertical="8dp"/>
+
+                            <!-- Currency Display -->
+                            <LinearLayout android:orientation="vertical" android:layout_width="match_parent" android:layout_height="wrap_content">
+                                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Monnaie utilisée" android:textColor="#B0B0B0" android:textSize="12sp"/>
+                                <TextView android:id="@+id/tvDisplayCurrency" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="@color/white" android:textSize="16sp" android:textStyle="bold" android:text="MRU"/>
+                            </LinearLayout>
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnEditInfo"
+                        android:layout_width="match_parent"
+                        android:layout_height="56dp"
+                        android:text="MODIFIER LES INFORMATIONS"
+                        android:layout_marginTop="12dp"
+                        app:cornerRadius="8dp"
+                        app:icon="@android:drawable/ic_menu_edit"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                        android:textColor="#1E90FF"
+                        app:strokeColor="#1E90FF"/>
+
+                    <!-- Section Mortalité -->
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="20dp"
+                        app:cardBackgroundColor="#1A1A1A"
+                        app:cardCornerRadius="12dp"
+                        app:strokeColor="#F44336"
+                        app:strokeWidth="1dp">
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:padding="16dp">
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="Saisir une Mortalité"
+                                android:textSize="18sp"
+                                android:textStyle="bold"
+                                android:textColor="#F44336"
+                                android:layout_marginBottom="16dp"/>
+                            <com.google.android.material.textfield.TextInputLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:hint="Date de l'événement"
+                                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                                android:layout_marginBottom="12dp"
+                                app:hintTextColor="#B0B0B0"
+                                app:boxStrokeColor="#F44336"
+                                app:startIconDrawable="@android:drawable/ic_menu_my_calendar"
+                                app:startIconTint="#F44336">
+                                <com.google.android.material.textfield.TextInputEditText
+                                    android:id="@+id/etMortalityDate"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:focusable="false"
+                                    android:clickable="true"
+                                    android:textColor="@color/white" />
+                            </com.google.android.material.textfield.TextInputLayout>
+                            <com.google.android.material.textfield.TextInputLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:hint="Nombre de poules mortes"
+                                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                                android:layout_marginBottom="16dp"
+                                app:hintTextColor="#B0B0B0"
+                                app:boxStrokeColor="#F44336"
+                                app:startIconDrawable="@android:drawable/ic_delete"
+                                app:startIconTint="#F44336">
+                                <com.google.android.material.textfield.TextInputEditText
+                                    android:id="@+id/etMortalityInput"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:inputType="number"
+                                    android:textColor="@color/white" />
+                            </com.google.android.material.textfield.TextInputLayout>
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnSaveMortality"
+                                android:layout_width="match_parent"
+                                android:layout_height="56dp"
+                                android:text="ENREGISTRER LA MORTALITÉ"
+                                android:backgroundTint="#F44336"
+                                app:cornerRadius="8dp"
+                                app:icon="@android:drawable/ic_menu_save"
+                                android:textColor="@color/white"/>
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnViewMortalityHistory"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="VOIR L'HISTORIQUE"
+                                android:layout_marginTop="8dp"
+                                style="@style/Widget.MaterialComponents.Button.TextButton"
+                                android:textColor="#F44336"/>
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+                </LinearLayout>
+
+                <!-- Mode Saisie/Modification -->
+                <LinearLayout
+                    android:id="@+id/layoutEditInfo"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:textColor="@color/white" />
-            </com.google.android.material.textfield.TextInputLayout>
+                    android:orientation="vertical"
+                    android:visibility="visible">
 
-            <com.google.android.material.textfield.TextInputLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:hint="Nombre de poules au depart"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-                android:layout_marginBottom="12dp"
-                app:hintTextColor="@color/white"
-                app:boxStrokeColor="@color/white">
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/etHensCount"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:inputType="number"
-                    android:textColor="@color/white" />
-            </com.google.android.material.textfield.TextInputLayout>
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Configuration de la ferme"
+                        android:textColor="@color/white"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="24dp"/>
 
-            <com.google.android.material.textfield.TextInputLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:hint="Race des poules"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-                android:layout_marginBottom="12dp"
-                app:hintTextColor="@color/white"
-                app:boxStrokeColor="@color/white">
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/etHenBreed"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:textColor="@color/white" />
-            </com.google.android.material.textfield.TextInputLayout>
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Nom de la ferme"
+                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                        android:layout_marginBottom="12dp"
+                        app:hintTextColor="@color/white"
+                        app:boxStrokeColor="@color/white">
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etFarmName"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:textColor="@color/white" />
+                    </com.google.android.material.textfield.TextInputLayout>
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Nombre de poules au depart"
+                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                        android:layout_marginBottom="12dp"
+                        app:hintTextColor="@color/white"
+                        app:boxStrokeColor="@color/white">
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etHensCount"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="number"
+                            android:textColor="@color/white" />
+                    </com.google.android.material.textfield.TextInputLayout>
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Race des poules"
+                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                        android:layout_marginBottom="12dp"
+                        app:hintTextColor="@color/white"
+                        app:boxStrokeColor="@color/white">
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etHenBreed"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:textColor="@color/white" />
+                    </com.google.android.material.textfield.TextInputLayout>
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Date d'arrivée"
+                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                        android:layout_marginBottom="12dp"
+                        app:hintTextColor="@color/white"
+                        app:boxStrokeColor="@color/white">
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etArrivalDate"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:focusable="false"
+                            android:clickable="true"
+                            android:textColor="@color/white" />
+                    </com.google.android.material.textfield.TextInputLayout>
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Date de naissance"
+                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                        android:layout_marginBottom="12dp"
+                        app:hintTextColor="@color/white"
+                        app:boxStrokeColor="@color/white">
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etBirthDate"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:focusable="false"
+                            android:clickable="true"
+                            android:textColor="@color/white" />
+                    </com.google.android.material.textfield.TextInputLayout>
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/tilCurrency"
+                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Choix Monnaie"
+                        android:layout_marginBottom="24dp"
+                        app:hintTextColor="@color/white"
+                        app:boxStrokeColor="@color/white">
+                        <AutoCompleteTextView
+                            android:id="@+id/actvCurrency"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="none"
+                            android:textColor="@color/white" />
+                    </com.google.android.material.textfield.TextInputLayout>
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnSaveFarmInfo"
+                        android:layout_width="match_parent"
+                        android:layout_height="60dp"
+                        android:text="ENREGISTRER"
+                        android:backgroundTint="?attr/colorPrimary"
+                        app:cornerRadius="8dp" />
 
-            <com.google.android.material.textfield.TextInputLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:hint="Date d'arrivée (JJ/MM/AAAA)"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-                android:layout_marginBottom="12dp"
-                app:hintTextColor="@color/white"
-                app:boxStrokeColor="@color/white">
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/etArrivalDate"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:focusable="false"
-                    android:clickable="true"
-                    android:textColor="@color/white" />
-            </com.google.android.material.textfield.TextInputLayout>
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnCancelEdit"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="ANNULER"
+                        android:layout_marginTop="8dp"
+                        style="@style/Widget.MaterialComponents.Button.TextButton"
+                        android:textColor="@color/white"
+                        android:visibility="gone"/>
+                </LinearLayout>
+            </LinearLayout>
+        </ScrollView>
+    </androidx.coordinatorlayout.widget.CoordinatorLayout>
 
-            <com.google.android.material.textfield.TextInputLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:hint="Date de naissance des poussins"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-                android:layout_marginBottom="12dp"
-                app:hintTextColor="@color/white"
-                app:boxStrokeColor="@color/white">
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/etBirthDate"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:focusable="false"
-                    android:clickable="true"
-                    android:textColor="@color/white" />
-            </com.google.android.material.textfield.TextInputLayout>
+    <com.google.android.material.navigation.NavigationView
+        android:id="@+id/navigationView"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:layout_gravity="start"
+        app:headerLayout="@layout/nav_header"
+        app:itemIconTint="@color/accent_blue"
+        app:itemTextColor="@color/white"
+        app:menu="@menu/drawer_menu" />
 
-            <com.google.android.material.textfield.TextInputLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:hint="Type d'aliment"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-                android:layout_marginBottom="24dp"
-                app:hintTextColor="@color/white"
-                app:boxStrokeColor="@color/white">
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/etFeedInfo"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:textColor="@color/white" />
-            </com.google.android.material.textfield.TextInputLayout>
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnSaveFarmInfo"
-                android:layout_width="match_parent"
-                android:layout_height="60dp"
-                android:text="ENREGISTRER LES INFORMATIONS"
-                android:backgroundTint="?attr/colorPrimary"
-                app:cornerRadius="8dp" />
-
-            <Button
-                android:id="@+id/btnCancelEdit"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="ANNULER"
-                android:layout_marginTop="8dp"
-                android:visibility="gone"
-                style="@style/Widget.MaterialComponents.Button.TextButton"
-                android:textColor="@color/white"/>
-        </LinearLayout>
-
-    </LinearLayout>
-</ScrollView>
+</androidx.drawerlayout.widget.DrawerLayout>
