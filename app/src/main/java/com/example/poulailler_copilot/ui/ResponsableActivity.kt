@@ -101,7 +101,9 @@ class ResponsableActivity : AppCompatActivity(), NavigationView.OnNavigationItem
         }
 
         vm.loginHistory.observe(this) { list ->
-            binding.rvLoginHistory.adapter = LoginHistoryAdapter(list)
+            // Filter to keep only the 10 most recent logins
+            val filteredList = list.take(10)
+            binding.rvLoginHistory.adapter = LoginHistoryAdapter(filteredList)
         }
     }
 

@@ -11,6 +11,12 @@ interface MortalityDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(mortality: Mortality)
 
+    @Update
+    suspend fun update(mortality: Mortality)
+
+    @Delete
+    suspend fun delete(mortality: Mortality)
+
     @Query("SELECT SUM(count) FROM mortality")
     suspend fun getTotalMortality(): Int?
 }

@@ -19,7 +19,7 @@
                 android:id="@+id/toolbar"
                 android:layout_width="match_parent"
                 android:layout_height="?attr/actionBarSize"
-                app:title="Suivi Sanitaire"
+                app:title="Suivi Mortalité"
                 app:titleTextColor="@color/white"
                 app:navigationIcon="@android:drawable/ic_menu_sort_by_size"
                 app:navigationIconTint="@color/white" />
@@ -36,72 +36,21 @@
                 android:orientation="vertical"
                 android:padding="16dp">
 
-                <!-- Guide de Prophylaxie Amélioré -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
                     android:gravity="center_vertical"
-                    android:layout_marginBottom="12dp">
-                    <View
-                        android:layout_width="4dp"
-                        android:layout_height="24dp"
-                        android:background="#1E90FF" />
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="GUIDE DE PROPHYLAXIE"
-                        android:textColor="#1E90FF"
-                        android:textSize="14sp"
-                        android:textStyle="bold"
-                        android:layout_marginStart="12dp"
-                        android:letterSpacing="0.1" />
-                </LinearLayout>
-
-                <com.google.android.material.card.MaterialCardView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    app:cardBackgroundColor="#111111"
-                    app:cardCornerRadius="16dp"
-                    app:strokeColor="#222222"
-                    app:strokeWidth="1dp"
-                    app:cardElevation="0dp">
-
-                    <LinearLayout
-                        android:id="@+id/llProphylaxisContainer"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:padding="16dp">
-                        <!-- Les items seront ajoutés dynamiquement ou via tvProphylaxisInfo -->
-                        <TextView
-                            android:id="@+id/tvProphylaxisInfo"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:textColor="#B0B0B0"
-                            android:textSize="14sp"
-                            android:lineSpacingExtra="8dp"
-                            android:text="Chargement du guide..." />
-                    </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
-
-                <!-- Section Historique Améliorée -->
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:layout_marginTop="32dp"
                     android:layout_marginBottom="16dp">
                     <View
                         android:layout_width="4dp"
                         android:layout_height="24dp"
-                        android:background="#4CAF50" />
+                        android:background="#F44336" />
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="HISTORIQUE DES SOINS"
-                        android:textColor="#4CAF50"
+                        android:text="HISTORIQUE DES PERTES"
+                        android:textColor="#F44336"
                         android:textSize="14sp"
                         android:textStyle="bold"
                         android:layout_marginStart="12dp"
@@ -109,11 +58,11 @@
                 </LinearLayout>
 
                 <androidx.recyclerview.widget.RecyclerView
-                    android:id="@+id/rvVaccineHistory"
+                    android:id="@+id/rvMortalityHistory"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:nestedScrollingEnabled="false"
-                    tools:listitem="@layout/item_vaccine" />
+                    tools:listitem="@layout/item_mortality" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnShowMore"
@@ -125,7 +74,6 @@
                     style="@style/Widget.MaterialComponents.Button.TextButton"
                     android:visibility="gone" />
 
-                <!-- Espace pour ne pas que le FAB cache le dernier item -->
                 <View
                     android:layout_width="match_parent"
                     android:layout_height="100dp" />
@@ -134,15 +82,15 @@
         </androidx.core.widget.NestedScrollView>
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/fabAddVaccine"
+            android:id="@+id/fabAddMortality"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="bottom|end"
             android:layout_margin="24dp"
             android:src="@android:drawable/ic_input_add"
-            app:backgroundTint="#4CAF50"
+            app:backgroundTint="#F44336"
             app:tint="@color/white"
-            android:contentDescription="Ajouter un soin" />
+            android:contentDescription="Signaler une mortalité" />
 
     </androidx.coordinatorlayout.widget.CoordinatorLayout>
 

@@ -8,6 +8,12 @@ interface EggSaleDao {
     @Insert
     suspend fun insert(sale: EggSale)
 
+    @Update
+    suspend fun update(sale: EggSale)
+
+    @Delete
+    suspend fun delete(sale: EggSale)
+
     @Query("SELECT * FROM egg_sales ORDER BY date DESC")
     fun getAll(): Flow<List<EggSale>>
 

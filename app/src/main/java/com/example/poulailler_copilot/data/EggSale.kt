@@ -12,5 +12,6 @@ data class EggSale(
     val pricePerUnit: Double,
     val totalPrice: Double,
     val buyer: String? = null,
-    val phoneNumber: String? = null
+    val phoneNumber: String? = null,
+    val firestoreId: String? = null
 )

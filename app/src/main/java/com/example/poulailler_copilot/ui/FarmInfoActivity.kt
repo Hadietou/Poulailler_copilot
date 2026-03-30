@@ -15,7 +15,6 @@ import androidx.lifecycle.lifecycleScope
 import com.example.poulailler_copilot.R
 import com.example.poulailler_copilot.data.AppDatabase
 import com.example.poulailler_copilot.data.FarmInfo
-import com.example.poulailler_copilot.data.Mortality
 import com.example.poulailler_copilot.databinding.ActivityFarmInfoBinding
 import com.example.poulailler_copilot.repository.FirebaseRepository
 import com.google.android.material.navigation.NavigationView
@@ -32,7 +31,6 @@ class FarmInfoActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
     private val calendar = Calendar.getInstance()
     private var arrivalDateMs: Long = 0
     private var birthDateMs: Long = 0
-    private var mortalityDateMs: Long = System.currentTimeMillis()
     private var currentFarmInfo: FarmInfo? = null
     private val firebaseRepo = FirebaseRepository()
     
@@ -63,14 +61,6 @@ class FarmInfoActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
 
         binding.btnCancelEdit.setOnClickListener {
             showEditMode(false)
-        }
-
-        binding.btnSaveMortality.setOnClickListener {
-            saveMortality()
-        }
-
-        binding.btnViewMortalityHistory.setOnClickListener {
-            startActivity(Intent(this, MortalityHistoryActivity::class.java))
         }
     }
 
@@ -105,7 +95,7 @@ class FarmInfoActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
                 val profile = firebaseRepo.getUserProfile(uid)
                 withContext(Dispatchers.Main) {
                     tvUsername.text = profile?.username ?: "Utilisateur"
-                    tvUserRole.text = profile?.role ?: userRole
+                    tvUserRole.text = userRole
                 }
             }
         }
@@ -131,20 +121,10 @@ class FarmInfoActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
                 binding.etBirthDate.setText(SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(date))
             }
         }
-
-        binding.etMortalityDate.setOnClickListener {
-            showDatePicker { date ->
-                mortalityDateMs = date.time
-                binding.etMortalityDate.setText(SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(date))
-            }
-        }
-        
-        binding.etMortalityDate.setText(SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date()))
     }
 
     private fun loadExistingData() {
         lifecycleScope.launch(Dispatchers.IO) {
-            // Priority to Cloud data
             val info = firebaseRepo.getFarmInfo()
             withContext(Dispatchers.Main) {
                 if (info != null && info.farmName.isNotEmpty()) {
@@ -168,7 +148,6 @@ class FarmInfoActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
         binding.tvDisplayBirth.text = if (info.chickBirthDate > 0) sdf.format(Date(info.chickBirthDate)) else "--/--/----"
         binding.tvDisplayCurrency.text = info.currency
 
-        // Pre-fill edit fields
         binding.etFarmName.setText(info.farmName)
         binding.etHensCount.setText(info.hensCount.toString())
         binding.etHenBreed.setText(info.henBreed)
@@ -234,27 +213,6 @@ class FarmInfoActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
         }
     }
 
-    private fun saveMortality() {
-        val countStr = binding.etMortalityInput.text.toString()
-        val count = countStr.toIntOrNull() ?: 0
-
-        if (count <= 0) {
-            Toast.makeText(this, "Veuillez saisir un nombre valide", Toast.LENGTH_SHORT).show()
-            return
-        }
-
-        lifecycleScope.launch(Dispatchers.IO) {
-            val db = AppDatabase.getInstance(this@FarmInfoActivity)
-            val mortality = Mortality(count = count, date = mortalityDateMs)
-            db.mortalityDao().insert(mortality)
-            firebaseRepo.addMortality(count, mortalityDateMs)
-            withContext(Dispatchers.Main) {
-                Toast.makeText(this@FarmInfoActivity, "Mortalité enregistrée", Toast.LENGTH_SHORT).show()
-                binding.etMortalityInput.setText("")
-            }
-        }
-    }
-
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
             R.id.nav_dashboard -> {
@@ -291,6 +249,12 @@ class FarmInfoActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
             }
             R.id.nav_sales -> {
                 val intent = Intent(this, SalesActivity::class.java)
+                intent.putExtra("userIdString", userId)
+                intent.putExtra("role", userRole)
+                startActivity(intent)
+            }
+            R.id.nav_mortality -> {
+                val intent = Intent(this, MortalityActivity::class.java)
                 intent.putExtra("userIdString", userId)
                 intent.putExtra("role", userRole)
                 startActivity(intent)

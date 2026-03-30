@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.drawerlayout.widget.DrawerLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/drawerLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -24,7 +25,7 @@
                 app:navigationIconTint="@color/white" />
         </com.google.android.material.appbar.AppBarLayout>
 
-        <ScrollView
+        <androidx.core.widget.NestedScrollView
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             app:layout_behavior="@string/appbar_scrolling_view_behavior">
@@ -35,166 +36,62 @@
                 android:orientation="vertical"
                 android:padding="16dp">
 
-                <com.google.android.material.card.MaterialCardView
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    app:cardBackgroundColor="#1A1A1A"
-                    app:cardCornerRadius="12dp"
-                    app:strokeColor="#4CAF50"
-                    app:strokeWidth="1dp">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="16dp">
+                    <View
+                        android:layout_width="4dp"
+                        android:layout_height="24dp"
+                        android:background="#4CAF50" />
+                    <TextView
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:padding="16dp">
+                        android:text="HISTORIQUE DES VENTES"
+                        android:textColor="#4CAF50"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:layout_marginStart="12dp"
+                        android:letterSpacing="0.1" />
+                </LinearLayout>
 
-                        <com.google.android.material.textfield.TextInputLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:hint="Date de la vente"
-                            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-                            android:layout_marginBottom="12dp"
-                            app:hintTextColor="#B0B0B0"
-                            app:boxStrokeColor="#4CAF50"
-                            app:startIconDrawable="@android:drawable/ic_menu_my_calendar"
-                            app:startIconTint="#4CAF50">
-                            <com.google.android.material.textfield.TextInputEditText
-                                android:id="@+id/etSaleDate"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:focusable="false"
-                                android:clickable="true"
-                                android:textColor="@color/white" />
-                        </com.google.android.material.textfield.TextInputLayout>
-
-                        <com.google.android.material.textfield.TextInputLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:hint="Nombre d'œufs vendus"
-                            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-                            android:layout_marginBottom="12dp"
-                            app:hintTextColor="#B0B0B0"
-                            app:boxStrokeColor="#4CAF50"
-                            app:startIconDrawable="@android:drawable/ic_input_add"
-                            app:startIconTint="#4CAF50">
-                            <com.google.android.material.textfield.TextInputEditText
-                                android:id="@+id/etQuantity"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:inputType="number"
-                                android:textColor="@color/white" />
-                        </com.google.android.material.textfield.TextInputLayout>
-
-                        <com.google.android.material.textfield.TextInputLayout
-                            android:id="@+id/tilUnitPrice"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:hint="Prix unitaire ($)"
-                            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-                            android:layout_marginBottom="12dp"
-                            app:hintTextColor="#B0B0B0"
-                            app:boxStrokeColor="#4CAF50"
-                            app:startIconDrawable="@android:drawable/ic_menu_agenda"
-                            app:startIconTint="#4CAF50">
-                            <com.google.android.material.textfield.TextInputEditText
-                                android:id="@+id/etUnitPrice"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:inputType="numberDecimal"
-                                android:textColor="@color/white" />
-                        </com.google.android.material.textfield.TextInputLayout>
-
-                        <com.google.android.material.textfield.TextInputLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:hint="Nom du client (Optionnel)"
-                            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-                            android:layout_marginBottom="12dp"
-                            app:hintTextColor="#B0B0B0"
-                            app:boxStrokeColor="#4CAF50"
-                            app:startIconDrawable="@android:drawable/ic_menu_search"
-                            app:startIconTint="#4CAF50">
-                            <com.google.android.material.textfield.TextInputEditText
-                                android:id="@+id/etBuyer"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:inputType="textPersonName"
-                                android:textColor="@color/white" />
-                        </com.google.android.material.textfield.TextInputLayout>
-
-                        <com.google.android.material.textfield.TextInputLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:hint="Numéro de téléphone"
-                            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-                            android:layout_marginBottom="24dp"
-                            app:hintTextColor="#B0B0B0"
-                            app:boxStrokeColor="#4CAF50"
-                            app:startIconDrawable="@android:drawable/ic_menu_call"
-                            app:startIconTint="#4CAF50">
-                            <com.google.android.material.textfield.TextInputEditText
-                                android:id="@+id/etPhoneNumber"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:inputType="phone"
-                                android:textColor="@color/white" />
-                        </com.google.android.material.textfield.TextInputLayout>
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnSaveSale"
-                            android:layout_width="match_parent"
-                            android:layout_height="60dp"
-                            android:text="VALIDER LA VENTE"
-                            android:backgroundTint="#4CAF50"
-                            android:textColor="@color/white"
-                            app:cornerRadius="8dp"
-                            app:icon="@android:drawable/ic_menu_save"/>
-                    </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
-
-                <!-- Section Historique -->
-                <com.google.android.material.card.MaterialCardView
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rvSalesHistory"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="32dp"
-                    app:cardBackgroundColor="#1A1A1A"
-                    app:cardCornerRadius="12dp"
-                    app:strokeColor="#87CEEB"
-                    app:strokeWidth="1dp">
+                    android:nestedScrollingEnabled="false"
+                    tools:listitem="@layout/item_sale" />
 
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:padding="16dp">
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnShowMore"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
+                    android:text="Afficher plus"
+                    android:textColor="#87CEEB"
+                    style="@style/Widget.MaterialComponents.Button.TextButton"
+                    android:visibility="gone" />
 
-                        <TextView
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:text="Historique des Ventes"
-                            android:textSize="18sp"
-                            android:textStyle="bold"
-                            android:textColor="#87CEEB"
-                            android:layout_marginBottom="16dp"/>
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnViewSaleHistory"
-                            android:layout_width="match_parent"
-                            android:layout_height="56dp"
-                            android:text="AFFICHER L'HISTORIQUE"
-                            app:cornerRadius="8dp"
-                            app:icon="@android:drawable/ic_menu_recent_history"
-                            style="@style/Widget.MaterialComponents.Button.TextButton"
-                            android:textColor="#87CEEB"/>
-                    </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
-
-                <!-- Hidden for VM compatibility -->
-                <ListView android:id="@+id/lvSales" android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone"/>
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="100dp" />
 
             </LinearLayout>
-        </ScrollView>
+        </androidx.core.widget.NestedScrollView>
+
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fabAddSale"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|end"
+            android:layout_margin="24dp"
+            android:src="@android:drawable/ic_input_add"
+            app:backgroundTint="#4CAF50"
+            app:tint="@color/white"
+            android:contentDescription="Ajouter une vente" />
+
     </androidx.coordinatorlayout.widget.CoordinatorLayout>
 
     <com.google.android.material.navigation.NavigationView

@@ -8,6 +8,12 @@ interface EggEntryDao {
     @Insert
     suspend fun insert(entry: EggEntry)
 
+    @Update
+    suspend fun update(entry: EggEntry)
+
+    @Delete
+    suspend fun delete(entry: EggEntry)
+
     @Query("SELECT * FROM egg_entries ORDER BY date DESC")
     suspend fun getAll(): List<EggEntry>
 

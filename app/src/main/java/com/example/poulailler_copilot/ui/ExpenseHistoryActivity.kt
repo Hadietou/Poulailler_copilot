@@ -2,6 +2,7 @@ package com.example.poulailler_copilot.ui
 
 import android.os.Bundle
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
@@ -11,40 +12,89 @@ import com.example.poulailler_copilot.data.AppDatabase
 import com.example.poulailler_copilot.data.Expense
 import com.example.poulailler_copilot.databinding.ActivityExpenseHistoryBinding
 import com.example.poulailler_copilot.databinding.ItemExpenseBinding
-import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.*
 
 class ExpenseHistoryActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityExpenseHistoryBinding
+    private val adapter = ExpenseAdapter()
+    private var currentOffset = 0
+    private val pageSize = 20
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityExpenseHistoryBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        val adapter = ExpenseAdapter()
+        setupToolbar()
+        setupRecyclerView()
+        loadInitialData()
+
+        binding.btnLoadMore.setOnClickListener {
+            loadMoreData()
+        }
+    }
+
+    private fun setupToolbar() {
+        setSupportActionBar(binding.toolbar)
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        binding.toolbar.setNavigationOnClickListener { finish() }
+    }
+
+    private fun setupRecyclerView() {
         binding.rvExpenseHistory.layoutManager = LinearLayoutManager(this)
         binding.rvExpenseHistory.adapter = adapter
+    }
 
-        lifecycleScope.launch {
+    private fun loadInitialData() {
+        currentOffset = 0
+        lifecycleScope.launch(Dispatchers.IO) {
             val db = AppDatabase.getInstance(this@ExpenseHistoryActivity)
-            db.expenseDao().getAllFlow().collectLatest { list ->
-                adapter.submitList(list)
+            val initialList = db.expenseDao().getPagedExpenses(pageSize, currentOffset)
+            withContext(Dispatchers.Main) {
+                adapter.submitList(initialList)
+                currentOffset += initialList.size
+                updateLoadMoreButton(initialList.size)
             }
         }
+    }
 
-        binding.btnClose.setOnClickListener { finish() }
+    private fun loadMoreData() {
+        lifecycleScope.launch(Dispatchers.IO) {
+            val db = AppDatabase.getInstance(this@ExpenseHistoryActivity)
+            val newList = db.expenseDao().getPagedExpenses(pageSize, currentOffset)
+            withContext(Dispatchers.Main) {
+                adapter.appendList(newList)
+                currentOffset += newList.size
+                updateLoadMoreButton(newList.size)
+            }
+        }
+    }
+
+    private fun updateLoadMoreButton(lastFetchedSize: Int) {
+        if (lastFetchedSize >= pageSize) {
+            binding.btnLoadMore.visibility = View.VISIBLE
+        } else {
+            binding.btnLoadMore.visibility = View.GONE
+        }
     }
 
     class ExpenseAdapter : RecyclerView.Adapter<ExpenseAdapter.ViewHolder>() {
-        private var items = listOf<Expense>()
+        private var items = mutableListOf<Expense>()
 
         fun submitList(list: List<Expense>) {
-            items = list
+            items = list.toMutableList()
             notifyDataSetChanged()
+        }
+
+        fun appendList(list: List<Expense>) {
+            val startPos = items.size
+            items.addAll(list)
+            notifyItemRangeInserted(startPos, list.size)
         }
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {

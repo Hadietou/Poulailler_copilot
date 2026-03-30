@@ -1,9 +1,13 @@
 package com.example.poulailler_copilot.ui
 
+import android.app.AlertDialog
 import android.app.DatePickerDialog
 import android.content.Intent
 import android.os.Bundle
+import android.view.LayoutInflater
 import android.view.MenuItem
+import android.view.View
+import android.view.ViewGroup
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.viewModels
@@ -11,8 +15,14 @@ import androidx.appcompat.app.ActionBarDrawerToggle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.GravityCompat
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.example.poulailler_copilot.R
+import com.example.poulailler_copilot.data.AppDatabase
+import com.example.poulailler_copilot.data.EggEntry
 import com.example.poulailler_copilot.databinding.ActivityAgentBinding
+import com.example.poulailler_copilot.databinding.DialogAddCollectionBinding
+import com.example.poulailler_copilot.databinding.ItemCollectionBinding
 import com.example.poulailler_copilot.repository.FirebaseRepository
 import com.google.android.material.navigation.NavigationView
 import com.google.firebase.auth.FirebaseAuth
@@ -31,6 +41,10 @@ class AgentActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
     private var userId: String? = null
     private var userRole: String = "AGENT"
     private val firebaseRepo = FirebaseRepository()
+    private lateinit var adapter: CollectionAdapter
+    
+    private var allEntries: List<EggEntry> = emptyList()
+    private var isShowingAll = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -41,38 +55,16 @@ class AgentActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
         userRole = intent.getStringExtra("role") ?: "AGENT"
 
         setupNavigation()
+        setupRecyclerView()
+        observeCollections()
 
-        binding.btnSelectDate.setOnClickListener {
-            showDatePicker()
+        binding.fabAddCollection.setOnClickListener {
+            showAddCollectionDialog()
         }
 
-        binding.btnAddEntry.setOnClickListener {
-            val count = binding.etEggsCount.text.toString().toIntOrNull() ?: 0
-            val broken = binding.etBrokenEggsCount.text.toString().toIntOrNull() ?: 0
-            val remarks = binding.etRemarks.text.toString()
-
-            if (count == 0 && broken == 0) {
-                Toast.makeText(this, "Veuillez saisir au moins une donnée", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
-
-            viewModel.addEntry(
-                userId = 0L, // Fallback for local Room
-                date = selectedDateMs,
-                eggs = count,
-                broken = broken,
-                remarks = remarks,
-                onDone = {
-                    Toast.makeText(this@AgentActivity, "Collecte enregistrée", Toast.LENGTH_SHORT).show()
-                    binding.etEggsCount.setText("")
-                    binding.etBrokenEggsCount.setText("")
-                    binding.etRemarks.setText("")
-                }
-            )
-        }
-
-        binding.btnViewCollectionHistory.setOnClickListener {
-            startActivity(Intent(this, CollectionHistoryActivity::class.java))
+        binding.btnShowMore.setOnClickListener {
+            isShowingAll = true
+            refreshDisplay()
         }
     }
 
@@ -96,6 +88,29 @@ class AgentActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
         updateNavHeader()
     }
 
+    private fun setupRecyclerView() {
+        adapter = CollectionAdapter { entry ->
+            if (userRole == "RESPONSABLE") {
+                showEditCollectionDialog(entry)
+            }
+        }
+        binding.rvCollectionHistory.layoutManager = LinearLayoutManager(this)
+        binding.rvCollectionHistory.adapter = adapter
+    }
+
+    private fun observeCollections() {
+        viewModel.entries.observe(this) { list ->
+            allEntries = list
+            refreshDisplay()
+        }
+    }
+
+    private fun refreshDisplay() {
+        val toDisplay = if (isShowingAll) allEntries else allEntries.take(10)
+        adapter.submitList(toDisplay)
+        binding.btnShowMore.visibility = if (!isShowingAll && allEntries.size > 10) View.VISIBLE else View.GONE
+    }
+
     private fun updateNavHeader() {
         val headerView = binding.navigationView.getHeaderView(0)
         val tvUsername = headerView.findViewById<TextView>(R.id.tvUsername)
@@ -113,13 +128,131 @@ class AgentActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
         }
     }
 
-    private fun showDatePicker() {
-        DatePickerDialog(this, { _, year, month, dayOfMonth ->
-            calendar.set(year, month, dayOfMonth)
-            selectedDateMs = calendar.timeInMillis
-            val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-            binding.btnSelectDate.text = "Date: ${sdf.format(calendar.time)}"
-        }, calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH), calendar.get(Calendar.DAY_OF_MONTH)).show()
+    private fun showAddCollectionDialog() {
+        val dialogBinding = DialogAddCollectionBinding.inflate(LayoutInflater.from(this))
+        val dialog = AlertDialog.Builder(this)
+            .setView(dialogBinding.root)
+            .create()
+
+        val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+        dialogBinding.btnSelectDate.text = "Date: ${sdf.format(Date())}"
+        selectedDateMs = System.currentTimeMillis()
+
+        dialogBinding.btnSelectDate.setOnClickListener {
+            DatePickerDialog(this, { _, year, month, dayOfMonth ->
+                val tempCal = Calendar.getInstance()
+                tempCal.set(year, month, dayOfMonth)
+                selectedDateMs = tempCal.timeInMillis
+                dialogBinding.btnSelectDate.text = "Date: ${sdf.format(tempCal.time)}"
+            }, calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH), calendar.get(Calendar.DAY_OF_MONTH)).show()
+        }
+
+        dialogBinding.btnAddEntry.setOnClickListener {
+            val count = dialogBinding.etEggsCount.text.toString().toIntOrNull() ?: 0
+            val broken = dialogBinding.etBrokenEggsCount.text.toString().toIntOrNull() ?: 0
+            val remarks = dialogBinding.etRemarks.text.toString()
+
+            if (count == 0 && broken == 0) {
+                Toast.makeText(this, "Veuillez saisir au moins une donnée", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            viewModel.addEntry(
+                userId = 0L,
+                date = selectedDateMs,
+                eggs = count,
+                broken = broken,
+                remarks = remarks,
+                onDone = {
+                    Toast.makeText(this@AgentActivity, "Collecte enregistrée", Toast.LENGTH_SHORT).show()
+                    dialog.dismiss()
+                }
+            )
+        }
+
+        dialog.show()
+    }
+
+    private fun showEditCollectionDialog(entry: EggEntry) {
+        val dialogBinding = DialogAddCollectionBinding.inflate(LayoutInflater.from(this))
+        val dialog = AlertDialog.Builder(this)
+            .setView(dialogBinding.root)
+            .create()
+
+        // Pre-fill
+        dialogBinding.etEggsCount.setText(entry.eggsCount.toString())
+        dialogBinding.etBrokenEggsCount.setText(entry.brokenEggsCount.toString())
+        dialogBinding.etRemarks.setText(entry.remarks ?: "")
+        
+        val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+        dialogBinding.btnSelectDate.text = "Date: ${sdf.format(Date(entry.date))}"
+        var editDateMs = entry.date
+
+        dialogBinding.btnSelectDate.setOnClickListener {
+            val dCal = Calendar.getInstance().apply { timeInMillis = entry.date }
+            DatePickerDialog(this, { _, year, month, dayOfMonth ->
+                val tempCal = Calendar.getInstance()
+                tempCal.set(year, month, dayOfMonth)
+                editDateMs = tempCal.timeInMillis
+                dialogBinding.btnSelectDate.text = "Date: ${sdf.format(tempCal.time)}"
+            }, dCal.get(Calendar.YEAR), dCal.get(Calendar.MONTH), dCal.get(Calendar.DAY_OF_MONTH)).show()
+        }
+
+        dialogBinding.btnAddEntry.text = "MODIFIER"
+        dialogBinding.btnAddEntry.setOnClickListener {
+            val count = dialogBinding.etEggsCount.text.toString().toIntOrNull() ?: 0
+            val broken = dialogBinding.etBrokenEggsCount.text.toString().toIntOrNull() ?: 0
+            val remarks = dialogBinding.etRemarks.text.toString()
+
+            if (count == 0 && broken == 0) {
+                Toast.makeText(this, "Champs vides", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            lifecycleScope.launch(Dispatchers.IO) {
+                val updatedEntry = entry.copy(
+                    date = editDateMs,
+                    eggsCount = count,
+                    brokenEggsCount = broken,
+                    remarks = remarks
+                )
+                AppDatabase.getInstance(this@AgentActivity).eggEntryDao().update(updatedEntry)
+                firebaseRepo.updateEggEntry(updatedEntry)
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(this@AgentActivity, "Collecte modifiée", Toast.LENGTH_SHORT).show()
+                    dialog.dismiss()
+                }
+            }
+        }
+
+        val deleteButton = TextView(this).apply {
+            text = "SUPPRIMER CETTE COLLECTE"
+            setPadding(0, 32, 0, 0)
+            setTextColor(getColor(R.color.error))
+            gravity = android.view.Gravity.CENTER
+            setOnClickListener {
+                AlertDialog.Builder(this@AgentActivity)
+                    .setTitle("Suppression")
+                    .setMessage("Voulez-vous vraiment supprimer cette collecte ?")
+                    .setPositiveButton("Supprimer") { _, _ ->
+                        lifecycleScope.launch(Dispatchers.IO) {
+                            AppDatabase.getInstance(this@AgentActivity).eggEntryDao().delete(entry)
+                            if (entry.firestoreId != null) {
+                                firebaseRepo.deleteEggEntry(entry.firestoreId)
+                            }
+                            withContext(Dispatchers.Main) {
+                                Toast.makeText(this@AgentActivity, "Collecte supprimée", Toast.LENGTH_SHORT).show()
+                                dialog.dismiss()
+                            }
+                        }
+                    }
+                    .setNegativeButton("Annuler", null)
+                    .show()
+            }
+        }
+        (dialogBinding.root as ViewGroup).addView(deleteButton)
+
+        dialog.show()
     }
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
@@ -158,8 +291,14 @@ class AgentActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
             }
             R.id.nav_sales -> {
                 val intent = Intent(this, SalesActivity::class.java)
-                intent.putExtra("role", userRole)
                 intent.putExtra("userIdString", userId)
+                intent.putExtra("role", userRole)
+                startActivity(intent)
+            }
+            R.id.nav_mortality -> {
+                val intent = Intent(this, MortalityActivity::class.java)
+                intent.putExtra("userIdString", userId)
+                intent.putExtra("role", userRole)
                 startActivity(intent)
             }
             R.id.nav_logout -> {
@@ -183,6 +322,37 @@ class AgentActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
             binding.drawerLayout.closeDrawer(GravityCompat.START)
         } else {
             super.onBackPressed()
+        }
+    }
+
+    class CollectionAdapter(private val onItemClick: (EggEntry) -> Unit) : RecyclerView.Adapter<CollectionAdapter.ViewHolder>() {
+        private var items = listOf<EggEntry>()
+
+        fun submitList(list: List<EggEntry>) {
+            items = list
+            notifyDataSetChanged()
+        }
+
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+            val binding = ItemCollectionBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+            return ViewHolder(binding)
+        }
+
+        override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+            val item = items[position]
+            holder.bind(item)
+            holder.itemView.setOnClickListener { onItemClick(item) }
+        }
+
+        override fun getItemCount() = items.size
+
+        class ViewHolder(private val binding: ItemCollectionBinding) : RecyclerView.ViewHolder(binding.root) {
+            fun bind(item: EggEntry) {
+                val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+                binding.tvDate.text = sdf.format(Date(item.date))
+                binding.tvEggs.text = "${item.eggsCount} œufs"
+                binding.tvBroken.text = "${item.brokenEggsCount} cassés"
+            }
         }
     }
 }

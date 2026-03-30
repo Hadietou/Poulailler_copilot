@@ -8,7 +8,6 @@ import android.view.LayoutInflater
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ArrayAdapter
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.ActionBarDrawerToggle
@@ -19,10 +18,10 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.poulailler_copilot.R
 import com.example.poulailler_copilot.data.AppDatabase
-import com.example.poulailler_copilot.data.Expense
-import com.example.poulailler_copilot.databinding.ActivityExpensesBinding
-import com.example.poulailler_copilot.databinding.DialogAddExpenseBinding
-import com.example.poulailler_copilot.databinding.ItemExpenseBinding
+import com.example.poulailler_copilot.data.Mortality
+import com.example.poulailler_copilot.databinding.ActivityMortalityBinding
+import com.example.poulailler_copilot.databinding.DialogAddMortalityBinding
+import com.example.poulailler_copilot.databinding.ItemMortalityBinding
 import com.example.poulailler_copilot.repository.FirebaseRepository
 import com.google.android.material.navigation.NavigationView
 import com.google.firebase.auth.FirebaseAuth
@@ -33,35 +32,33 @@ import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.*
 
-class ExpensesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelectedListener {
+class MortalityActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelectedListener {
 
-    private lateinit var binding: ActivityExpensesBinding
+    private lateinit var binding: ActivityMortalityBinding
     private val calendar = Calendar.getInstance()
     private var selectedDateMs: Long = System.currentTimeMillis()
-    private var currency: String = "MRU"
-    private val firebaseRepo = FirebaseRepository()
     private var userRole: String = "AGENT"
     private var userId: String? = null
-    private lateinit var adapter: ExpenseAdapter
+    private val firebaseRepo = FirebaseRepository()
+    private lateinit var adapter: MortalityAdapter
     
-    private var allExpenses: List<Expense> = emptyList()
+    private var allMortalities: List<Mortality> = emptyList()
     private var isShowingAll = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        binding = ActivityExpensesBinding.inflate(layoutInflater)
+        binding = ActivityMortalityBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
         userRole = intent.getStringExtra("role") ?: "AGENT"
         userId = intent.getStringExtra("userIdString") ?: FirebaseAuth.getInstance().currentUser?.uid
 
         setupNavigation()
-        loadCurrency()
         setupRecyclerView()
-        observeExpenses()
+        observeMortality()
 
-        binding.fabAddExpense.setOnClickListener {
-            showAddExpenseDialog()
+        binding.fabAddMortality.setOnClickListener {
+            showAddMortalityDialog()
         }
 
         binding.btnShowMore.setOnClickListener {
@@ -91,30 +88,29 @@ class ExpensesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
     }
 
     private fun setupRecyclerView() {
-        adapter = ExpenseAdapter { expense ->
+        adapter = MortalityAdapter { mortality ->
             if (userRole == "RESPONSABLE") {
-                showEditExpenseDialog(expense)
+                showEditMortalityDialog(mortality)
             }
         }
-        binding.rvExpenseHistory.layoutManager = LinearLayoutManager(this)
-        binding.rvExpenseHistory.adapter = adapter
+        binding.rvMortalityHistory.layoutManager = LinearLayoutManager(this)
+        binding.rvMortalityHistory.adapter = adapter
     }
 
-    private fun observeExpenses() {
+    private fun observeMortality() {
         lifecycleScope.launch {
-            val db = AppDatabase.getInstance(this@ExpensesActivity)
-            db.expenseDao().getAllFlow().collectLatest { list ->
-                allExpenses = list
+            val db = AppDatabase.getInstance(this@MortalityActivity)
+            db.mortalityDao().getAllMortality().collectLatest { list ->
+                allMortalities = list
                 refreshDisplay()
             }
         }
     }
 
     private fun refreshDisplay() {
-        val toDisplay = if (isShowingAll) allExpenses else allExpenses.take(10)
+        val toDisplay = if (isShowingAll) allMortalities else allMortalities.take(10)
         adapter.submitList(toDisplay)
-        
-        binding.btnShowMore.visibility = if (!isShowingAll && allExpenses.size > 10) View.VISIBLE else View.GONE
+        binding.btnShowMore.visibility = if (!isShowingAll && allMortalities.size > 10) View.VISIBLE else View.GONE
     }
 
     private fun updateNavHeader() {
@@ -134,71 +130,41 @@ class ExpensesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
         }
     }
 
-    private fun loadCurrency() {
-        lifecycleScope.launch(Dispatchers.IO) {
-            val info = firebaseRepo.getFarmInfo()
-            withContext(Dispatchers.Main) {
-                currency = info?.currency ?: "MRU"
-            }
-        }
-    }
-
-    private fun showAddExpenseDialog() {
-        val dialogBinding = DialogAddExpenseBinding.inflate(LayoutInflater.from(this))
+    private fun showAddMortalityDialog() {
+        val dialogBinding = DialogAddMortalityBinding.inflate(LayoutInflater.from(this))
         val dialog = AlertDialog.Builder(this)
             .setView(dialogBinding.root)
             .create()
 
-        dialogBinding.tilAmount.hint = "Montant ($currency)"
-        
-        val categories = arrayOf("Aliment", "Santé", "Transport", "Main d'œuvre", "Autre")
-        val adapterSpinner = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, categories)
-        dialogBinding.autoCompleteCategory.setAdapter(adapterSpinner)
-
-        dialogBinding.autoCompleteCategory.setOnItemClickListener { _, _, position, _ ->
-            if (categories[position] == "Aliment") {
-                dialogBinding.tilQuantityKg.visibility = View.VISIBLE
-            } else {
-                dialogBinding.tilQuantityKg.visibility = View.GONE
-            }
-        }
-
         val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-        dialogBinding.etExpenseDate.setText(sdf.format(Date()))
+        dialogBinding.etMortalityDate.setText(sdf.format(Date()))
         selectedDateMs = System.currentTimeMillis()
 
-        dialogBinding.etExpenseDate.setOnClickListener {
+        dialogBinding.etMortalityDate.setOnClickListener {
             DatePickerDialog(this, { _, year, month, dayOfMonth ->
                 val tempCal = Calendar.getInstance()
                 tempCal.set(year, month, dayOfMonth)
                 selectedDateMs = tempCal.timeInMillis
-                dialogBinding.etExpenseDate.setText(sdf.format(tempCal.time))
+                dialogBinding.etMortalityDate.setText(sdf.format(tempCal.time))
             }, calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH), calendar.get(Calendar.DAY_OF_MONTH)).show()
         }
 
-        dialogBinding.btnSaveExpense.setOnClickListener {
-            val category = dialogBinding.autoCompleteCategory.text.toString()
-            val amount = dialogBinding.etAmount.text.toString().toDoubleOrNull() ?: 0.0
-            val qty = dialogBinding.etQuantityKg.text.toString().toDoubleOrNull() ?: 0.0
-            val description = dialogBinding.etDescription.text.toString()
+        dialogBinding.btnSaveMortality.setOnClickListener {
+            val countStr = dialogBinding.etMortalityInput.text.toString()
+            val count = countStr.toIntOrNull() ?: 0
 
-            if (category.isEmpty() || amount <= 0.0) {
-                Toast.makeText(this, "Veuillez remplir les champs obligatoires", Toast.LENGTH_SHORT).show()
+            if (count <= 0) {
+                Toast.makeText(this, "Veuillez saisir un nombre valide", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
             lifecycleScope.launch(Dispatchers.IO) {
-                val expense = Expense(
-                    date = selectedDateMs,
-                    category = category,
-                    amount = amount,
-                    quantityKg = if (category == "Aliment") qty else 0.0,
-                    description = description
-                )
-                AppDatabase.getInstance(this@ExpensesActivity).expenseDao().insert(expense)
-                firebaseRepo.addExpense(expense)
+                val db = AppDatabase.getInstance(this@MortalityActivity)
+                val mortality = Mortality(count = count, date = selectedDateMs)
+                db.mortalityDao().insert(mortality)
+                firebaseRepo.addMortality(count, selectedDateMs)
                 withContext(Dispatchers.Main) {
-                    Toast.makeText(this@ExpensesActivity, "Dépense enregistrée", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@MortalityActivity, "Mortalité enregistrée", Toast.LENGTH_SHORT).show()
                     dialog.dismiss()
                 }
             }
@@ -207,98 +173,67 @@ class ExpensesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
         dialog.show()
     }
 
-    private fun showEditExpenseDialog(expense: Expense) {
-        val dialogBinding = DialogAddExpenseBinding.inflate(LayoutInflater.from(this))
+    private fun showEditMortalityDialog(mortality: Mortality) {
+        val dialogBinding = DialogAddMortalityBinding.inflate(LayoutInflater.from(this))
         val dialog = AlertDialog.Builder(this)
             .setView(dialogBinding.root)
             .create()
 
-        dialogBinding.tilAmount.hint = "Montant ($currency)"
-        
-        val categories = arrayOf("Aliment", "Santé", "Transport", "Main d'œuvre", "Autre")
-        val adapterSpinner = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, categories)
-        dialogBinding.autoCompleteCategory.setAdapter(adapterSpinner)
-
         // Pre-fill
-        dialogBinding.autoCompleteCategory.setText(expense.category, false)
-        dialogBinding.etAmount.setText(expense.amount.toString())
-        dialogBinding.etDescription.setText(expense.description ?: "")
-        if (expense.category == "Aliment") {
-            dialogBinding.tilQuantityKg.visibility = View.VISIBLE
-            dialogBinding.etQuantityKg.setText(expense.quantityKg?.toString() ?: "")
-        } else {
-            dialogBinding.tilQuantityKg.visibility = View.GONE
-        }
-
+        dialogBinding.etMortalityInput.setText(mortality.count.toString())
         val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-        dialogBinding.etExpenseDate.setText(sdf.format(Date(expense.date)))
-        var editDateMs = expense.date
+        dialogBinding.etMortalityDate.setText(sdf.format(Date(mortality.date)))
+        var editDateMs = mortality.date
 
-        dialogBinding.etExpenseDate.setOnClickListener {
-            val dCal = Calendar.getInstance().apply { timeInMillis = expense.date }
+        dialogBinding.etMortalityDate.setOnClickListener {
+            val dCal = Calendar.getInstance().apply { timeInMillis = mortality.date }
             DatePickerDialog(this, { _, year, month, dayOfMonth ->
                 val tempCal = Calendar.getInstance()
                 tempCal.set(year, month, dayOfMonth)
                 editDateMs = tempCal.timeInMillis
-                dialogBinding.etExpenseDate.setText(sdf.format(tempCal.time))
+                dialogBinding.etMortalityDate.setText(sdf.format(tempCal.time))
             }, dCal.get(Calendar.YEAR), dCal.get(Calendar.MONTH), dCal.get(Calendar.DAY_OF_MONTH)).show()
         }
 
-        dialogBinding.autoCompleteCategory.setOnItemClickListener { _, _, position, _ ->
-            if (categories[position] == "Aliment") {
-                dialogBinding.tilQuantityKg.visibility = View.VISIBLE
-            } else {
-                dialogBinding.tilQuantityKg.visibility = View.GONE
-            }
-        }
-
-        dialogBinding.btnSaveExpense.text = "MODIFIER"
-        dialogBinding.btnSaveExpense.setOnClickListener {
-            val category = dialogBinding.autoCompleteCategory.text.toString()
-            val amount = dialogBinding.etAmount.text.toString().toDoubleOrNull() ?: 0.0
-            val qty = dialogBinding.etQuantityKg.text.toString().toDoubleOrNull() ?: 0.0
-            val description = dialogBinding.etDescription.text.toString()
-
-            if (category.isEmpty() || amount <= 0.0) {
-                Toast.makeText(this, "Champs obligatoires manquants", Toast.LENGTH_SHORT).show()
+        dialogBinding.btnSaveMortality.text = "MODIFIER"
+        dialogBinding.btnSaveMortality.setOnClickListener {
+            val count = dialogBinding.etMortalityInput.text.toString().toIntOrNull() ?: 0
+            if (count <= 0) {
+                Toast.makeText(this, "Nombre invalide", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
             lifecycleScope.launch(Dispatchers.IO) {
-                val updatedExpense = expense.copy(
-                    date = editDateMs,
-                    category = category,
-                    amount = amount,
-                    quantityKg = if (category == "Aliment") qty else 0.0,
-                    description = description
+                val updated = mortality.copy(
+                    count = count,
+                    date = editDateMs
                 )
-                AppDatabase.getInstance(this@ExpensesActivity).expenseDao().update(updatedExpense)
-                firebaseRepo.updateExpense(updatedExpense)
+                AppDatabase.getInstance(this@MortalityActivity).mortalityDao().update(updated)
+                firebaseRepo.updateMortality(updated)
                 withContext(Dispatchers.Main) {
-                    Toast.makeText(this@ExpensesActivity, "Dépense modifiée", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@MortalityActivity, "Mortalité modifiée", Toast.LENGTH_SHORT).show()
                     dialog.dismiss()
                 }
             }
         }
 
-        // Add Delete Option
         val deleteButton = TextView(this).apply {
-            text = "SUPPRIMER CETTE DÉPENSE"
+            text = "SUPPRIMER CET ENREGISTREMENT"
             setPadding(0, 32, 0, 0)
             setTextColor(getColor(R.color.error))
             gravity = android.view.Gravity.CENTER
             setOnClickListener {
-                AlertDialog.Builder(this@ExpensesActivity)
+                AlertDialog.Builder(this@MortalityActivity)
                     .setTitle("Suppression")
-                    .setMessage("Voulez-vous vraiment supprimer cette dépense ?")
+                    .setMessage("Voulez-vous supprimer cette mortalité ?")
                     .setPositiveButton("Supprimer") { _, _ ->
                         lifecycleScope.launch(Dispatchers.IO) {
-                            AppDatabase.getInstance(this@ExpensesActivity).expenseDao().delete(expense)
-                            if (expense.firestoreId != null) {
-                                firebaseRepo.deleteExpense(expense.firestoreId)
+                            AppDatabase.getInstance(this@MortalityActivity).mortalityDao().delete(mortality)
+                            if (mortality.firestoreId != null) {
+                                firebaseRepo.deleteMortality(mortality.firestoreId)
                             }
                             withContext(Dispatchers.Main) {
-                                Toast.makeText(this@ExpensesActivity, "Dépense supprimée", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(this@MortalityActivity, "Supprimé", Toast.LENGTH_SHORT).show()
                                 dialog.dismiss()
                             }
                         }
@@ -345,19 +280,19 @@ class ExpensesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
                 intent.putExtra("userIdString", userId)
                 startActivity(intent)
             }
-            R.id.nav_expenses -> {}
+            R.id.nav_expenses -> {
+                val intent = Intent(this, ExpensesActivity::class.java)
+                intent.putExtra("role", userRole)
+                intent.putExtra("userIdString", userId)
+                startActivity(intent)
+            }
             R.id.nav_sales -> {
                 val intent = Intent(this, SalesActivity::class.java)
                 intent.putExtra("userIdString", userId)
                 intent.putExtra("role", userRole)
                 startActivity(intent)
             }
-            R.id.nav_mortality -> {
-                val intent = Intent(this, MortalityActivity::class.java)
-                intent.putExtra("userIdString", userId)
-                intent.putExtra("role", userRole)
-                startActivity(intent)
-            }
+            R.id.nav_mortality -> {}
             R.id.nav_logout -> {
                 val intent = Intent(this, LoginActivity::class.java)
                 intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
@@ -382,16 +317,16 @@ class ExpensesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
         }
     }
 
-    class ExpenseAdapter(private val onItemClick: (Expense) -> Unit) : RecyclerView.Adapter<ExpenseAdapter.ViewHolder>() {
-        private var items = listOf<Expense>()
+    class MortalityAdapter(private val onItemClick: (Mortality) -> Unit) : RecyclerView.Adapter<MortalityAdapter.ViewHolder>() {
+        private var items = listOf<Mortality>()
 
-        fun submitList(list: List<Expense>) {
+        fun submitList(list: List<Mortality>) {
             items = list
             notifyDataSetChanged()
         }
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-            val binding = ItemExpenseBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+            val binding = ItemMortalityBinding.inflate(LayoutInflater.from(parent.context), parent, false)
             return ViewHolder(binding)
         }
 
@@ -403,13 +338,11 @@ class ExpensesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
 
         override fun getItemCount() = items.size
 
-        class ViewHolder(private val binding: ItemExpenseBinding) : RecyclerView.ViewHolder(binding.root) {
-            fun bind(item: Expense) {
+        class ViewHolder(private val binding: ItemMortalityBinding) : RecyclerView.ViewHolder(binding.root) {
+            fun bind(item: Mortality) {
                 val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
                 binding.tvDate.text = sdf.format(Date(item.date))
-                binding.tvCategory.text = item.category
-                binding.tvDescription.text = item.description
-                binding.tvAmount.text = String.format("%.2f $", item.amount)
+                binding.tvCount.text = "${item.count} Poules"
             }
         }
     }
