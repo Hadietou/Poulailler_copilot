@@ -36,6 +36,11 @@
             android:id="@+id/nav_sales"
             android:icon="@android:drawable/ic_menu_send"
             android:title="Vente des Oeufs" />
+
+        <item
+            android:id="@+id/nav_mortality"
+            android:icon="@android:drawable/ic_delete"
+            android:title="Suivi Mortalité" />
     </group>
 
     <item android:title="Compte">

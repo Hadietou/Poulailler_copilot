@@ -8,5 +8,6 @@ data class VaccineEntry(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val name: String,
     val date: Long,
-    val remarks: String? = null
+    val remarks: String? = null,
+    val firestoreId: String? = null
 )

@@ -1,23 +1,32 @@
 package com.example.poulailler_copilot.ui
 
+import android.app.AlertDialog
 import android.app.DatePickerDialog
 import android.content.Intent
 import android.os.Bundle
+import android.view.LayoutInflater
 import android.view.MenuItem
+import android.view.View
+import android.view.ViewGroup
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.ActionBarDrawerToggle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.GravityCompat
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.example.poulailler_copilot.R
 import com.example.poulailler_copilot.data.AppDatabase
 import com.example.poulailler_copilot.data.EggSale
 import com.example.poulailler_copilot.databinding.ActivitySalesBinding
+import com.example.poulailler_copilot.databinding.DialogAddSaleBinding
+import com.example.poulailler_copilot.databinding.ItemSaleBinding
 import com.example.poulailler_copilot.repository.FirebaseRepository
 import com.google.android.material.navigation.NavigationView
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
@@ -31,6 +40,10 @@ class SalesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
     private var userRole: String = "AGENT"
     private var currency: String = "MRU"
     private val firebaseRepo = FirebaseRepository()
+    private lateinit var adapter: SaleAdapter
+    
+    private var allSales: List<EggSale> = emptyList()
+    private var isShowingAll = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -42,18 +55,16 @@ class SalesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
 
         setupNavigation()
         loadCurrency()
-        updateDateDisplay()
+        setupRecyclerView()
+        observeSales()
 
-        binding.etSaleDate.setOnClickListener {
-            showDatePicker()
+        binding.fabAddSale.setOnClickListener {
+            showAddSaleDialog()
         }
 
-        binding.btnSaveSale.setOnClickListener {
-            saveSale()
-        }
-
-        binding.btnViewSaleHistory.setOnClickListener {
-            startActivity(Intent(this, SalesHistoryActivity::class.java))
+        binding.btnShowMore.setOnClickListener {
+            isShowingAll = true
+            refreshDisplay()
         }
     }
 
@@ -75,6 +86,32 @@ class SalesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
         menu.findItem(R.id.nav_farm_info).isVisible = userRole == "RESPONSABLE"
 
         updateNavHeader()
+    }
+
+    private fun setupRecyclerView() {
+        adapter = SaleAdapter { sale ->
+            if (userRole == "RESPONSABLE") {
+                showEditSaleDialog(sale)
+            }
+        }
+        binding.rvSalesHistory.layoutManager = LinearLayoutManager(this)
+        binding.rvSalesHistory.adapter = adapter
+    }
+
+    private fun observeSales() {
+        lifecycleScope.launch {
+            val db = AppDatabase.getInstance(this@SalesActivity)
+            db.eggSaleDao().getAll().collectLatest { list ->
+                allSales = list
+                refreshDisplay()
+            }
+        }
+    }
+
+    private fun refreshDisplay() {
+        val toDisplay = if (isShowingAll) allSales else allSales.take(10)
+        adapter.submitList(toDisplay)
+        binding.btnShowMore.visibility = if (!isShowingAll && allSales.size > 10) View.VISIBLE else View.GONE
     }
 
     private fun updateNavHeader() {
@@ -100,56 +137,153 @@ class SalesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
             val info = db.farmInfoDao().getInfo()
             withContext(Dispatchers.Main) {
                 currency = info?.currency ?: "MRU"
-                binding.tilUnitPrice.hint = "Prix unitaire ($currency)"
             }
         }
     }
 
-    private fun showDatePicker() {
-        DatePickerDialog(this, { _, year, month, day ->
-            selectedDate.set(year, month, day)
-            updateDateDisplay()
-        }, selectedDate.get(Calendar.YEAR), selectedDate.get(Calendar.MONTH), selectedDate.get(Calendar.DAY_OF_MONTH)).show()
-    }
+    private fun showAddSaleDialog() {
+        val dialogBinding = DialogAddSaleBinding.inflate(LayoutInflater.from(this))
+        val dialog = AlertDialog.Builder(this)
+            .setView(dialogBinding.root)
+            .create()
 
-    private fun updateDateDisplay() {
+        dialogBinding.tilUnitPrice.hint = "Prix unitaire ($currency)"
+        
         val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-        binding.etSaleDate.setText(sdf.format(selectedDate.time))
-    }
+        dialogBinding.etSaleDate.setText(sdf.format(selectedDate.time))
+        selectedDate = Calendar.getInstance()
 
-    private fun saveSale() {
-        val quantity = binding.etQuantity.text.toString().toIntOrNull()
-        val unitPrice = binding.etUnitPrice.text.toString().toDoubleOrNull()
-        val buyer = binding.etBuyer.text.toString()
-        val phone = binding.etPhoneNumber.text.toString()
-
-        if (quantity == null || unitPrice == null) {
-            Toast.makeText(this, "Veuillez remplir les champs obligatoires", Toast.LENGTH_SHORT).show()
-            return
+        dialogBinding.etSaleDate.setOnClickListener {
+            DatePickerDialog(this, { _, year, month, day ->
+                val tempCal = Calendar.getInstance()
+                tempCal.set(year, month, day)
+                selectedDate = tempCal
+                dialogBinding.etSaleDate.setText(sdf.format(tempCal.time))
+            }, selectedDate.get(Calendar.YEAR), selectedDate.get(Calendar.MONTH), selectedDate.get(Calendar.DAY_OF_MONTH)).show()
         }
 
-        val totalPrice = quantity * unitPrice
-        val sale = EggSale(
-            userId = 0L, // Fallback for local Room
-            date = selectedDate.timeInMillis,
-            quantity = quantity,
-            pricePerUnit = unitPrice,
-            totalPrice = totalPrice,
-            buyer = if (buyer.isBlank()) null else buyer,
-            phoneNumber = if (phone.isBlank()) null else phone
-        )
+        dialogBinding.btnSaveSale.setOnClickListener {
+            val quantity = dialogBinding.etQuantity.text.toString().toIntOrNull()
+            val unitPrice = dialogBinding.etUnitPrice.text.toString().toDoubleOrNull()
+            val buyer = dialogBinding.etBuyer.text.toString()
+            val phone = dialogBinding.etPhoneNumber.text.toString()
 
-        lifecycleScope.launch(Dispatchers.IO) {
-            AppDatabase.getInstance(this@SalesActivity).eggSaleDao().insert(sale)
-            firebaseRepo.addSale(sale)
-            withContext(Dispatchers.Main) {
-                Toast.makeText(this@SalesActivity, "Vente enregistrée !", Toast.LENGTH_LONG).show()
-                binding.etQuantity.text?.clear()
-                binding.etUnitPrice.text?.clear()
-                binding.etBuyer.text?.clear()
-                binding.etPhoneNumber.text?.clear()
+            if (quantity == null || unitPrice == null) {
+                Toast.makeText(this, "Veuillez remplir les champs obligatoires", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            val totalPrice = quantity * unitPrice
+            val sale = EggSale(
+                userId = 0L,
+                date = selectedDate.timeInMillis,
+                quantity = quantity,
+                pricePerUnit = unitPrice,
+                totalPrice = totalPrice,
+                buyer = if (buyer.isBlank()) null else buyer,
+                phoneNumber = if (phone.isBlank()) null else phone
+            )
+
+            lifecycleScope.launch(Dispatchers.IO) {
+                AppDatabase.getInstance(this@SalesActivity).eggSaleDao().insert(sale)
+                firebaseRepo.addSale(sale)
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(this@SalesActivity, "Vente enregistrée !", Toast.LENGTH_LONG).show()
+                    dialog.dismiss()
+                }
             }
         }
+
+        dialog.show()
+    }
+
+    private fun showEditSaleDialog(sale: EggSale) {
+        val dialogBinding = DialogAddSaleBinding.inflate(LayoutInflater.from(this))
+        val dialog = AlertDialog.Builder(this)
+            .setView(dialogBinding.root)
+            .create()
+
+        dialogBinding.tilUnitPrice.hint = "Prix unitaire ($currency)"
+        
+        // Pre-fill
+        dialogBinding.etQuantity.setText(sale.quantity.toString())
+        dialogBinding.etUnitPrice.setText(sale.pricePerUnit.toString())
+        dialogBinding.etBuyer.setText(sale.buyer ?: "")
+        dialogBinding.etPhoneNumber.setText(sale.phoneNumber ?: "")
+        
+        val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+        dialogBinding.etSaleDate.setText(sdf.format(Date(sale.date)))
+        var editDateMs = sale.date
+
+        dialogBinding.etSaleDate.setOnClickListener {
+            val dCal = Calendar.getInstance().apply { timeInMillis = sale.date }
+            DatePickerDialog(this, { _, year, month, day ->
+                val tempCal = Calendar.getInstance()
+                tempCal.set(year, month, day)
+                editDateMs = tempCal.timeInMillis
+                dialogBinding.etSaleDate.setText(sdf.format(tempCal.time))
+            }, dCal.get(Calendar.YEAR), dCal.get(Calendar.MONTH), dCal.get(Calendar.DAY_OF_MONTH)).show()
+        }
+
+        dialogBinding.btnSaveSale.text = "MODIFIER"
+        dialogBinding.btnSaveSale.setOnClickListener {
+            val quantity = dialogBinding.etQuantity.text.toString().toIntOrNull()
+            val unitPrice = dialogBinding.etUnitPrice.text.toString().toDoubleOrNull()
+            val buyer = dialogBinding.etBuyer.text.toString()
+            val phone = dialogBinding.etPhoneNumber.text.toString()
+
+            if (quantity == null || unitPrice == null) {
+                Toast.makeText(this, "Champs obligatoires", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            val totalPrice = quantity * unitPrice
+            lifecycleScope.launch(Dispatchers.IO) {
+                val updatedSale = sale.copy(
+                    date = editDateMs,
+                    quantity = quantity,
+                    pricePerUnit = unitPrice,
+                    totalPrice = totalPrice,
+                    buyer = if (buyer.isBlank()) null else buyer,
+                    phoneNumber = if (phone.isBlank()) null else phone
+                )
+                AppDatabase.getInstance(this@SalesActivity).eggSaleDao().update(updatedSale)
+                firebaseRepo.updateSale(updatedSale)
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(this@SalesActivity, "Vente modifiée", Toast.LENGTH_SHORT).show()
+                    dialog.dismiss()
+                }
+            }
+        }
+
+        val deleteButton = TextView(this).apply {
+            text = "SUPPRIMER CETTE VENTE"
+            setPadding(0, 32, 0, 0)
+            setTextColor(getColor(R.color.error))
+            gravity = android.view.Gravity.CENTER
+            setOnClickListener {
+                AlertDialog.Builder(this@SalesActivity)
+                    .setTitle("Suppression")
+                    .setMessage("Voulez-vous vraiment supprimer cette vente ?")
+                    .setPositiveButton("Supprimer") { _, _ ->
+                        lifecycleScope.launch(Dispatchers.IO) {
+                            AppDatabase.getInstance(this@SalesActivity).eggSaleDao().delete(sale)
+                            if (sale.firestoreId != null) {
+                                firebaseRepo.deleteSale(sale.firestoreId)
+                            }
+                            withContext(Dispatchers.Main) {
+                                Toast.makeText(this@SalesActivity, "Vente supprimée", Toast.LENGTH_SHORT).show()
+                                dialog.dismiss()
+                            }
+                        }
+                    }
+                    .setNegativeButton("Annuler", null)
+                    .show()
+            }
+        }
+        (dialogBinding.root as ViewGroup).addView(deleteButton)
+
+        dialog.show()
     }
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
@@ -192,6 +326,12 @@ class SalesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
                 startActivity(intent)
             }
             R.id.nav_sales -> {}
+            R.id.nav_mortality -> {
+                val intent = Intent(this, MortalityActivity::class.java)
+                intent.putExtra("userIdString", userId)
+                intent.putExtra("role", userRole)
+                startActivity(intent)
+            }
             R.id.nav_logout -> {
                 val intent = Intent(this, LoginActivity::class.java)
                 intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
@@ -213,6 +353,38 @@ class SalesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
             binding.drawerLayout.closeDrawer(GravityCompat.START)
         } else {
             super.onBackPressed()
+        }
+    }
+
+    class SaleAdapter(private val onItemClick: (EggSale) -> Unit) : RecyclerView.Adapter<SaleAdapter.ViewHolder>() {
+        private var items = listOf<EggSale>()
+
+        fun submitList(list: List<EggSale>) {
+            items = list
+            notifyDataSetChanged()
+        }
+
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+            val binding = ItemSaleBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+            return ViewHolder(binding)
+        }
+
+        override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+            val item = items[position]
+            holder.bind(item)
+            holder.itemView.setOnClickListener { onItemClick(item) }
+        }
+
+        override fun getItemCount() = items.size
+
+        class ViewHolder(private val binding: ItemSaleBinding) : RecyclerView.ViewHolder(binding.root) {
+            fun bind(item: EggSale) {
+                val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+                binding.tvDate.text = sdf.format(Date(item.date))
+                binding.tvClient.text = item.buyer ?: "Client anonyme"
+                binding.tvDetails.text = "${item.quantity} œufs x ${String.format(Locale.getDefault(), "%.2f", item.pricePerUnit)}"
+                binding.tvTotal.text = String.format(Locale.getDefault(), "%.2f", item.totalPrice)
+            }
         }
     }
 }

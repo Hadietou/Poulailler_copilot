@@ -23,5 +23,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Poulailler_copilot"
+rootProject.name = "KOURKOUROU"
 include(":app")

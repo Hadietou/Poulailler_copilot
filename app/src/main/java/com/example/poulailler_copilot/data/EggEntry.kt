@@ -10,5 +10,6 @@ data class EggEntry(
     val date: Long,
     val eggsCount: Int,
     val brokenEggsCount: Int = 0,
-    val remarks: String?
+    val remarks: String?,
+    val firestoreId: String? = null
 )

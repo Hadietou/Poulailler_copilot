@@ -7,5 +7,6 @@ import androidx.room.PrimaryKey
 data class Mortality(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
     val count: Int,
-    val date: Long
+    val date: Long,
+    val firestoreId: String? = null
 )

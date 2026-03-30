@@ -14,6 +14,11 @@ class FirebaseRepository {
     private val db = FirebaseFirestore.getInstance()
 
     // --- Users ---
+    suspend fun getCurrentUserProfile(): User? {
+        val uid = auth.currentUser?.uid ?: return null
+        return getUserProfile(uid)
+    }
+
     suspend fun getUserProfile(uid: String): User? {
         return try {
             val doc = db.collection("users").document(uid).get().await()
@@ -105,7 +110,8 @@ class FirebaseRepository {
                         date = doc.getLong("date") ?: 0L,
                         eggsCount = doc.getLong("eggsCount")?.toInt() ?: 0,
                         brokenEggsCount = doc.getLong("brokenEggsCount")?.toInt() ?: 0,
-                        remarks = doc.getString("remarks")
+                        remarks = doc.getString("remarks"),
+                        firestoreId = doc.id
                     )
                 } ?: emptyList()
                 trySend(list)
@@ -124,6 +130,21 @@ class FirebaseRepository {
         db.collection("egg_entries").add(data).await()
     }
 
+    suspend fun updateEggEntry(entry: EggEntry) {
+        if (entry.firestoreId == null) return
+        val data = hashMapOf(
+            "date" to entry.date,
+            "eggsCount" to entry.eggsCount,
+            "brokenEggsCount" to entry.brokenEggsCount,
+            "remarks" to entry.remarks
+        )
+        db.collection("egg_entries").document(entry.firestoreId).set(data).await()
+    }
+
+    suspend fun deleteEggEntry(firestoreId: String) {
+        db.collection("egg_entries").document(firestoreId).delete().await()
+    }
+
     // --- Mortality ---
     fun getMortalityFlow(): Flow<List<Mortality>> = callbackFlow {
         val subscription = db.collection("mortality")
@@ -137,7 +158,8 @@ class FirebaseRepository {
                     Mortality(
                         id = 0,
                         count = doc.getLong("count")?.toInt() ?: 0,
-                        date = doc.getLong("date") ?: 0L
+                        date = doc.getLong("date") ?: 0L,
+                        firestoreId = doc.id
                     )
                 } ?: emptyList()
                 trySend(list)
@@ -151,6 +173,19 @@ class FirebaseRepository {
             "date" to date
         )
         db.collection("mortality").add(data).await()
+    }
+
+    suspend fun updateMortality(mortality: Mortality) {
+        if (mortality.firestoreId == null) return
+        val data = hashMapOf(
+            "count" to mortality.count,
+            "date" to mortality.date
+        )
+        db.collection("mortality").document(mortality.firestoreId).set(data).await()
+    }
+
+    suspend fun deleteMortality(firestoreId: String) {
+        db.collection("mortality").document(firestoreId).delete().await()
     }
 
     // --- Sales ---
@@ -171,7 +206,8 @@ class FirebaseRepository {
                         pricePerUnit = doc.getDouble("pricePerUnit") ?: 0.0,
                         totalPrice = doc.getDouble("totalPrice") ?: 0.0,
                         buyer = doc.getString("buyer"),
-                        phoneNumber = doc.getString("phoneNumber")
+                        phoneNumber = doc.getString("phoneNumber"),
+                        firestoreId = doc.id
                     )
                 } ?: emptyList()
                 trySend(list)
@@ -192,6 +228,69 @@ class FirebaseRepository {
         db.collection("sales").add(data).await()
     }
 
+    suspend fun updateSale(sale: EggSale) {
+        if (sale.firestoreId == null) return
+        val data = hashMapOf(
+            "date" to sale.date,
+            "quantity" to sale.quantity,
+            "pricePerUnit" to sale.pricePerUnit,
+            "totalPrice" to sale.totalPrice,
+            "buyer" to sale.buyer,
+            "phoneNumber" to sale.phoneNumber
+        )
+        db.collection("sales").document(sale.firestoreId).set(data).await()
+    }
+
+    suspend fun deleteSale(firestoreId: String) {
+        db.collection("sales").document(firestoreId).delete().await()
+    }
+
+    // --- Vaccines ---
+    fun getVaccinesFlow(): Flow<List<VaccineEntry>> = callbackFlow {
+        val subscription = db.collection("vaccines")
+            .orderBy("date", Query.Direction.DESCENDING)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    close(error)
+                    return@addSnapshotListener
+                }
+                val list = snapshot?.documents?.mapNotNull { doc ->
+                    VaccineEntry(
+                        id = 0,
+                        name = doc.getString("name") ?: "",
+                        date = doc.getLong("date") ?: 0L,
+                        remarks = doc.getString("remarks"),
+                        firestoreId = doc.id
+                    )
+                } ?: emptyList()
+                trySend(list)
+            }
+        awaitClose { subscription.remove() }
+    }
+
+    suspend fun addVaccine(entry: VaccineEntry) {
+        val data = hashMapOf(
+            "name" to entry.name,
+            "date" to entry.date,
+            "remarks" to entry.remarks
+        )
+        db.collection("vaccines").add(data).await()
+    }
+
+    suspend fun updateVaccine(entry: VaccineEntry) {
+        if (entry.firestoreId == null) return
+        val data = hashMapOf(
+            "name" to entry.name,
+            "date" to entry.date,
+            "remarks" to entry.remarks
+        )
+        db.collection("vaccines").document(entry.firestoreId).set(data).await()
+    }
+
+    suspend fun deleteVaccine(firestoreId: String) {
+        db.collection("vaccines").document(firestoreId).delete().await()
+    }
+
     // --- Expenses ---
     fun getExpensesFlow(): Flow<List<Expense>> = callbackFlow {
         val subscription = db.collection("expenses")
@@ -208,7 +307,8 @@ class FirebaseRepository {
                         category = doc.getString("category") ?: "",
                         description = doc.getString("description") ?: "",
                         amount = doc.getDouble("amount") ?: 0.0,
-                        quantityKg = doc.getDouble("quantityKg")
+                        quantityKg = doc.getDouble("quantityKg"),
+                        firestoreId = doc.id
                     )
                 } ?: emptyList()
                 trySend(list)
@@ -225,6 +325,22 @@ class FirebaseRepository {
             "quantityKg" to expense.quantityKg
         )
         db.collection("expenses").add(data).await()
+    }
+
+    suspend fun updateExpense(expense: Expense) {
+        if (expense.firestoreId == null) return
+        val data = hashMapOf(
+            "date" to expense.date,
+            "category" to expense.category,
+            "description" to expense.description,
+            "amount" to expense.amount,
+            "quantityKg" to expense.quantityKg
+        )
+        db.collection("expenses").document(expense.firestoreId).set(data).await()
+    }
+
+    suspend fun deleteExpense(firestoreId: String) {
+        db.collection("expenses").document(firestoreId).delete().await()
     }
 
     // --- Farm Info ---
