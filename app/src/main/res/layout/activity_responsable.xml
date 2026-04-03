@@ -5,7 +5,7 @@
     android:id="@+id/drawerLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#0A0A0A">
+    android:background="@color/background">
 
     <androidx.coordinatorlayout.widget.CoordinatorLayout
         android:layout_width="match_parent"
@@ -14,16 +14,16 @@
         <com.google.android.material.appbar.AppBarLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="#0A0A0A"
+            android:background="@color/background"
             app:elevation="0dp">
             <com.google.android.material.appbar.MaterialToolbar
                 android:id="@+id/toolbar"
                 android:layout_width="match_parent"
                 android:layout_height="?attr/actionBarSize"
                 app:title="Centre d'Administration"
-                app:titleTextColor="@color/white"
+                app:titleTextColor="@color/text_primary"
                 app:navigationIcon="@android:drawable/ic_menu_sort_by_size"
-                app:navigationIconTint="@color/white" />
+                app:navigationIconTint="@color/text_primary" />
         </com.google.android.material.appbar.AppBarLayout>
 
         <androidx.core.widget.NestedScrollView
@@ -38,6 +38,51 @@
                 android:orientation="vertical"
                 android:padding="20dp">
 
+                <!-- Farm Code Section -->
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="24dp"
+                    app:cardBackgroundColor="@color/surface"
+                    app:cardCornerRadius="20dp"
+                    app:cardElevation="0dp"
+                    app:strokeColor="@color/emerald_container"
+                    app:strokeWidth="1dp">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="20dp"
+                        android:gravity="center">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="CODE DE LA FERME"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="12sp"
+                            android:letterSpacing="0.1"/>
+                        <TextView
+                            android:id="@+id/tvFarmCode"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="------"
+                            android:textColor="@color/emerald_soft"
+                            android:textSize="32sp"
+                            android:textStyle="bold"
+                            android:layout_marginTop="4dp"/>
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnInviteAgent"
+                            style="@style/Widget.MaterialComponents.Button.TextButton.Icon"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Inviter un agent"
+                            android:textColor="@color/emerald_soft"
+                            app:icon="@android:drawable/ic_menu_share"
+                            app:iconTint="@color/emerald_soft"
+                            android:layout_marginTop="8dp"/>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
                 <!-- Header Agents -->
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -48,12 +93,12 @@
                     <View
                         android:layout_width="4dp"
                         android:layout_height="24dp"
-                        android:background="#1E90FF" />
+                        android:background="@color/emerald_soft" />
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="GESTION DES AGENTS"
-                        android:textColor="#1E90FF"
+                        android:textColor="@color/text_primary"
                         android:textSize="14sp"
                         android:textStyle="bold"
                         android:layout_marginStart="12dp"
@@ -79,12 +124,12 @@
                     <View
                         android:layout_width="4dp"
                         android:layout_height="24dp"
-                        android:background="#4CAF50" />
+                        android:background="@color/earthy_orange" />
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="HISTORIQUE DES CONNEXIONS"
-                        android:textColor="#4CAF50"
+                        android:textColor="@color/text_primary"
                         android:textSize="14sp"
                         android:textStyle="bold"
                         android:layout_marginStart="12dp"
@@ -94,9 +139,9 @@
                 <com.google.android.material.card.MaterialCardView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    app:cardBackgroundColor="#161616"
+                    app:cardBackgroundColor="@color/surface"
                     app:cardCornerRadius="20dp"
-                    app:strokeColor="#2A2A2A"
+                    app:strokeColor="@color/emerald_container"
                     app:strokeWidth="1dp"
                     app:cardElevation="0dp">
 
@@ -126,9 +171,9 @@
         android:layout_height="match_parent"
         android:layout_gravity="start"
         app:headerLayout="@layout/nav_header"
-        app:itemIconTint="#1E90FF"
-        app:itemTextColor="@color/white"
+        app:itemIconTint="@color/emerald_soft"
+        app:itemTextColor="@color/text_primary"
         app:menu="@menu/drawer_menu"
-        android:background="#121212" />
+        app:itemShapeAppearanceOverlay="@style/ShapeAppearance.App.LargeComponent"/>
 
 </androidx.drawerlayout.widget.DrawerLayout>

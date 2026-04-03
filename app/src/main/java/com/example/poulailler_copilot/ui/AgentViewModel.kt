@@ -28,12 +28,12 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
     private fun observeFirebaseEntries() {
         viewModelScope.launch {
             firebaseRepo.getEggEntriesFlow().collectLatest { list ->
-                entries.value = list
+                entries.postValue(list)
             }
         }
     }
 
-    fun addEntry(userId: Long, date: Long, eggs: Int, broken: Int, remarks: String?, onDone: () -> Unit) {
+    fun addEntry(userId: String, date: Long, eggs: Int, broken: Int, remarks: String?, onDone: () -> Unit) {
         viewModelScope.launch(Dispatchers.IO) {
             val entry = EggEntry(
                 userId = userId,
@@ -42,9 +42,9 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
                 brokenEggsCount = broken,
                 remarks = remarks
             )
-            // Save to Local for offline
+            // Local save
             eggRepo.addEntry(userId, date, eggs, broken, remarks)
-            // Save to Firebase for Dashboard
+            // Firebase save
             firebaseRepo.addEggEntry(entry)
 
             withContext(Dispatchers.Main) { onDone() }

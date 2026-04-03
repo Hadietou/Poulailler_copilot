@@ -89,7 +89,7 @@ class SalesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
     }
 
     private fun setupRecyclerView() {
-        adapter = SaleAdapter { sale ->
+        adapter = SaleAdapter(currency) { sale ->
             if (userRole == "RESPONSABLE") {
                 showEditSaleDialog(sale)
             }
@@ -100,8 +100,7 @@ class SalesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
 
     private fun observeSales() {
         lifecycleScope.launch {
-            val db = AppDatabase.getInstance(this@SalesActivity)
-            db.eggSaleDao().getAll().collectLatest { list ->
+            firebaseRepo.getSalesFlow().collectLatest { list ->
                 allSales = list
                 refreshDisplay()
             }
@@ -110,6 +109,7 @@ class SalesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
 
     private fun refreshDisplay() {
         val toDisplay = if (isShowingAll) allSales else allSales.take(10)
+        adapter.updateCurrency(currency)
         adapter.submitList(toDisplay)
         binding.btnShowMore.visibility = if (!isShowingAll && allSales.size > 10) View.VISIBLE else View.GONE
     }
@@ -124,7 +124,7 @@ class SalesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
             if (uid != null) {
                 val profile = firebaseRepo.getUserProfile(uid)
                 withContext(Dispatchers.Main) {
-                    tvUsername.text = profile?.username ?: "Utilisateur"
+                    tvUsername.text = profile?.username?.uppercase() ?: "UTILISATEUR"
                     tvUserRole.text = userRole
                 }
             }
@@ -132,11 +132,11 @@ class SalesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
     }
 
     private fun loadCurrency() {
-        lifecycleScope.launch(Dispatchers.IO) {
-            val db = AppDatabase.getInstance(this@SalesActivity)
-            val info = db.farmInfoDao().getInfo()
+        lifecycleScope.launch {
+            val info = firebaseRepo.getFarmInfo()
             withContext(Dispatchers.Main) {
                 currency = info?.currency ?: "MRU"
+                adapter.updateCurrency(currency)
             }
         }
     }
@@ -175,7 +175,7 @@ class SalesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
 
             val totalPrice = quantity * unitPrice
             val sale = EggSale(
-                userId = 0L,
+                userId = userId ?: "",
                 date = selectedDate.timeInMillis,
                 quantity = quantity,
                 pricePerUnit = unitPrice,
@@ -205,7 +205,6 @@ class SalesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
 
         dialogBinding.tilUnitPrice.hint = "Prix unitaire ($currency)"
         
-        // Pre-fill
         dialogBinding.etQuantity.setText(sale.quantity.toString())
         dialogBinding.etUnitPrice.setText(sale.pricePerUnit.toString())
         dialogBinding.etBuyer.setText(sale.buyer ?: "")
@@ -258,7 +257,7 @@ class SalesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
 
         val deleteButton = TextView(this).apply {
             text = "SUPPRIMER CETTE VENTE"
-            setPadding(0, 32, 0, 0)
+            setPadding(0, 48, 0, 0)
             setTextColor(getColor(R.color.error))
             gravity = android.view.Gravity.CENTER
             setOnClickListener {
@@ -333,6 +332,7 @@ class SalesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
                 startActivity(intent)
             }
             R.id.nav_logout -> {
+                FirebaseAuth.getInstance().signOut()
                 val intent = Intent(this, LoginActivity::class.java)
                 intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                 startActivity(intent)
@@ -356,11 +356,16 @@ class SalesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
         }
     }
 
-    class SaleAdapter(private val onItemClick: (EggSale) -> Unit) : RecyclerView.Adapter<SaleAdapter.ViewHolder>() {
+    class SaleAdapter(private var currency: String, private val onItemClick: (EggSale) -> Unit) : RecyclerView.Adapter<SaleAdapter.ViewHolder>() {
         private var items = listOf<EggSale>()
 
         fun submitList(list: List<EggSale>) {
             items = list
+            notifyDataSetChanged()
+        }
+
+        fun updateCurrency(newCurrency: String) {
+            this.currency = newCurrency
             notifyDataSetChanged()
         }
 
@@ -371,19 +376,19 @@ class SalesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
 
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             val item = items[position]
-            holder.bind(item)
+            holder.bind(item, currency)
             holder.itemView.setOnClickListener { onItemClick(item) }
         }
 
         override fun getItemCount() = items.size
 
         class ViewHolder(private val binding: ItemSaleBinding) : RecyclerView.ViewHolder(binding.root) {
-            fun bind(item: EggSale) {
+            fun bind(item: EggSale, currency: String) {
                 val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
                 binding.tvDate.text = sdf.format(Date(item.date))
                 binding.tvClient.text = item.buyer ?: "Client anonyme"
-                binding.tvDetails.text = "${item.quantity} œufs x ${String.format(Locale.getDefault(), "%.2f", item.pricePerUnit)}"
-                binding.tvTotal.text = String.format(Locale.getDefault(), "%.2f", item.totalPrice)
+                binding.tvDetails.text = "${item.quantity} œufs x ${String.format(Locale.getDefault(), "%.0f", item.pricePerUnit)}"
+                binding.tvTotal.text = String.format(Locale.getDefault(), "%.0f %s", item.totalPrice, currency)
             }
         }
     }

@@ -99,8 +99,8 @@ class MortalityActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
 
     private fun observeMortality() {
         lifecycleScope.launch {
-            val db = AppDatabase.getInstance(this@MortalityActivity)
-            db.mortalityDao().getAllMortality().collectLatest { list ->
+            // Lecture depuis Firebase pour restaurer l'historique Cloud
+            firebaseRepo.getMortalityFlow().collectLatest { list ->
                 allMortalities = list
                 refreshDisplay()
             }
@@ -123,7 +123,7 @@ class MortalityActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
             if (uid != null) {
                 val profile = firebaseRepo.getUserProfile(uid)
                 withContext(Dispatchers.Main) {
-                    tvUsername.text = profile?.username ?: "Utilisateur"
+                    tvUsername.text = profile?.username?.uppercase() ?: "UTILISATEUR"
                     tvUserRole.text = userRole
                 }
             }
@@ -219,7 +219,7 @@ class MortalityActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
 
         val deleteButton = TextView(this).apply {
             text = "SUPPRIMER CET ENREGISTREMENT"
-            setPadding(0, 32, 0, 0)
+            setPadding(0, 48, 0, 0)
             setTextColor(getColor(R.color.error))
             gravity = android.view.Gravity.CENTER
             setOnClickListener {

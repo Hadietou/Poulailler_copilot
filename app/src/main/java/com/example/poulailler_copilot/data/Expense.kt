@@ -11,5 +11,6 @@ data class Expense(
     val amount: Double,
     val quantityKg: Double? = null,
     val description: String? = null,
-    val firestoreId: String? = null
+    val firestoreId: String? = null,
+    val farmId: String? = null
 )

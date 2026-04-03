@@ -94,7 +94,7 @@ class FarmInfoActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
             if (uid != null) {
                 val profile = firebaseRepo.getUserProfile(uid)
                 withContext(Dispatchers.Main) {
-                    tvUsername.text = profile?.username ?: "Utilisateur"
+                    tvUsername.text = profile?.username?.uppercase() ?: "UTILISATEUR"
                     tvUserRole.text = userRole
                 }
             }
@@ -124,7 +124,7 @@ class FarmInfoActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
     }
 
     private fun loadExistingData() {
-        lifecycleScope.launch(Dispatchers.IO) {
+        lifecycleScope.launch {
             val info = firebaseRepo.getFarmInfo()
             withContext(Dispatchers.Main) {
                 if (info != null && info.farmName.isNotEmpty()) {
@@ -260,6 +260,7 @@ class FarmInfoActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
                 startActivity(intent)
             }
             R.id.nav_logout -> {
+                FirebaseAuth.getInstance().signOut()
                 val intent = Intent(this, LoginActivity::class.java)
                 intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                 startActivity(intent)

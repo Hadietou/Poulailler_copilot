@@ -101,8 +101,8 @@ class VaccineActivity : AppCompatActivity(), NavigationView.OnNavigationItemSele
 
     private fun observeVaccines() {
         lifecycleScope.launch {
-            val db = AppDatabase.getInstance(this@VaccineActivity)
-            db.vaccineEntryDao().getAllFlow().collectLatest { list ->
+            // Lecture depuis Firebase pour restaurer l'historique Cloud
+            firebaseRepo.getVaccinesFlow().collectLatest { list ->
                 allVaccines = list
                 refreshDisplay()
             }
@@ -125,7 +125,7 @@ class VaccineActivity : AppCompatActivity(), NavigationView.OnNavigationItemSele
             if (uid != null) {
                 val profile = firebaseRepo.getUserProfile(uid)
                 withContext(Dispatchers.Main) {
-                    tvUsername.text = profile?.username ?: "Utilisateur"
+                    tvUsername.text = profile?.username?.uppercase() ?: "UTILISATEUR"
                     tvUserRole.text = userRole
                 }
             }
@@ -230,7 +230,7 @@ class VaccineActivity : AppCompatActivity(), NavigationView.OnNavigationItemSele
 
         val deleteButton = TextView(this).apply {
             text = "SUPPRIMER CE SOIN"
-            setPadding(0, 32, 0, 0)
+            setPadding(0, 48, 0, 0)
             setTextColor(getColor(R.color.error))
             gravity = android.view.Gravity.CENTER
             setOnClickListener {
@@ -367,7 +367,7 @@ class VaccineActivity : AppCompatActivity(), NavigationView.OnNavigationItemSele
                 val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
                 binding.tvDate.text = sdf.format(Date(item.date))
                 binding.tvVaccineName.text = item.name
-                binding.tvRemarks.text = item.remarks
+                binding.tvRemarks.text = item.remarks ?: ""
             }
         }
     }

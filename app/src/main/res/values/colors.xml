@@ -22,6 +22,7 @@
     <color name="text_primary">#1C1B1F</color>
     <color name="text_secondary">#49454F</color>
     <color name="error">#B3261E</color>
+    <color name="error_container">#F9DEDC</color>
 
     <!-- Couleurs Accent (utilisées dans les layouts) -->
     <color name="accent_blue">#0061A4</color>

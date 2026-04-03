@@ -14,6 +14,7 @@ class ResponsableViewModel(application: Application) : AndroidViewModel(applicat
 
     val agents = MutableLiveData<List<Map<String, Any>>>()
     val loginHistory = MutableLiveData<List<Map<String, Any>>>()
+    val farmCode = MutableLiveData<String>()
 
     fun observeAgents() {
         viewModelScope.launch {
@@ -28,6 +29,13 @@ class ResponsableViewModel(application: Application) : AndroidViewModel(applicat
             firebaseRepo.getLoginHistoryFlow().collectLatest { list ->
                 loginHistory.postValue(list)
             }
+        }
+    }
+
+    fun loadFarmCode() {
+        viewModelScope.launch {
+            val code = firebaseRepo.getFarmCode()
+            farmCode.postValue(code ?: "------")
         }
     }
 

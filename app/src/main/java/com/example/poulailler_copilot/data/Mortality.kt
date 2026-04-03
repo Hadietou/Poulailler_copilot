@@ -5,8 +5,9 @@ import androidx.room.PrimaryKey
 
 @Entity(tableName = "mortality")
 data class Mortality(
-    @PrimaryKey(autoGenerate = true) val id: Int = 0,
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val count: Int,
     val date: Long,
-    val firestoreId: String? = null
+    val firestoreId: String? = null,
+    val farmId: String? = null
 )

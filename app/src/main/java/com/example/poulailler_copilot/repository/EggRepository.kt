@@ -5,7 +5,7 @@ import com.example.poulailler_copilot.data.EggEntryDao
 
 class EggRepository(private val eggEntryDao: EggEntryDao) {
 
-    suspend fun addEntry(userId: Long, date: Long, eggs: Int, broken: Int, remarks: String?) {
+    suspend fun addEntry(userId: String, date: Long, eggs: Int, broken: Int, remarks: String?) {
         eggEntryDao.insert(
             EggEntry(
                 userId = userId,
@@ -19,7 +19,7 @@ class EggRepository(private val eggEntryDao: EggEntryDao) {
 
     suspend fun getAll(): List<EggEntry> = eggEntryDao.getAll()
 
-    suspend fun getByUser(userId: Long): List<EggEntry> = eggEntryDao.getByUser(userId)
+    suspend fun getByUser(userId: String): List<EggEntry> = eggEntryDao.getByUser(userId)
 
     suspend fun getTotalEggs(): Int = eggEntryDao.getTotalEggs() ?: 0
 }

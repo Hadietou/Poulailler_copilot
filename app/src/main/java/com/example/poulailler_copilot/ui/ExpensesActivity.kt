@@ -91,7 +91,7 @@ class ExpensesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
     }
 
     private fun setupRecyclerView() {
-        adapter = ExpenseAdapter { expense ->
+        adapter = ExpenseAdapter(currency) { expense ->
             if (userRole == "RESPONSABLE") {
                 showEditExpenseDialog(expense)
             }
@@ -102,8 +102,7 @@ class ExpensesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
 
     private fun observeExpenses() {
         lifecycleScope.launch {
-            val db = AppDatabase.getInstance(this@ExpensesActivity)
-            db.expenseDao().getAllFlow().collectLatest { list ->
+            firebaseRepo.getExpensesFlow().collectLatest { list ->
                 allExpenses = list
                 refreshDisplay()
             }
@@ -112,6 +111,7 @@ class ExpensesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
 
     private fun refreshDisplay() {
         val toDisplay = if (isShowingAll) allExpenses else allExpenses.take(10)
+        adapter.updateCurrency(currency)
         adapter.submitList(toDisplay)
         
         binding.btnShowMore.visibility = if (!isShowingAll && allExpenses.size > 10) View.VISIBLE else View.GONE
@@ -127,7 +127,7 @@ class ExpensesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
             if (uid != null) {
                 val profile = firebaseRepo.getUserProfile(uid)
                 withContext(Dispatchers.Main) {
-                    tvUsername.text = profile?.username ?: "Utilisateur"
+                    tvUsername.text = profile?.username?.uppercase() ?: "UTILISATEUR"
                     tvUserRole.text = userRole
                 }
             }
@@ -135,10 +135,11 @@ class ExpensesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
     }
 
     private fun loadCurrency() {
-        lifecycleScope.launch(Dispatchers.IO) {
+        lifecycleScope.launch {
             val info = firebaseRepo.getFarmInfo()
             withContext(Dispatchers.Main) {
                 currency = info?.currency ?: "MRU"
+                adapter.updateCurrency(currency)
             }
         }
     }
@@ -219,7 +220,6 @@ class ExpensesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
         val adapterSpinner = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, categories)
         dialogBinding.autoCompleteCategory.setAdapter(adapterSpinner)
 
-        // Pre-fill
         dialogBinding.autoCompleteCategory.setText(expense.category, false)
         dialogBinding.etAmount.setText(expense.amount.toString())
         dialogBinding.etDescription.setText(expense.description ?: "")
@@ -281,10 +281,9 @@ class ExpensesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
             }
         }
 
-        // Add Delete Option
         val deleteButton = TextView(this).apply {
             text = "SUPPRIMER CETTE DÉPENSE"
-            setPadding(0, 32, 0, 0)
+            setPadding(0, 48, 0, 0)
             setTextColor(getColor(R.color.error))
             gravity = android.view.Gravity.CENTER
             setOnClickListener {
@@ -359,6 +358,7 @@ class ExpensesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
                 startActivity(intent)
             }
             R.id.nav_logout -> {
+                firebaseRepo.logout()
                 val intent = Intent(this, LoginActivity::class.java)
                 intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                 startActivity(intent)
@@ -382,11 +382,16 @@ class ExpensesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
         }
     }
 
-    class ExpenseAdapter(private val onItemClick: (Expense) -> Unit) : RecyclerView.Adapter<ExpenseAdapter.ViewHolder>() {
+    class ExpenseAdapter(private var currency: String, private val onItemClick: (Expense) -> Unit) : RecyclerView.Adapter<ExpenseAdapter.ViewHolder>() {
         private var items = listOf<Expense>()
 
         fun submitList(list: List<Expense>) {
             items = list
+            notifyDataSetChanged()
+        }
+        
+        fun updateCurrency(newCurrency: String) {
+            this.currency = newCurrency
             notifyDataSetChanged()
         }
 
@@ -397,19 +402,24 @@ class ExpensesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
 
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             val item = items[position]
-            holder.bind(item)
+            holder.bind(item, currency)
             holder.itemView.setOnClickListener { onItemClick(item) }
         }
 
         override fun getItemCount() = items.size
 
         class ViewHolder(private val binding: ItemExpenseBinding) : RecyclerView.ViewHolder(binding.root) {
-            fun bind(item: Expense) {
+            fun bind(item: Expense, currency: String) {
                 val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
                 binding.tvDate.text = sdf.format(Date(item.date))
                 binding.tvCategory.text = item.category
-                binding.tvDescription.text = item.description
-                binding.tvAmount.text = String.format("%.2f $", item.amount)
+                binding.tvDescription.text = item.description ?: ""
+                
+                if (item.category == "Aliment" && item.quantityKg != null && item.quantityKg > 0) {
+                    binding.tvDescription.text = "${item.quantityKg.toInt()} kg - ${item.description ?: ""}"
+                }
+                
+                binding.tvAmount.text = String.format(Locale.getDefault(), "%.0f %s", item.amount, currency)
             }
         }
     }

@@ -46,9 +46,20 @@ class ResponsableActivity : AppCompatActivity(), NavigationView.OnNavigationItem
         setupNavigation()
         setupRecyclerViews()
         observeViewModel()
+        setupClickListeners()
 
         vm.observeAgents()
         vm.observeLoginHistory()
+        vm.loadFarmCode()
+    }
+
+    private fun setupClickListeners() {
+        binding.btnInviteAgent.setOnClickListener {
+            val code = vm.farmCode.value
+            if (code != null && code != "------") {
+                firebaseRepo.shareInviteCode(this, code)
+            }
+        }
     }
 
     private fun setupNavigation() {
@@ -81,7 +92,7 @@ class ResponsableActivity : AppCompatActivity(), NavigationView.OnNavigationItem
             if (uid != null) {
                 val profile = firebaseRepo.getUserProfile(uid)
                 withContext(Dispatchers.Main) {
-                    tvUsername.text = profile?.username ?: "Utilisateur"
+                    tvUsername.text = profile?.username?.uppercase() ?: "UTILISATEUR"
                     tvUserRole.text = userRole
                 }
             }
@@ -101,9 +112,12 @@ class ResponsableActivity : AppCompatActivity(), NavigationView.OnNavigationItem
         }
 
         vm.loginHistory.observe(this) { list ->
-            // Filter to keep only the 10 most recent logins
             val filteredList = list.take(10)
             binding.rvLoginHistory.adapter = LoginHistoryAdapter(filteredList)
+        }
+
+        vm.farmCode.observe(this) { code ->
+            binding.tvFarmCode.text = code
         }
     }
 
@@ -153,6 +167,7 @@ class ResponsableActivity : AppCompatActivity(), NavigationView.OnNavigationItem
                 startActivity(intent)
             }
             R.id.nav_logout -> {
+                FirebaseAuth.getInstance().signOut()
                 val intent = Intent(this, LoginActivity::class.java)
                 intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                 startActivity(intent)
@@ -171,8 +186,6 @@ class ResponsableActivity : AppCompatActivity(), NavigationView.OnNavigationItem
         }
     }
 }
-
-// --- Adapters defined outside to avoid scope issues ---
 
 class AgentAdapter(
     private val items: List<Map<String, Any>>,
@@ -197,7 +210,6 @@ class AgentAdapter(
         holder.binding.tvAgentName.text = name
         holder.binding.tvAgentRole.text = "Rôle: $role"
         
-        // Prevent self-deactivation
         holder.binding.switchActive.isEnabled = uid != currentUserId
         
         holder.binding.switchActive.setOnCheckedChangeListener(null)

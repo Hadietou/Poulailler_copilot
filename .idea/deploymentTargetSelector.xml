@@ -4,10 +4,21 @@
     <selectionStates>
       <SelectionState runConfigName="app">
         <option name="selectionMode" value="DROPDOWN" />
-        <DropdownSelection timestamp="2026-03-26T22:51:53.305207600Z">
+        <DropdownSelection timestamp="2026-04-02T05:59:00.560388900Z">
           <Target type="DEFAULT_BOOT">
             <handle>
-              <DeviceId pluginId="LocalEmulator" identifier="path=C:\Users\Hatou\.android\avd\Pixel_2.avd" />
+              <DeviceId pluginId="PhysicalDevice" identifier="serial=RZCW82RKZ5Y" />
+            </handle>
+          </Target>
+        </DropdownSelection>
+        <DialogSelection />
+      </SelectionState>
+      <SelectionState runConfigName="New Run Config">
+        <option name="selectionMode" value="DROPDOWN" />
+        <DropdownSelection timestamp="2026-04-03T12:57:16.083570Z">
+          <Target type="DEFAULT_BOOT">
+            <handle>
+              <DeviceId pluginId="PhysicalDevice" identifier="serial=RZCW82RKZ5Y" />
             </handle>
           </Target>
         </DropdownSelection>

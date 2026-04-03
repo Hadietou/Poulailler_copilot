@@ -121,7 +121,7 @@ class AgentActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
             if (uid != null) {
                 val profile = firebaseRepo.getUserProfile(uid)
                 withContext(Dispatchers.Main) {
-                    tvUsername.text = profile?.username ?: "Utilisateur"
+                    tvUsername.text = profile?.username?.uppercase() ?: "UTILISATEUR"
                     tvUserRole.text = userRole
                 }
             }
@@ -158,7 +158,7 @@ class AgentActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
             }
 
             viewModel.addEntry(
-                userId = 0L,
+                userId = userId ?: "",
                 date = selectedDateMs,
                 eggs = count,
                 broken = broken,
@@ -291,8 +291,8 @@ class AgentActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
             }
             R.id.nav_sales -> {
                 val intent = Intent(this, SalesActivity::class.java)
-                intent.putExtra("userIdString", userId)
                 intent.putExtra("role", userRole)
+                intent.putExtra("userIdString", userId)
                 startActivity(intent)
             }
             R.id.nav_mortality -> {
@@ -302,6 +302,7 @@ class AgentActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
                 startActivity(intent)
             }
             R.id.nav_logout -> {
+                FirebaseAuth.getInstance().signOut()
                 val intent = Intent(this, LoginActivity::class.java)
                 intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                 startActivity(intent)

@@ -2,7 +2,7 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="180dp"
-    android:background="#FFB300"
+    android:background="@color/accent_amber"
     android:gravity="bottom"
     android:orientation="vertical"
     android:padding="16dp"
@@ -20,16 +20,24 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:paddingTop="8dp"
-        android:text="Chargement..."
+        android:text="Utilisateur"
         android:textAppearance="@style/TextAppearance.AppCompat.Body1"
         android:textSize="18sp"
         android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/tvFarmNameNav"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Ma Ferme"
+        android:textSize="14sp"
+        android:alpha="0.9" />
 
     <TextView
         android:id="@+id/tvUserRole"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Rôle"
-        android:alpha="0.8"
-        android:textSize="14sp" />
+        android:alpha="0.7"
+        android:textSize="12sp" />
 </LinearLayout>

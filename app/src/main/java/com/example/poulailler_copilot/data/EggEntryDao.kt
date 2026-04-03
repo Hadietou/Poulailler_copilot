@@ -21,7 +21,7 @@ interface EggEntryDao {
     fun getAllFlow(): Flow<List<EggEntry>>
 
     @Query("SELECT * FROM egg_entries WHERE userId = :userId ORDER BY date DESC")
-    suspend fun getByUser(userId: Long): List<EggEntry>
+    suspend fun getByUser(userId: String): List<EggEntry>
 
     @Query("SELECT SUM(eggsCount) FROM egg_entries")
     suspend fun getTotalEggs(): Int?
