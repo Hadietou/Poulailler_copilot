@@ -299,7 +299,7 @@ class FirebaseRepository {
             2. Une fois installée, utilisez ce code pour rejoindre ma ferme :
             👉 $farmCode 👈
             
-            (Ou cliquez directement ici si vous avez déjà l'application : $appLink)
+          
         """.trimIndent()
 
         val shareIntent = Intent(Intent.ACTION_SEND).apply {

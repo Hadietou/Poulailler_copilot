@@ -216,6 +216,9 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
             axisRight.isEnabled = false
             legend.textColor = textColor
             
+            // Adjust margins to prevent labels from being cut
+            setExtraOffsets(5f, 5f, 5f, 15f)
+            
             animateX(1000)
             invalidate()
         }
@@ -264,6 +267,8 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
                 granularity = 1f
                 setDrawGridLines(false)
                 labelRotationAngle = -45f
+                // Important: Ensure enough space for rotated labels
+                setLabelCount(sortedExpenses.size)
                 valueFormatter = object : ValueFormatter() {
                     override fun getFormattedValue(value: Float): String {
                         val index = value.toInt()
@@ -280,6 +285,9 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
             
             axisRight.isEnabled = false
             legend.isEnabled = false
+
+            // Adjust extra offset at bottom for rotated labels
+            setExtraOffsets(5f, 5f, 5f, 25f)
 
             animateY(1000)
             invalidate()
