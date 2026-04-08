@@ -5,6 +5,8 @@ import android.os.Bundle
 import android.util.Log
 import android.view.MenuItem
 import android.view.View
+import android.widget.AdapterView
+import android.widget.ArrayAdapter
 import android.widget.TextView
 import androidx.activity.viewModels
 import androidx.appcompat.app.ActionBarDrawerToggle
@@ -15,6 +17,7 @@ import com.example.poulailler_copilot.R
 import com.example.poulailler_copilot.databinding.ActivityDashboardBinding
 import com.example.poulailler_copilot.repository.FirebaseRepository
 import com.example.poulailler_copilot.data.CategoryExpense
+import com.example.poulailler_copilot.data.Batch
 import com.google.android.material.navigation.NavigationView
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.Dispatchers
@@ -54,6 +57,7 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
 
             setupNavigation()
             setupClickListeners()
+            setupBatchSpinner()
             observeViewModel()
             
             lifecycleScope.launch {
@@ -80,6 +84,16 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
         binding.navigationView.setNavigationItemSelectedListener(this)
     }
 
+    private fun setupBatchSpinner() {
+        binding.spinnerBatches.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                val batch = viewModel.allBatches.value?.get(position)
+                batch?.let { viewModel.selectBatch(it) }
+            }
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
+        }
+    }
+
     private fun updateNavHeader(username: String) {
         val headerView = binding.navigationView.getHeaderView(0) ?: return
         headerView.findViewById<TextView>(R.id.tvUsername)?.text = username.uppercase()
@@ -93,6 +107,7 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
         menu.findItem(R.id.nav_expenses)?.isVisible = isResp
         menu.findItem(R.id.nav_vaccines)?.isVisible = isResp
         menu.findItem(R.id.nav_farm_info)?.isVisible = isResp
+        menu.findItem(R.id.nav_batches)?.isVisible = isResp
         
         binding.titleFinance.visibility = if (isResp) View.VISIBLE else View.GONE
         binding.cardNetProfit.visibility = if (isResp) View.VISIBLE else View.GONE
@@ -107,9 +122,22 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
                 binding.tvDashboardFarmName.text = info.farmName
                 val headerView = binding.navigationView.getHeaderView(0)
                 headerView?.findViewById<TextView>(R.id.tvFarmNameNav)?.text = info.farmName
-                updateHensAgeHeader()
             }
         }
+
+        viewModel.allBatches.observe(this) { batches ->
+            val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, batches.map { it.name })
+            adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+            binding.spinnerBatches.adapter = adapter
+            
+            val selected = viewModel.selectedBatch.value
+            if (selected != null) {
+                val index = batches.indexOfFirst { it.firestoreId == selected.firestoreId }
+                if (index >= 0) binding.spinnerBatches.setSelection(index)
+            }
+        }
+
+        viewModel.selectedBatch.observe(this) { updateHensAgeHeader() }
 
         viewModel.effectiveHensCount.observe(this) { 
             binding.tvHensCount.text = "Poules: ${NumberFormat.getInstance().format(it)}"
@@ -127,10 +155,10 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
             binding.tvLayingTrend.text = "$sign${trend.toInt()}% vs hier"
             if (trend >= 0) {
                 binding.tvLayingTrend.setTextColor(getColor(R.color.emerald_soft))
-                binding.tvLayingTrend.backgroundTintList = getColorStateList(R.color.emerald_container)
+                binding.tvLayingTrend.backgroundTintList = android.content.res.ColorStateList.valueOf(getColor(R.color.emerald_container))
             } else {
                 binding.tvLayingTrend.setTextColor(getColor(R.color.error))
-                binding.tvLayingTrend.backgroundTintList = getColorStateList(R.color.error_container)
+                binding.tvLayingTrend.backgroundTintList = android.content.res.ColorStateList.valueOf(getColor(R.color.error_container))
             }
         }
         
@@ -172,7 +200,10 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
     }
 
     private fun setupLineChart(production: List<Pair<Long, Int>>) {
-        if (production.isEmpty()) return
+        if (production.isEmpty()) {
+            binding.productionChart.clear()
+            return
+        }
         
         val entries = production.mapIndexed { index, pair ->
             Entry(index.toFloat(), pair.second.toFloat())
@@ -216,9 +247,7 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
             axisRight.isEnabled = false
             legend.textColor = textColor
             
-            // Adjust margins to prevent labels from being cut
             setExtraOffsets(5f, 5f, 5f, 15f)
-            
             animateX(1000)
             invalidate()
         }
@@ -230,7 +259,6 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
             return
         }
 
-        // 1. Sort from highest to lowest
         val sortedExpenses = expenses.sortedByDescending { it.totalAmount }
 
         val entries = sortedExpenses.mapIndexed { index, catExp ->
@@ -249,7 +277,7 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
         val textColor = getColor(R.color.text_primary)
 
         val dataSet = BarDataSet(entries, "")
-        dataSet.setColors(colorsList) // Assign colors to each bar
+        dataSet.setColors(colorsList) 
         dataSet.valueTextSize = 12f
         dataSet.valueTextColor = textColor
         dataSet.valueFormatter = object : ValueFormatter() {
@@ -267,7 +295,6 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
                 granularity = 1f
                 setDrawGridLines(false)
                 labelRotationAngle = -45f
-                // Important: Ensure enough space for rotated labels
                 setLabelCount(sortedExpenses.size)
                 valueFormatter = object : ValueFormatter() {
                     override fun getFormattedValue(value: Float): String {
@@ -285,19 +312,17 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
             
             axisRight.isEnabled = false
             legend.isEnabled = false
-
-            // Adjust extra offset at bottom for rotated labels
             setExtraOffsets(5f, 5f, 5f, 25f)
-
             animateY(1000)
             invalidate()
         }
     }
 
     private fun updateHensAgeHeader() {
-        val info = viewModel.farmInfo.value
-        val age = info?.let { viewModel.getFormattedAge(it.chickBirthDate) } ?: "-- semaines"
-        binding.tvHensAgeHeader.text = "Lot actuel : ${viewModel.effectiveHensCount.value ?: 0} Poules\nAge : $age"
+        val batch = viewModel.selectedBatch.value
+        val age = batch?.let { viewModel.getFormattedAge(it.chickBirthDate) } ?: "-- semaines"
+        val count = viewModel.effectiveHensCount.value ?: 0
+        binding.tvHensAgeHeader.text = "Lot : ${batch?.name ?: "--"}\n$count Poules • Age : $age"
     }
 
     private fun setupClickListeners() {
@@ -312,12 +337,15 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
         val intent = Intent(this, cls)
         intent.putExtra("role", userRole)
         intent.putExtra("userIdString", userId)
+        val selectedBatchId = viewModel.selectedBatch.value?.firestoreId
+        intent.putExtra("selectedBatchId", selectedBatchId)
         startActivity(intent)
     }
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
             R.id.nav_dashboard -> {}
+            R.id.nav_batches -> openAct(BatchActivity::class.java)
             R.id.nav_users -> openAct(ResponsableActivity::class.java)
             R.id.nav_farm_info -> openAct(FarmInfoActivity::class.java)
             R.id.nav_collect -> openAct(AgentActivity::class.java)

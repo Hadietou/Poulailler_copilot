@@ -2,17 +2,14 @@ package com.example.poulailler_copilot.repository
 
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
 import android.util.Log
 import com.example.poulailler_copilot.data.*
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.SetOptions
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.tasks.await
-import java.util.*
 
 class FirebaseRepository {
     private val auth = FirebaseAuth.getInstance()
@@ -62,11 +59,22 @@ class FirebaseRepository {
         farmRef.set(farmData).await()
         
         val initialFarmInfo = hashMapOf(
-            "farmName" to farmName, "hensCount" to hensCount, "henBreed" to henBreed,
-            "arrivalDate" to arrivalDate, "chickBirthDate" to birthDate,
-            "currency" to currency, "setupDate" to System.currentTimeMillis()
+            "farmName" to farmName,
+            "currency" to currency, 
+            "setupDate" to System.currentTimeMillis()
         )
         db.collection("fermes").document(farmId).collection("config").document("farm_info").set(initialFarmInfo).await()
+
+        // Créer le lot initial
+        val initialBatch = hashMapOf(
+            "name" to "Lot 1",
+            "hensCount" to hensCount,
+            "henBreed" to henBreed,
+            "arrivalDate" to arrivalDate,
+            "chickBirthDate" to birthDate,
+            "status" to "ACTIVE"
+        )
+        db.collection("fermes").document(farmId).collection("batches").add(initialBatch).await()
         
         db.collection("users").document(uid).set(hashMapOf("farmId" to farmId, "role" to "RESPONSABLE", "active" to true), SetOptions.merge()).await()
         
@@ -107,7 +115,7 @@ class FirebaseRepository {
         return try {
             val s = db.collection("fermes").document(id).collection("config").document("farm_info").get().await()
             if (s.exists()) {
-                FarmInfo(1, s.getString("farmName") ?: "", s.getLong("hensCount")?.toInt() ?: 0, s.getString("henBreed") ?: "", s.getLong("arrivalDate") ?: 0L, s.getLong("chickBirthDate") ?: 0L, s.getLong("setupDate") ?: System.currentTimeMillis(), s.getString("feedInfo") ?: "", s.getLong("mortality")?.toInt() ?: 0, s.getDouble("expenses") ?: 0.0, s.getString("currency") ?: "MRU")
+                FarmInfo(1, s.getString("farmName") ?: "", s.getString("currency") ?: "MRU", s.getLong("setupDate") ?: System.currentTimeMillis())
             } else null
         } catch (e: Exception) { null }
     }
@@ -120,9 +128,35 @@ class FirebaseRepository {
             val sub = db.collection("fermes").document(id).collection("config").document("farm_info")
                 .addSnapshotListener { s, e ->
                     val info = if (s != null && s.exists()) {
-                        FarmInfo(1, s.getString("farmName") ?: "", s.getLong("hensCount")?.toInt() ?: 0, s.getString("henBreed") ?: "", s.getLong("arrivalDate") ?: 0L, s.getLong("chickBirthDate") ?: 0L, s.getLong("setupDate") ?: System.currentTimeMillis(), s.getString("feedInfo") ?: "", s.getLong("mortality")?.toInt() ?: 0, s.getDouble("expenses") ?: 0.0, s.getString("currency") ?: "MRU")
+                        FarmInfo(1, s.getString("farmName") ?: "", s.getString("currency") ?: "MRU", s.getLong("setupDate") ?: System.currentTimeMillis())
                     } else null
                     trySend(info)
+                }
+            awaitClose { sub.remove() }
+        }
+    }
+
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    fun getBatchesFlow(): Flow<List<Batch>> = farmIdFlow.flatMapLatest { fId ->
+        val id = fId ?: getFarmId()
+        if (id == null) flowOf(emptyList())
+        else callbackFlow {
+            val sub = db.collection("fermes").document(id).collection("batches")
+                .addSnapshotListener { s, e ->
+                    val list = s?.documents?.mapNotNull { doc ->
+                        Batch(
+                            id = 0L,
+                            name = doc.getString("name") ?: "",
+                            hensCount = doc.getLong("hensCount")?.toInt() ?: 0,
+                            henBreed = doc.getString("henBreed") ?: "",
+                            arrivalDate = doc.getLong("arrivalDate") ?: 0L,
+                            chickBirthDate = doc.getLong("chickBirthDate") ?: 0L,
+                            status = doc.getString("status") ?: "ACTIVE",
+                            firestoreId = doc.id,
+                            farmId = id
+                        )
+                    } ?: emptyList()
+                    trySend(list)
                 }
             awaitClose { sub.remove() }
         }
@@ -136,7 +170,7 @@ class FirebaseRepository {
             val sub = db.collection("egg_entries").whereEqualTo("farmId", id)
                 .addSnapshotListener { s, e ->
                     val list = s?.documents?.mapNotNull { doc ->
-                        EggEntry(0L, doc.getString("userId") ?: "", doc.getLong("date") ?: 0L, doc.getLong("eggsCount")?.toInt() ?: 0, doc.getLong("brokenEggsCount")?.toInt() ?: 0, doc.getString("remarks"), doc.id, id)
+                        EggEntry(0L, doc.getString("userId") ?: "", doc.getLong("date") ?: 0L, doc.getLong("eggsCount")?.toInt() ?: 0, doc.getLong("brokenEggsCount")?.toInt() ?: 0, doc.getString("remarks"), doc.id, id, doc.getString("batchId"))
                     }?.sortedByDescending { it.date } ?: emptyList()
                     trySend(list)
                 }
@@ -152,7 +186,7 @@ class FirebaseRepository {
             val sub = db.collection("mortality").whereEqualTo("farmId", id)
                 .addSnapshotListener { s, e ->
                     val list = s?.documents?.mapNotNull { doc ->
-                        Mortality(0L, doc.getLong("count")?.toInt() ?: 0, doc.getLong("date") ?: 0L, doc.id, id)
+                        Mortality(0L, doc.getLong("count")?.toInt() ?: 0, doc.getLong("date") ?: 0L, doc.id, id, doc.getString("batchId"))
                     }?.sortedByDescending { it.date } ?: emptyList()
                     trySend(list)
                 }
@@ -168,7 +202,7 @@ class FirebaseRepository {
             val sub = db.collection("sales").whereEqualTo("farmId", id)
                 .addSnapshotListener { s, e ->
                     val list = s?.documents?.mapNotNull { doc ->
-                        EggSale(0L, doc.getString("userId") ?: "", doc.getLong("date") ?: 0L, doc.getLong("quantity")?.toInt() ?: 0, doc.getDouble("pricePerUnit") ?: 0.0, doc.getDouble("totalPrice") ?: 0.0, doc.getString("buyer"), doc.getString("phoneNumber"), doc.id, id)
+                        EggSale(0L, doc.getString("userId") ?: "", doc.getLong("date") ?: 0L, doc.getLong("quantity")?.toInt() ?: 0, doc.getDouble("pricePerUnit") ?: 0.0, doc.getDouble("totalPrice") ?: 0.0, doc.getString("buyer"), doc.getString("phoneNumber"), doc.id, id, doc.getString("batchId"))
                     }?.sortedByDescending { it.date } ?: emptyList()
                     trySend(list)
                 }
@@ -184,7 +218,7 @@ class FirebaseRepository {
             val sub = db.collection("expenses").whereEqualTo("farmId", id)
                 .addSnapshotListener { s, e ->
                     val list = s?.documents?.mapNotNull { doc ->
-                        Expense(0L, doc.getLong("date") ?: 0L, doc.getString("category") ?: "", doc.getDouble("amount") ?: 0.0, doc.getDouble("quantityKg"), doc.getString("description"), doc.id, id)
+                        Expense(0L, doc.getLong("date") ?: 0L, doc.getString("category") ?: "", doc.getDouble("amount") ?: 0.0, doc.getDouble("quantityKg"), doc.getString("description"), doc.id, id, doc.getString("batchId"))
                     }?.sortedByDescending { it.date } ?: emptyList()
                     trySend(list)
                 }
@@ -200,7 +234,7 @@ class FirebaseRepository {
             val sub = db.collection("vaccines").whereEqualTo("farmId", id)
                 .addSnapshotListener { s, e ->
                     val list = s?.documents?.mapNotNull { doc ->
-                        VaccineEntry(0L, doc.getString("name") ?: "", doc.getLong("date") ?: 0L, doc.getString("remarks"), doc.id, id)
+                        VaccineEntry(0L, doc.getString("name") ?: "", doc.getLong("date") ?: 0L, doc.getString("remarks"), doc.id, id, doc.getString("batchId"))
                     }?.sortedByDescending { it.date } ?: emptyList()
                     trySend(list)
                 }
@@ -210,39 +244,70 @@ class FirebaseRepository {
 
     suspend fun saveFarmInfo(info: FarmInfo) {
         val fId = requireFarmId()
-        db.collection("fermes").document(fId).collection("config").document("farm_info").set(hashMapOf("farmName" to info.farmName, "hensCount" to info.hensCount, "henBreed" to info.henBreed, "arrivalDate" to info.arrivalDate, "chickBirthDate" to info.chickBirthDate, "currency" to info.currency), SetOptions.merge()).await()
+        db.collection("fermes").document(fId).collection("config").document("farm_info").set(hashMapOf("farmName" to info.farmName, "currency" to info.currency), SetOptions.merge()).await()
+    }
+
+    suspend fun addBatch(batch: Batch) {
+        val fId = requireFarmId()
+        db.collection("fermes").document(fId).collection("batches").add(hashMapOf(
+            "name" to batch.name,
+            "hensCount" to batch.hensCount,
+            "henBreed" to batch.henBreed,
+            "arrivalDate" to batch.arrivalDate,
+            "chickBirthDate" to batch.chickBirthDate,
+            "status" to batch.status
+        )).await()
+    }
+
+    suspend fun updateBatch(batch: Batch) {
+        val fId = requireFarmId()
+        batch.firestoreId?.let { 
+            db.collection("fermes").document(fId).collection("batches").document(it).update(hashMapOf(
+                "name" to batch.name,
+                "hensCount" to batch.hensCount,
+                "henBreed" to batch.henBreed,
+                "arrivalDate" to batch.arrivalDate,
+                "chickBirthDate" to batch.chickBirthDate,
+                "status" to batch.status
+            ) as Map<String, Any>).await()
+        }
+    }
+
+    suspend fun deleteBatch(batchId: String) {
+        val fId = requireFarmId()
+        db.collection("fermes").document(fId).collection("batches").document(batchId).delete().await()
     }
 
     suspend fun addEggEntry(e: EggEntry) {
         val fId = requireFarmId()
-        db.collection("egg_entries").add(hashMapOf("userId" to auth.currentUser?.uid, "date" to e.date, "eggsCount" to e.eggsCount, "brokenEggsCount" to e.brokenEggsCount, "remarks" to e.remarks, "farmId" to fId)).await()
+        db.collection("egg_entries").add(hashMapOf("userId" to auth.currentUser?.uid, "date" to e.date, "eggsCount" to e.eggsCount, "brokenEggsCount" to e.brokenEggsCount, "remarks" to e.remarks, "farmId" to fId, "batchId" to e.batchId)).await()
     }
 
-    suspend fun addMortality(c: Int, d: Long) {
+    suspend fun addMortality(c: Int, d: Long, batchId: String?) {
         val fId = requireFarmId()
-        db.collection("mortality").add(hashMapOf("count" to c, "date" to d, "farmId" to fId)).await()
+        db.collection("mortality").add(hashMapOf("count" to c, "date" to d, "farmId" to fId, "batchId" to batchId)).await()
     }
 
     suspend fun addSale(s: EggSale) {
         val fId = requireFarmId()
-        db.collection("sales").add(hashMapOf("userId" to auth.currentUser?.uid, "date" to s.date, "quantity" to s.quantity, "pricePerUnit" to s.pricePerUnit, "totalPrice" to s.totalPrice, "buyer" to s.buyer, "phoneNumber" to s.phoneNumber, "farmId" to fId)).await()
+        db.collection("sales").add(hashMapOf("userId" to auth.currentUser?.uid, "date" to s.date, "quantity" to s.quantity, "pricePerUnit" to s.pricePerUnit, "totalPrice" to s.totalPrice, "buyer" to s.buyer, "phoneNumber" to s.phoneNumber, "farmId" to fId, "batchId" to s.batchId)).await()
     }
 
     suspend fun addExpense(e: Expense) {
         val fId = requireFarmId()
-        db.collection("expenses").add(hashMapOf("date" to e.date, "category" to e.category, "description" to e.description, "amount" to e.amount, "quantityKg" to e.quantityKg, "farmId" to fId)).await()
+        db.collection("expenses").add(hashMapOf("date" to e.date, "category" to e.category, "description" to e.description, "amount" to e.amount, "quantityKg" to e.quantityKg, "farmId" to fId, "batchId" to e.batchId)).await()
     }
 
     suspend fun addVaccine(v: VaccineEntry) {
         val fId = requireFarmId()
-        db.collection("vaccines").add(hashMapOf("name" to v.name, "date" to v.date, "remarks" to v.remarks, "farmId" to fId)).await()
+        db.collection("vaccines").add(hashMapOf("name" to v.name, "date" to v.date, "remarks" to v.remarks, "farmId" to fId, "batchId" to v.batchId)).await()
     }
 
-    suspend fun updateEggEntry(e: EggEntry) { e.firestoreId?.let { db.collection("egg_entries").document(it).update(hashMapOf("date" to e.date, "eggsCount" to e.eggsCount, "brokenEggsCount" to e.brokenEggsCount, "remarks" to e.remarks) as Map<String, Any>).await() } }
-    suspend fun updateMortality(m: Mortality) { m.firestoreId?.let { db.collection("mortality").document(it).update(hashMapOf("count" to m.count, "date" to m.date) as Map<String, Any>).await() } }
-    suspend fun updateSale(s: EggSale) { s.firestoreId?.let { db.collection("sales").document(it).update(hashMapOf("date" to s.date, "quantity" to s.quantity, "pricePerUnit" to s.pricePerUnit, "totalPrice" to s.totalPrice, "buyer" to s.buyer, "phoneNumber" to s.phoneNumber) as Map<String, Any>).await() } }
-    suspend fun updateVaccine(v: VaccineEntry) { v.firestoreId?.let { db.collection("vaccines").document(it).update(hashMapOf("name" to v.name, "date" to v.date, "remarks" to v.remarks) as Map<String, Any>).await() } }
-    suspend fun updateExpense(e: Expense) { e.firestoreId?.let { db.collection("expenses").document(it).update(hashMapOf("date" to e.date, "category" to e.category, "description" to e.description, "amount" to e.amount, "quantityKg" to e.quantityKg) as Map<String, Any>).await() } }
+    suspend fun updateEggEntry(e: EggEntry) { e.firestoreId?.let { db.collection("egg_entries").document(it).update(hashMapOf("date" to e.date, "eggsCount" to e.eggsCount, "brokenEggsCount" to e.brokenEggsCount, "remarks" to e.remarks, "batchId" to e.batchId) as Map<String, Any>).await() } }
+    suspend fun updateMortality(m: Mortality) { m.firestoreId?.let { db.collection("mortality").document(it).update(hashMapOf("count" to m.count, "date" to m.date, "batchId" to m.batchId) as Map<String, Any>).await() } }
+    suspend fun updateSale(s: EggSale) { s.firestoreId?.let { db.collection("sales").document(it).update(hashMapOf("date" to s.date, "quantity" to s.quantity, "pricePerUnit" to s.pricePerUnit, "totalPrice" to s.totalPrice, "buyer" to s.buyer, "phoneNumber" to s.phoneNumber, "batchId" to s.batchId) as Map<String, Any>).await() } }
+    suspend fun updateVaccine(v: VaccineEntry) { v.firestoreId?.let { db.collection("vaccines").document(it).update(hashMapOf("name" to v.name, "date" to v.date, "remarks" to v.remarks, "batchId" to v.batchId) as Map<String, Any>).await() } }
+    suspend fun updateExpense(e: Expense) { e.firestoreId?.let { db.collection("expenses").document(it).update(hashMapOf("date" to e.date, "category" to e.category, "description" to e.description, "amount" to e.amount, "quantityKg" to e.quantityKg, "batchId" to e.batchId) as Map<String, Any>).await() } }
 
     suspend fun deleteEggEntry(id: String) = db.collection("egg_entries").document(id).delete().await()
     suspend fun deleteMortality(id: String) = db.collection("mortality").document(id).delete().await()
@@ -286,9 +351,7 @@ class FirebaseRepository {
     }
 
     fun shareInviteCode(context: Context, farmCode: String) {
-        // Lien vers l'APK sur Google Drive pour les tests
         val apkDownloadLink = "https://drive.google.com/file/d/1oC4RejQmRnzNCDyOxV6GH50A8AHCR7Sf/view?usp=sharing"
-        val appLink = "poulaillerpro://join?code=$farmCode"
         
         val message = """
             🐔 Rejoignez mon exploitation sur l'application KOURKOUROU!

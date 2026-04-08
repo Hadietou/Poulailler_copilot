@@ -39,6 +39,7 @@ class SalesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
     private var userId: String? = null
     private var userRole: String = "AGENT"
     private var currency: String = "MRU"
+    private var selectedBatchId: String? = null
     private val firebaseRepo = FirebaseRepository()
     private lateinit var adapter: SaleAdapter
     
@@ -52,6 +53,7 @@ class SalesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
 
         userId = intent.getStringExtra("userIdString") ?: FirebaseAuth.getInstance().currentUser?.uid
         userRole = intent.getStringExtra("role") ?: "AGENT"
+        selectedBatchId = intent.getStringExtra("selectedBatchId")
 
         setupNavigation()
         loadCurrency()
@@ -84,6 +86,7 @@ class SalesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
         menu.findItem(R.id.nav_expenses).isVisible = userRole == "RESPONSABLE"
         menu.findItem(R.id.nav_vaccines).isVisible = userRole == "RESPONSABLE"
         menu.findItem(R.id.nav_farm_info).isVisible = userRole == "RESPONSABLE"
+        menu.findItem(R.id.nav_batches).isVisible = userRole == "RESPONSABLE"
 
         updateNavHeader()
     }
@@ -101,7 +104,11 @@ class SalesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
     private fun observeSales() {
         lifecycleScope.launch {
             firebaseRepo.getSalesFlow().collectLatest { list ->
-                allSales = list
+                allSales = if (selectedBatchId != null) {
+                    list.filter { it.batchId == selectedBatchId }
+                } else {
+                    list
+                }
                 refreshDisplay()
             }
         }
@@ -181,11 +188,11 @@ class SalesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
                 pricePerUnit = unitPrice,
                 totalPrice = totalPrice,
                 buyer = if (buyer.isBlank()) null else buyer,
-                phoneNumber = if (phone.isBlank()) null else phone
+                phoneNumber = if (phone.isBlank()) null else phone,
+                batchId = selectedBatchId
             )
 
             lifecycleScope.launch(Dispatchers.IO) {
-                AppDatabase.getInstance(this@SalesActivity).eggSaleDao().insert(sale)
                 firebaseRepo.addSale(sale)
                 withContext(Dispatchers.Main) {
                     Toast.makeText(this@SalesActivity, "Vente enregistrée !", Toast.LENGTH_LONG).show()
@@ -246,7 +253,6 @@ class SalesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
                     buyer = if (buyer.isBlank()) null else buyer,
                     phoneNumber = if (phone.isBlank()) null else phone
                 )
-                AppDatabase.getInstance(this@SalesActivity).eggSaleDao().update(updatedSale)
                 firebaseRepo.updateSale(updatedSale)
                 withContext(Dispatchers.Main) {
                     Toast.makeText(this@SalesActivity, "Vente modifiée", Toast.LENGTH_SHORT).show()
@@ -266,7 +272,6 @@ class SalesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
                     .setMessage("Voulez-vous vraiment supprimer cette vente ?")
                     .setPositiveButton("Supprimer") { _, _ ->
                         lifecycleScope.launch(Dispatchers.IO) {
-                            AppDatabase.getInstance(this@SalesActivity).eggSaleDao().delete(sale)
                             if (sale.firestoreId != null) {
                                 firebaseRepo.deleteSale(sale.firestoreId)
                             }
@@ -294,6 +299,12 @@ class SalesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
                 startActivity(intent)
                 finish()
             }
+            R.id.nav_batches -> {
+                val intent = Intent(this, BatchActivity::class.java)
+                intent.putExtra("role", userRole)
+                intent.putExtra("userIdString", userId)
+                startActivity(intent)
+            }
             R.id.nav_users -> {
                 val intent = Intent(this, ResponsableActivity::class.java)
                 intent.putExtra("role", userRole)
@@ -310,18 +321,21 @@ class SalesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
                 val intent = Intent(this, AgentActivity::class.java)
                 intent.putExtra("userIdString", userId)
                 intent.putExtra("role", userRole)
+                intent.putExtra("selectedBatchId", selectedBatchId)
                 startActivity(intent)
             }
             R.id.nav_vaccines -> {
                 val intent = Intent(this, VaccineActivity::class.java)
                 intent.putExtra("role", userRole)
                 intent.putExtra("userIdString", userId)
+                intent.putExtra("selectedBatchId", selectedBatchId)
                 startActivity(intent)
             }
             R.id.nav_expenses -> {
                 val intent = Intent(this, ExpensesActivity::class.java)
                 intent.putExtra("role", userRole)
                 intent.putExtra("userIdString", userId)
+                intent.putExtra("selectedBatchId", selectedBatchId)
                 startActivity(intent)
             }
             R.id.nav_sales -> {}
@@ -329,6 +343,7 @@ class SalesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
                 val intent = Intent(this, MortalityActivity::class.java)
                 intent.putExtra("userIdString", userId)
                 intent.putExtra("role", userRole)
+                intent.putExtra("selectedBatchId", selectedBatchId)
                 startActivity(intent)
             }
             R.id.nav_logout -> {

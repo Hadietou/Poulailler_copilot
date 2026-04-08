@@ -8,19 +8,15 @@ class FarmRepository(private val farmInfoDao: FarmInfoDao) {
     suspend fun getInfo(): FarmInfo? = farmInfoDao.getInfo()
 
     suspend fun saveInfo(
-        hensCount: Int,
-        feedInfo: String,
-        mortality: Int,
-        expenses: Double,
+        farmName: String,
+        currency: String,
         setupDate: Long = System.currentTimeMillis()
     ) {
         val currentInfo = getInfo()
         val info = FarmInfo(
             id = currentInfo?.id ?: 1,
-            hensCount = hensCount,
-            feedInfo = feedInfo,
-            mortality = mortality,
-            expenses = expenses,
+            farmName = farmName,
+            currency = currency,
             setupDate = currentInfo?.setupDate ?: setupDate
         )
         farmInfoDao.upsert(info)

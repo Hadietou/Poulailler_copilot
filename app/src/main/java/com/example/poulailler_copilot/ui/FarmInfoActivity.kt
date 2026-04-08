@@ -1,6 +1,5 @@
 package com.example.poulailler_copilot.ui
 
-import android.app.DatePickerDialog
 import android.content.Intent
 import android.os.Bundle
 import android.view.MenuItem
@@ -13,7 +12,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.GravityCompat
 import androidx.lifecycle.lifecycleScope
 import com.example.poulailler_copilot.R
-import com.example.poulailler_copilot.data.AppDatabase
 import com.example.poulailler_copilot.data.FarmInfo
 import com.example.poulailler_copilot.databinding.ActivityFarmInfoBinding
 import com.example.poulailler_copilot.repository.FirebaseRepository
@@ -28,9 +26,6 @@ import java.util.*
 class FarmInfoActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelectedListener {
 
     private lateinit var binding: ActivityFarmInfoBinding
-    private val calendar = Calendar.getInstance()
-    private var arrivalDateMs: Long = 0
-    private var birthDateMs: Long = 0
     private var currentFarmInfo: FarmInfo? = null
     private val firebaseRepo = FirebaseRepository()
     
@@ -49,7 +44,6 @@ class FarmInfoActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
         setupNavigation()
         setupCurrencyDropdown()
         loadExistingData()
-        setupDatePickers()
 
         binding.btnSaveFarmInfo.setOnClickListener {
             saveData()
@@ -80,6 +74,7 @@ class FarmInfoActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
         menu.findItem(R.id.nav_expenses).isVisible = userRole == "RESPONSABLE"
         menu.findItem(R.id.nav_vaccines).isVisible = userRole == "RESPONSABLE"
         menu.findItem(R.id.nav_farm_info).isVisible = userRole == "RESPONSABLE"
+        menu.findItem(R.id.nav_batches).isVisible = userRole == "RESPONSABLE"
 
         updateNavHeader()
     }
@@ -107,22 +102,6 @@ class FarmInfoActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
         binding.actvCurrency.setText(currencies[0], false)
     }
 
-    private fun setupDatePickers() {
-        binding.etArrivalDate.setOnClickListener {
-            showDatePicker { date ->
-                arrivalDateMs = date.time
-                binding.etArrivalDate.setText(SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(date))
-            }
-        }
-
-        binding.etBirthDate.setOnClickListener {
-            showDatePicker { date ->
-                birthDateMs = date.time
-                binding.etBirthDate.setText(SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(date))
-            }
-        }
-    }
-
     private fun loadExistingData() {
         lifecycleScope.launch {
             val info = firebaseRepo.getFarmInfo()
@@ -139,28 +118,22 @@ class FarmInfoActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
     }
 
     private fun displayInfo(info: FarmInfo) {
-        val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-        
         binding.tvDisplayFarmName.text = info.farmName
-        binding.tvDisplayHensCount.text = "${info.hensCount} poules"
-        binding.tvDisplayBreed.text = info.henBreed.ifEmpty { "Non spécifiée" }
-        binding.tvDisplayArrival.text = if (info.arrivalDate > 0) sdf.format(Date(info.arrivalDate)) else "--/--/----"
-        binding.tvDisplayBirth.text = if (info.chickBirthDate > 0) sdf.format(Date(info.chickBirthDate)) else "--/--/----"
         binding.tvDisplayCurrency.text = info.currency
-
+        
         binding.etFarmName.setText(info.farmName)
-        binding.etHensCount.setText(info.hensCount.toString())
-        binding.etHenBreed.setText(info.henBreed)
         binding.actvCurrency.setText(info.currency, false)
 
-        if (info.arrivalDate > 0) {
-            arrivalDateMs = info.arrivalDate
-            binding.etArrivalDate.setText(sdf.format(Date(info.arrivalDate)))
-        }
-        if (info.chickBirthDate > 0) {
-            birthDateMs = info.chickBirthDate
-            binding.etBirthDate.setText(sdf.format(Date(info.chickBirthDate)))
-        }
+        // Hide old fields that are now in Batch
+        binding.tvDisplayHensCount.visibility = View.GONE
+        binding.tvDisplayBreed.visibility = View.GONE
+        binding.tvDisplayArrival.visibility = View.GONE
+        binding.tvDisplayBirth.visibility = View.GONE
+        
+        binding.tilHensCount.visibility = View.GONE
+        binding.tilHenBreed.visibility = View.GONE
+        binding.tilArrivalDate.visibility = View.GONE
+        binding.tilBirthDate.visibility = View.GONE
     }
 
     private fun showEditMode(isEditing: Boolean) {
@@ -174,37 +147,21 @@ class FarmInfoActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
         }
     }
 
-    private fun showDatePicker(onDateSelected: (Date) -> Unit) {
-        DatePickerDialog(this, { _, year, month, dayOfMonth ->
-            val cal = Calendar.getInstance()
-            cal.set(year, month, dayOfMonth)
-            onDateSelected(cal.time)
-        }, calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH), calendar.get(Calendar.DAY_OF_MONTH)).show()
-    }
-
     private fun saveData() {
         val name = binding.etFarmName.text.toString()
-        val count = binding.etHensCount.text.toString().toIntOrNull() ?: 0
-        val breed = binding.etHenBreed.text.toString()
         val currency = binding.actvCurrency.text.toString()
 
-        if (name.isEmpty() || count <= 0) {
-            Toast.makeText(this, "Veuillez saisir le nom et le nombre de poules", Toast.LENGTH_SHORT).show()
+        if (name.isEmpty()) {
+            Toast.makeText(this, "Veuillez saisir le nom de la ferme", Toast.LENGTH_SHORT).show()
             return
         }
 
         lifecycleScope.launch(Dispatchers.IO) {
-            val db = AppDatabase.getInstance(this@FarmInfoActivity)
             val info = FarmInfo(
                 id = 1,
                 farmName = name,
-                hensCount = count,
-                henBreed = breed,
-                arrivalDate = arrivalDateMs,
-                chickBirthDate = birthDateMs,
                 currency = currency
             )
-            db.farmInfoDao().upsert(info)
             firebaseRepo.saveFarmInfo(info)
             withContext(Dispatchers.Main) {
                 Toast.makeText(this@FarmInfoActivity, "Informations enregistrées", Toast.LENGTH_SHORT).show()
@@ -221,6 +178,12 @@ class FarmInfoActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
                 intent.putExtra("userIdString", userId)
                 startActivity(intent)
                 finish()
+            }
+            R.id.nav_batches -> {
+                val intent = Intent(this, BatchActivity::class.java)
+                intent.putExtra("role", userRole)
+                intent.putExtra("userIdString", userId)
+                startActivity(intent)
             }
             R.id.nav_users -> {
                 val intent = Intent(this, ResponsableActivity::class.java)
@@ -249,8 +212,8 @@ class FarmInfoActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
             }
             R.id.nav_sales -> {
                 val intent = Intent(this, SalesActivity::class.java)
-                intent.putExtra("userIdString", userId)
                 intent.putExtra("role", userRole)
+                intent.putExtra("userIdString", userId)
                 startActivity(intent)
             }
             R.id.nav_mortality -> {

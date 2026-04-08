@@ -12,5 +12,6 @@ data class Expense(
     val quantityKg: Double? = null,
     val description: String? = null,
     val firestoreId: String? = null,
-    val farmId: String? = null
+    val farmId: String? = null,
+    val batchId: String? = null
 )

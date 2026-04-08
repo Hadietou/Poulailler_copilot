@@ -12,5 +12,6 @@ data class EggEntry(
     val brokenEggsCount: Int = 0,
     val remarks: String?,
     val firestoreId: String? = null,
-    val farmId: String? = null
+    val farmId: String? = null,
+    val batchId: String? = null
 )

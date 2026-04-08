@@ -39,6 +39,10 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     val allEntries = MutableLiveData<List<EggEntry>>(emptyList())
     val allMortalities = MutableLiveData<List<Mortality>>(emptyList())
     val allExpenses = MutableLiveData<List<Expense>>(emptyList())
+    val allSales = MutableLiveData<List<EggSale>>(emptyList())
+
+    val allBatches = MutableLiveData<List<Batch>>(emptyList())
+    val selectedBatch = MutableLiveData<Batch?>()
 
     val effectiveHensCount = MutableLiveData<Int>(0)
     val totalMortalityCount = MutableLiveData<Int>(0)
@@ -64,6 +68,19 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
 
         viewModelScope.launch {
             try {
+                firebaseRepo.getBatchesFlow().collectLatest { batches ->
+                    allBatches.value = batches
+                    if (selectedBatch.value == null && batches.isNotEmpty()) {
+                        selectedBatch.postValue(batches.firstOrNull { it.status == "ACTIVE" } ?: batches.first())
+                    } else {
+                        refreshAllStats()
+                    }
+                }
+            } catch (e: Exception) { Log.e("DashboardVM", "Error in batchesFlow", e) }
+        }
+
+        viewModelScope.launch {
+            try {
                 firebaseRepo.getEggEntriesFlow().collectLatest { entries ->
                     allEntries.value = entries
                     refreshAllStats()
@@ -75,7 +92,6 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
             try {
                 firebaseRepo.getMortalityFlow().collectLatest { list ->
                     allMortalities.value = list
-                    totalMortalityCount.value = list.sumOf { it.count }
                     refreshAllStats()
                 }
             } catch (e: Exception) { Log.e("DashboardVM", "Error in mortalityFlow", e) }
@@ -84,8 +100,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         viewModelScope.launch {
             try {
                 firebaseRepo.getSalesFlow().collectLatest { list ->
-                    totalSales.value = list.sumOf { it.totalPrice }
-                    totalSold.value = list.sumOf { it.quantity }
+                    allSales.value = list
                     refreshAllStats()
                 }
             } catch (e: Exception) { Log.e("DashboardVM", "Error in salesFlow", e) }
@@ -101,16 +116,26 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         }
     }
 
-    private fun refreshAllStats() {
-        // Run financial calculations even if farmInfo is null
-        val expenses = allExpenses.value ?: emptyList()
-        val sales = totalSales.value ?: 0.0
-        val entries = allEntries.value ?: emptyList()
-        val mortalities = allMortalities.value ?: emptyList()
+    fun selectBatch(batch: Batch) {
+        selectedBatch.value = batch
+        refreshAllStats()
+    }
 
+    private fun refreshAllStats() {
+        val batch = selectedBatch.value ?: return
+        val batchId = batch.firestoreId
+
+        val entries = allEntries.value?.filter { it.batchId == batchId } ?: emptyList()
+        val mortalities = allMortalities.value?.filter { it.batchId == batchId } ?: emptyList()
+        val sales = allSales.value?.filter { it.batchId == batchId } ?: emptyList()
+        val expenses = allExpenses.value?.filter { it.batchId == batchId } ?: emptyList()
+
+        // Financials
         val expTotal = expenses.sumOf { it.amount }
+        val salesTotal = sales.sumOf { it.totalPrice }
+        totalSales.postValue(salesTotal)
         totalExpenses.postValue(expTotal)
-        netProfit.postValue(sales - expTotal)
+        netProfit.postValue(salesTotal - expTotal)
 
         val feedPurchased = expenses.filter { it.category == "Aliment" }.sumOf { it.quantityKg ?: 0.0 }
         totalFeedPurchasedKg.postValue(feedPurchased)
@@ -118,11 +143,10 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         expensesByCategory.postValue(expenses.groupBy { it.category }
             .map { (cat, items) -> CategoryExpense(cat, items.sumOf { it.amount }) })
 
-        val info = farmInfo.value ?: return
-
         // Hens and Mortality
         val totalMortality = mortalities.sumOf { it.count }
-        val currentHens = (info.hensCount - totalMortality).coerceAtLeast(0)
+        totalMortalityCount.postValue(totalMortality)
+        val currentHens = (batch.hensCount - totalMortality).coerceAtLeast(0)
         effectiveHensCount.postValue(currentHens)
 
         // Egg production
@@ -143,9 +167,11 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         layingTrend.postValue(currentRate - yesterdayRate)
 
         val totalColl = entries.sumOf { it.eggsCount }
+        val totalSoldQty = sales.sumOf { it.quantity }
         totalCollected.postValue(totalColl)
+        totalSold.postValue(totalSoldQty)
         totalBroken.postValue(entries.sumOf { it.brokenEggsCount })
-        totalRemaining.postValue(totalColl - (totalSold.value ?: 0) - (totalBroken.value ?: 0))
+        totalRemaining.postValue(totalColl - totalSoldQty - (entries.sumOf { it.brokenEggsCount }))
 
         // Weekly Production
         val last7Days = mutableListOf<Pair<Long, Int>>()
@@ -158,17 +184,12 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         weeklyProduction.postValue(last7Days)
 
         // Feed Stats
-        calculateFeedStats(info, mortalities, feedPurchased)
+        calculateFeedStats(batch, mortalities, feedPurchased)
     }
 
-    private fun calculateFeedStats(info: FarmInfo, mortalities: List<Mortality>, totalPurchased: Double) {
-        val initialHens = info.hensCount
-        // Use arrivalDate if available, fallback to setupDate or birthDate
-        val startDate = when {
-            info.arrivalDate > 0 -> info.arrivalDate
-            info.setupDate > 0 -> info.setupDate
-            else -> info.chickBirthDate
-        }
+    private fun calculateFeedStats(batch: Batch, mortalities: List<Mortality>, totalPurchased: Double) {
+        val initialHens = batch.hensCount
+        val startDate = batch.arrivalDate
         
         if (startDate <= 0 || initialHens <= 0) {
             currentStockKg.postValue(totalPurchased)
@@ -187,7 +208,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         while (currentDay < today) {
             val mortalityUntilThen = mortalities.filter { it.date <= currentDay }.sumOf { it.count }
             val hensThatDay = (initialHens - mortalityUntilThen).coerceAtLeast(0)
-            val ageInWeeks = ((currentDay - info.chickBirthDate) / (dayMillis * 7)).toInt()
+            val ageInWeeks = ((currentDay - batch.chickBirthDate) / (dayMillis * 7)).toInt()
 
             val dailyFeedPerHen = when {
                 ageInWeeks < 4 -> 0.040
@@ -203,7 +224,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         currentStockKg.postValue(stockRestant)
 
         val currentHens = (initialHens - mortalities.sumOf { it.count }).coerceAtLeast(0)
-        val currentAgeInWeeks = if (info.chickBirthDate > 0) ((today - info.chickBirthDate) / (dayMillis * 7)).toInt() else 20
+        val currentAgeInWeeks = if (batch.chickBirthDate > 0) ((today - batch.chickBirthDate) / (dayMillis * 7)).toInt() else 20
         val currentDailyFeedPerHen = when {
             currentAgeInWeeks < 4 -> 0.040
             currentAgeInWeeks < 8 -> 0.070

@@ -39,6 +39,7 @@ class MortalityActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
     private var selectedDateMs: Long = System.currentTimeMillis()
     private var userRole: String = "AGENT"
     private var userId: String? = null
+    private var selectedBatchId: String? = null
     private val firebaseRepo = FirebaseRepository()
     private lateinit var adapter: MortalityAdapter
     
@@ -52,6 +53,7 @@ class MortalityActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
 
         userRole = intent.getStringExtra("role") ?: "AGENT"
         userId = intent.getStringExtra("userIdString") ?: FirebaseAuth.getInstance().currentUser?.uid
+        selectedBatchId = intent.getStringExtra("selectedBatchId")
 
         setupNavigation()
         setupRecyclerView()
@@ -83,6 +85,7 @@ class MortalityActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
         menu.findItem(R.id.nav_expenses).isVisible = userRole == "RESPONSABLE"
         menu.findItem(R.id.nav_vaccines).isVisible = userRole == "RESPONSABLE"
         menu.findItem(R.id.nav_farm_info).isVisible = userRole == "RESPONSABLE"
+        menu.findItem(R.id.nav_batches).isVisible = userRole == "RESPONSABLE"
 
         updateNavHeader()
     }
@@ -99,9 +102,12 @@ class MortalityActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
 
     private fun observeMortality() {
         lifecycleScope.launch {
-            // Lecture depuis Firebase pour restaurer l'historique Cloud
             firebaseRepo.getMortalityFlow().collectLatest { list ->
-                allMortalities = list
+                allMortalities = if (selectedBatchId != null) {
+                    list.filter { it.batchId == selectedBatchId }
+                } else {
+                    list
+                }
                 refreshDisplay()
             }
         }
@@ -159,10 +165,7 @@ class MortalityActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
             }
 
             lifecycleScope.launch(Dispatchers.IO) {
-                val db = AppDatabase.getInstance(this@MortalityActivity)
-                val mortality = Mortality(count = count, date = selectedDateMs)
-                db.mortalityDao().insert(mortality)
-                firebaseRepo.addMortality(count, selectedDateMs)
+                firebaseRepo.addMortality(count, selectedDateMs, selectedBatchId)
                 withContext(Dispatchers.Main) {
                     Toast.makeText(this@MortalityActivity, "Mortalité enregistrée", Toast.LENGTH_SHORT).show()
                     dialog.dismiss()
@@ -179,7 +182,6 @@ class MortalityActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
             .setView(dialogBinding.root)
             .create()
 
-        // Pre-fill
         dialogBinding.etMortalityInput.setText(mortality.count.toString())
         val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
         dialogBinding.etMortalityDate.setText(sdf.format(Date(mortality.date)))
@@ -208,7 +210,6 @@ class MortalityActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
                     count = count,
                     date = editDateMs
                 )
-                AppDatabase.getInstance(this@MortalityActivity).mortalityDao().update(updated)
                 firebaseRepo.updateMortality(updated)
                 withContext(Dispatchers.Main) {
                     Toast.makeText(this@MortalityActivity, "Mortalité modifiée", Toast.LENGTH_SHORT).show()
@@ -228,7 +229,6 @@ class MortalityActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
                     .setMessage("Voulez-vous supprimer cette mortalité ?")
                     .setPositiveButton("Supprimer") { _, _ ->
                         lifecycleScope.launch(Dispatchers.IO) {
-                            AppDatabase.getInstance(this@MortalityActivity).mortalityDao().delete(mortality)
                             if (mortality.firestoreId != null) {
                                 firebaseRepo.deleteMortality(mortality.firestoreId)
                             }
@@ -256,6 +256,12 @@ class MortalityActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
                 startActivity(intent)
                 finish()
             }
+            R.id.nav_batches -> {
+                val intent = Intent(this, BatchActivity::class.java)
+                intent.putExtra("role", userRole)
+                intent.putExtra("userIdString", userId)
+                startActivity(intent)
+            }
             R.id.nav_users -> {
                 val intent = Intent(this, ResponsableActivity::class.java)
                 intent.putExtra("role", userRole)
@@ -272,28 +278,33 @@ class MortalityActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
                 val intent = Intent(this, AgentActivity::class.java)
                 intent.putExtra("userIdString", userId)
                 intent.putExtra("role", userRole)
+                intent.putExtra("selectedBatchId", selectedBatchId)
                 startActivity(intent)
             }
             R.id.nav_vaccines -> {
                 val intent = Intent(this, VaccineActivity::class.java)
                 intent.putExtra("role", userRole)
                 intent.putExtra("userIdString", userId)
+                intent.putExtra("selectedBatchId", selectedBatchId)
                 startActivity(intent)
             }
             R.id.nav_expenses -> {
                 val intent = Intent(this, ExpensesActivity::class.java)
                 intent.putExtra("role", userRole)
                 intent.putExtra("userIdString", userId)
+                intent.putExtra("selectedBatchId", selectedBatchId)
                 startActivity(intent)
             }
             R.id.nav_sales -> {
                 val intent = Intent(this, SalesActivity::class.java)
                 intent.putExtra("userIdString", userId)
                 intent.putExtra("role", userRole)
+                intent.putExtra("selectedBatchId", selectedBatchId)
                 startActivity(intent)
             }
             R.id.nav_mortality -> {}
             R.id.nav_logout -> {
+                FirebaseAuth.getInstance().signOut()
                 val intent = Intent(this, LoginActivity::class.java)
                 intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                 startActivity(intent)

@@ -10,5 +10,6 @@ data class VaccineEntry(
     val date: Long,
     val remarks: String? = null,
     val firestoreId: String? = null,
-    val farmId: String? = null
+    val farmId: String? = null,
+    val batchId: String? = null
 )

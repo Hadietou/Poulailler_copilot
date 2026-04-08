@@ -40,6 +40,7 @@ class AgentActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
     private var selectedDateMs: Long = System.currentTimeMillis()
     private var userId: String? = null
     private var userRole: String = "AGENT"
+    private var selectedBatchId: String? = null
     private val firebaseRepo = FirebaseRepository()
     private lateinit var adapter: CollectionAdapter
     
@@ -53,6 +54,7 @@ class AgentActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
 
         userId = intent.getStringExtra("userIdString") ?: FirebaseAuth.getInstance().currentUser?.uid
         userRole = intent.getStringExtra("role") ?: "AGENT"
+        selectedBatchId = intent.getStringExtra("selectedBatchId")
 
         setupNavigation()
         setupRecyclerView()
@@ -84,6 +86,7 @@ class AgentActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
         menu.findItem(R.id.nav_expenses).isVisible = userRole == "RESPONSABLE"
         menu.findItem(R.id.nav_vaccines).isVisible = userRole == "RESPONSABLE"
         menu.findItem(R.id.nav_farm_info).isVisible = userRole == "RESPONSABLE"
+        menu.findItem(R.id.nav_batches).isVisible = userRole == "RESPONSABLE"
 
         updateNavHeader()
     }
@@ -100,7 +103,12 @@ class AgentActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
 
     private fun observeCollections() {
         viewModel.entries.observe(this) { list ->
-            allEntries = list
+            // Filter entries by selected batch if provided
+            allEntries = if (selectedBatchId != null) {
+                list.filter { it.batchId == selectedBatchId }
+            } else {
+                list
+            }
             refreshDisplay()
         }
     }
@@ -163,6 +171,7 @@ class AgentActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
                 eggs = count,
                 broken = broken,
                 remarks = remarks,
+                batchId = selectedBatchId,
                 onDone = {
                     Toast.makeText(this@AgentActivity, "Collecte enregistrée", Toast.LENGTH_SHORT).show()
                     dialog.dismiss()
@@ -179,7 +188,6 @@ class AgentActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
             .setView(dialogBinding.root)
             .create()
 
-        // Pre-fill
         dialogBinding.etEggsCount.setText(entry.eggsCount.toString())
         dialogBinding.etBrokenEggsCount.setText(entry.brokenEggsCount.toString())
         dialogBinding.etRemarks.setText(entry.remarks ?: "")
@@ -216,7 +224,6 @@ class AgentActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
                     brokenEggsCount = broken,
                     remarks = remarks
                 )
-                AppDatabase.getInstance(this@AgentActivity).eggEntryDao().update(updatedEntry)
                 firebaseRepo.updateEggEntry(updatedEntry)
                 withContext(Dispatchers.Main) {
                     Toast.makeText(this@AgentActivity, "Collecte modifiée", Toast.LENGTH_SHORT).show()
@@ -236,7 +243,6 @@ class AgentActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
                     .setMessage("Voulez-vous vraiment supprimer cette collecte ?")
                     .setPositiveButton("Supprimer") { _, _ ->
                         lifecycleScope.launch(Dispatchers.IO) {
-                            AppDatabase.getInstance(this@AgentActivity).eggEntryDao().delete(entry)
                             if (entry.firestoreId != null) {
                                 firebaseRepo.deleteEggEntry(entry.firestoreId)
                             }
@@ -264,6 +270,12 @@ class AgentActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
                 startActivity(intent)
                 finish()
             }
+            R.id.nav_batches -> {
+                val intent = Intent(this, BatchActivity::class.java)
+                intent.putExtra("role", userRole)
+                intent.putExtra("userIdString", userId)
+                startActivity(intent)
+            }
             R.id.nav_users -> {
                 val intent = Intent(this, ResponsableActivity::class.java)
                 intent.putExtra("role", userRole)
@@ -276,7 +288,7 @@ class AgentActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
                 intent.putExtra("userIdString", userId)
                 startActivity(intent)
             }
-            R.id.nav_collect -> {} // Already here
+            R.id.nav_collect -> {}
             R.id.nav_vaccines -> {
                 val intent = Intent(this, VaccineActivity::class.java)
                 intent.putExtra("role", userRole)

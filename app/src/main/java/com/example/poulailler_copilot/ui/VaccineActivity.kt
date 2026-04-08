@@ -40,6 +40,7 @@ class VaccineActivity : AppCompatActivity(), NavigationView.OnNavigationItemSele
     private var selectedDateMs: Long = System.currentTimeMillis()
     private var userRole: String = "AGENT"
     private var userId: String? = null
+    private var selectedBatchId: String? = null
     private val firebaseRepo = FirebaseRepository()
     private lateinit var adapter: VaccineAdapter
     
@@ -53,6 +54,7 @@ class VaccineActivity : AppCompatActivity(), NavigationView.OnNavigationItemSele
 
         userRole = intent.getStringExtra("role") ?: "AGENT"
         userId = intent.getStringExtra("userIdString") ?: FirebaseAuth.getInstance().currentUser?.uid
+        selectedBatchId = intent.getStringExtra("selectedBatchId")
 
         setupNavigation()
         setupRecyclerView()
@@ -85,6 +87,7 @@ class VaccineActivity : AppCompatActivity(), NavigationView.OnNavigationItemSele
         menu.findItem(R.id.nav_expenses).isVisible = userRole == "RESPONSABLE"
         menu.findItem(R.id.nav_vaccines).isVisible = userRole == "RESPONSABLE"
         menu.findItem(R.id.nav_farm_info).isVisible = userRole == "RESPONSABLE"
+        menu.findItem(R.id.nav_batches).isVisible = userRole == "RESPONSABLE"
 
         updateNavHeader()
     }
@@ -101,9 +104,12 @@ class VaccineActivity : AppCompatActivity(), NavigationView.OnNavigationItemSele
 
     private fun observeVaccines() {
         lifecycleScope.launch {
-            // Lecture depuis Firebase pour restaurer l'historique Cloud
             firebaseRepo.getVaccinesFlow().collectLatest { list ->
-                allVaccines = list
+                allVaccines = if (selectedBatchId != null) {
+                    list.filter { it.batchId == selectedBatchId }
+                } else {
+                    list
+                }
                 refreshDisplay()
             }
         }
@@ -161,13 +167,12 @@ class VaccineActivity : AppCompatActivity(), NavigationView.OnNavigationItemSele
             }
 
             lifecycleScope.launch(Dispatchers.IO) {
-                val db = AppDatabase.getInstance(this@VaccineActivity)
                 val entry = VaccineEntry(
                     name = name,
                     date = selectedDateMs,
-                    remarks = remarks
+                    remarks = remarks,
+                    batchId = selectedBatchId
                 )
-                db.vaccineEntryDao().insert(entry)
                 firebaseRepo.addVaccine(entry)
                 withContext(Dispatchers.Main) {
                     Toast.makeText(this@VaccineActivity, "Soin enregistré", Toast.LENGTH_SHORT).show()
@@ -185,7 +190,6 @@ class VaccineActivity : AppCompatActivity(), NavigationView.OnNavigationItemSele
             .setView(dialogBinding.root)
             .create()
 
-        // Pre-fill
         dialogBinding.etVaccineName.setText(entry.name)
         dialogBinding.etRemarks.setText(entry.remarks ?: "")
         
@@ -219,7 +223,6 @@ class VaccineActivity : AppCompatActivity(), NavigationView.OnNavigationItemSele
                     name = name,
                     remarks = remarks
                 )
-                AppDatabase.getInstance(this@VaccineActivity).vaccineEntryDao().update(updatedEntry)
                 firebaseRepo.updateVaccine(updatedEntry)
                 withContext(Dispatchers.Main) {
                     Toast.makeText(this@VaccineActivity, "Soin modifié", Toast.LENGTH_SHORT).show()
@@ -239,7 +242,6 @@ class VaccineActivity : AppCompatActivity(), NavigationView.OnNavigationItemSele
                     .setMessage("Voulez-vous supprimer cet enregistrement ?")
                     .setPositiveButton("Supprimer") { _, _ ->
                         lifecycleScope.launch(Dispatchers.IO) {
-                            AppDatabase.getInstance(this@VaccineActivity).vaccineEntryDao().delete(entry)
                             if (entry.firestoreId != null) {
                                 firebaseRepo.deleteVaccine(entry.firestoreId)
                             }
@@ -280,6 +282,12 @@ class VaccineActivity : AppCompatActivity(), NavigationView.OnNavigationItemSele
                 startActivity(intent)
                 finish()
             }
+            R.id.nav_batches -> {
+                val intent = Intent(this, BatchActivity::class.java)
+                intent.putExtra("role", userRole)
+                intent.putExtra("userIdString", userId)
+                startActivity(intent)
+            }
             R.id.nav_users -> {
                 val intent = Intent(this, ResponsableActivity::class.java)
                 intent.putExtra("role", userRole)
@@ -296,6 +304,7 @@ class VaccineActivity : AppCompatActivity(), NavigationView.OnNavigationItemSele
                 val intent = Intent(this, AgentActivity::class.java)
                 intent.putExtra("userIdString", userId)
                 intent.putExtra("role", userRole)
+                intent.putExtra("selectedBatchId", selectedBatchId)
                 startActivity(intent)
             }
             R.id.nav_vaccines -> {}
@@ -303,18 +312,21 @@ class VaccineActivity : AppCompatActivity(), NavigationView.OnNavigationItemSele
                 val intent = Intent(this, ExpensesActivity::class.java)
                 intent.putExtra("role", userRole)
                 intent.putExtra("userIdString", userId)
+                intent.putExtra("selectedBatchId", selectedBatchId)
                 startActivity(intent)
             }
             R.id.nav_sales -> {
                 val intent = Intent(this, SalesActivity::class.java)
                 intent.putExtra("userIdString", userId)
                 intent.putExtra("role", userRole)
+                intent.putExtra("selectedBatchId", selectedBatchId)
                 startActivity(intent)
             }
             R.id.nav_mortality -> {
                 val intent = Intent(this, MortalityActivity::class.java)
                 intent.putExtra("role", userRole)
                 intent.putExtra("userIdString", userId)
+                intent.putExtra("selectedBatchId", selectedBatchId)
                 startActivity(intent)
             }
             R.id.nav_logout -> {

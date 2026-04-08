@@ -9,5 +9,6 @@ data class Mortality(
     val count: Int,
     val date: Long,
     val firestoreId: String? = null,
-    val farmId: String? = null
+    val farmId: String? = null,
+    val batchId: String? = null
 )

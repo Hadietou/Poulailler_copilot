@@ -14,5 +14,6 @@ data class EggSale(
     val buyer: String? = null,
     val phoneNumber: String? = null,
     val firestoreId: String? = null,
-    val farmId: String? = null
+    val farmId: String? = null,
+    val batchId: String? = null
 )

@@ -24,7 +24,16 @@
                 android:layout_height="?attr/actionBarSize"
                 app:title=""
                 app:navigationIconTint="@color/text_primary"
-                app:navigationIcon="@android:drawable/ic_menu_sort_by_size" />
+                app:navigationIcon="@android:drawable/ic_menu_sort_by_size">
+
+                <Spinner
+                    android:id="@+id/spinnerBatches"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="end"
+                    android:layout_marginEnd="16dp"
+                    android:backgroundTint="@color/primary" />
+            </com.google.android.material.appbar.MaterialToolbar>
         </com.google.android.material.appbar.AppBarLayout>
 
         <androidx.core.widget.NestedScrollView
@@ -87,7 +96,7 @@
                         android:paddingVertical="10dp"
                         android:text="Lot actuel : -- Poules\nAge : -- semaines"
                         android:textColor="@color/primary"
-                        android:textSize="18sp"
+                        android:textSize="14sp"
                         android:textStyle="bold"
                         android:gravity="center"
                         android:maxLines="2" />

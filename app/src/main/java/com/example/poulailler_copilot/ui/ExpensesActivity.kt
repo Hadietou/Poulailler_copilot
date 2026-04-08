@@ -39,6 +39,7 @@ class ExpensesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
     private val calendar = Calendar.getInstance()
     private var selectedDateMs: Long = System.currentTimeMillis()
     private var currency: String = "MRU"
+    private var selectedBatchId: String? = null
     private val firebaseRepo = FirebaseRepository()
     private var userRole: String = "AGENT"
     private var userId: String? = null
@@ -54,6 +55,7 @@ class ExpensesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
 
         userRole = intent.getStringExtra("role") ?: "AGENT"
         userId = intent.getStringExtra("userIdString") ?: FirebaseAuth.getInstance().currentUser?.uid
+        selectedBatchId = intent.getStringExtra("selectedBatchId")
 
         setupNavigation()
         loadCurrency()
@@ -86,6 +88,7 @@ class ExpensesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
         menu.findItem(R.id.nav_expenses).isVisible = userRole == "RESPONSABLE"
         menu.findItem(R.id.nav_vaccines).isVisible = userRole == "RESPONSABLE"
         menu.findItem(R.id.nav_farm_info).isVisible = userRole == "RESPONSABLE"
+        menu.findItem(R.id.nav_batches).isVisible = userRole == "RESPONSABLE"
 
         updateNavHeader()
     }
@@ -103,7 +106,11 @@ class ExpensesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
     private fun observeExpenses() {
         lifecycleScope.launch {
             firebaseRepo.getExpensesFlow().collectLatest { list ->
-                allExpenses = list
+                allExpenses = if (selectedBatchId != null) {
+                    list.filter { it.batchId == selectedBatchId }
+                } else {
+                    list
+                }
                 refreshDisplay()
             }
         }
@@ -194,9 +201,9 @@ class ExpensesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
                     category = category,
                     amount = amount,
                     quantityKg = if (category == "Aliment") qty else 0.0,
-                    description = description
+                    description = description,
+                    batchId = selectedBatchId
                 )
-                AppDatabase.getInstance(this@ExpensesActivity).expenseDao().insert(expense)
                 firebaseRepo.addExpense(expense)
                 withContext(Dispatchers.Main) {
                     Toast.makeText(this@ExpensesActivity, "Dépense enregistrée", Toast.LENGTH_SHORT).show()
@@ -272,7 +279,6 @@ class ExpensesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
                     quantityKg = if (category == "Aliment") qty else 0.0,
                     description = description
                 )
-                AppDatabase.getInstance(this@ExpensesActivity).expenseDao().update(updatedExpense)
                 firebaseRepo.updateExpense(updatedExpense)
                 withContext(Dispatchers.Main) {
                     Toast.makeText(this@ExpensesActivity, "Dépense modifiée", Toast.LENGTH_SHORT).show()
@@ -292,7 +298,6 @@ class ExpensesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
                     .setMessage("Voulez-vous vraiment supprimer cette dépense ?")
                     .setPositiveButton("Supprimer") { _, _ ->
                         lifecycleScope.launch(Dispatchers.IO) {
-                            AppDatabase.getInstance(this@ExpensesActivity).expenseDao().delete(expense)
                             if (expense.firestoreId != null) {
                                 firebaseRepo.deleteExpense(expense.firestoreId)
                             }
@@ -320,6 +325,12 @@ class ExpensesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
                 startActivity(intent)
                 finish()
             }
+            R.id.nav_batches -> {
+                val intent = Intent(this, BatchActivity::class.java)
+                intent.putExtra("role", userRole)
+                intent.putExtra("userIdString", userId)
+                startActivity(intent)
+            }
             R.id.nav_users -> {
                 val intent = Intent(this, ResponsableActivity::class.java)
                 intent.putExtra("role", userRole)
@@ -336,12 +347,14 @@ class ExpensesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
                 val intent = Intent(this, AgentActivity::class.java)
                 intent.putExtra("userIdString", userId)
                 intent.putExtra("role", userRole)
+                intent.putExtra("selectedBatchId", selectedBatchId)
                 startActivity(intent)
             }
             R.id.nav_vaccines -> {
                 val intent = Intent(this, VaccineActivity::class.java)
                 intent.putExtra("role", userRole)
                 intent.putExtra("userIdString", userId)
+                intent.putExtra("selectedBatchId", selectedBatchId)
                 startActivity(intent)
             }
             R.id.nav_expenses -> {}
@@ -349,12 +362,14 @@ class ExpensesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
                 val intent = Intent(this, SalesActivity::class.java)
                 intent.putExtra("userIdString", userId)
                 intent.putExtra("role", userRole)
+                intent.putExtra("selectedBatchId", selectedBatchId)
                 startActivity(intent)
             }
             R.id.nav_mortality -> {
                 val intent = Intent(this, MortalityActivity::class.java)
                 intent.putExtra("userIdString", userId)
                 intent.putExtra("role", userRole)
+                intent.putExtra("selectedBatchId", selectedBatchId)
                 startActivity(intent)
             }
             R.id.nav_logout -> {
