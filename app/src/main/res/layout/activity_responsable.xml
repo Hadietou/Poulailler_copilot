@@ -59,7 +59,7 @@
                             android:layout_height="wrap_content"
                             android:text="CODE DE LA FERME"
                             android:textColor="@color/text_secondary"
-                            android:textSize="12sp"
+                            android:textSize="8sp"
                             android:letterSpacing="0.1"/>
                         <TextView
                             android:id="@+id/tvFarmCode"
@@ -67,19 +67,57 @@
                             android:layout_height="wrap_content"
                             android:text="------"
                             android:textColor="@color/emerald_soft"
-                            android:textSize="32sp"
+                            android:textSize="12sp"
                             android:textStyle="bold"
                             android:layout_marginTop="4dp"/>
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnInviteAgent"
-                            style="@style/Widget.MaterialComponents.Button.TextButton.Icon"
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Nouvel Agent Section -->
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="24dp"
+                    app:cardBackgroundColor="@color/surface"
+                    app:cardCornerRadius="20dp"
+                    app:cardElevation="0dp"
+                    app:strokeColor="@color/emerald_container"
+                    app:strokeWidth="1dp">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="20dp">
+                        <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Inviter un agent"
-                            android:textColor="@color/emerald_soft"
-                            app:icon="@android:drawable/ic_menu_share"
-                            app:iconTint="@color/emerald_soft"
-                            android:layout_marginTop="8dp"/>
+                            android:text="AJOUT RAPIDE D'AGENT"
+                            android:textColor="@color/text_primary"
+                            android:textSize="14sp"
+                            android:textStyle="bold"
+                            android:layout_marginBottom="12dp"/>
+
+                        <com.google.android.material.textfield.TextInputLayout
+                            android:id="@+id/tilAgentName"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:hint="Nom de l'agent"
+                            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/etAgentName"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:inputType="textPersonName" />
+                        </com.google.android.material.textfield.TextInputLayout>
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnCreateAgent"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="12dp"
+                            android:text="CRÉER ET PARTAGER ACCÈS"
+                            android:backgroundTint="@color/emerald_soft"
+                            android:textColor="@color/white" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
@@ -97,7 +135,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="GESTION DES AGENTS"
+                        android:text="LISTE DES AGENTS"
                         android:textColor="@color/text_primary"
                         android:textSize="14sp"
                         android:textStyle="bold"

@@ -268,7 +268,18 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
-                    android:text="Pas de compte ? S'inscrire" />
+                    android:text="CRÉER MA FERME" />
+
+                <TextView
+                    android:id="@+id/tvAppVersionLogin"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:layout_marginTop="16dp"
+                    android:text="v1.0.0"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="12sp"
+                    android:alpha="0.6" />
 
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>

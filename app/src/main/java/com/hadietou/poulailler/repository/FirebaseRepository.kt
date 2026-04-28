@@ -1,0 +1,465 @@
+package com.hadietou.poulailler.repository
+
+import android.content.Context
+import android.content.Intent
+import android.util.Log
+import com.hadietou.poulailler.data.*
+import com.hadietou.poulailler.network.*
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.SetOptions
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.tasks.await
+
+class FirebaseRepository {
+    private val auth = FirebaseAuth.getInstance()
+    private val db = FirebaseFirestore.getInstance()
+
+    // REMPLACEZ PAR VOTRE CLÉ API BREVO RÉELLE
+    private val BREVO_API_KEY = "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"
+
+    companion object {
+        private val _farmIdFlow = MutableStateFlow<String?>(null)
+        val farmIdFlow: StateFlow<String?> = _farmIdFlow.asStateFlow()
+    }
+
+    suspend fun getFarmId(): String? {
+        val current = _farmIdFlow.value
+        if (current != null) return current
+        
+        val uid = auth.currentUser?.uid ?: return null
+        return try {
+            val userDoc = db.collection("users").document(uid).get().await()
+            val id = userDoc.getString("farmId")
+            if (id != null) {
+                _farmIdFlow.value = id
+            }
+            id
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    private suspend fun requireFarmId(): String {
+        return getFarmId() ?: throw Exception("ID de ferme introuvable.")
+    }
+
+    fun logout() {
+        auth.signOut()
+        _farmIdFlow.value = null
+    }
+
+    suspend fun createFarmExtended(
+        farmName: String, hensCount: Int, henBreed: String,
+        arrivalDate: Long, birthDate: Long, currency: String,
+        username: String, email: String
+    ): String {
+        val uid = auth.currentUser?.uid ?: throw Exception("Non connecté")
+        val farmCode = (1..6).map { "ABCDEFGHJKLMNPQRSTUVWXYZ23456789".random() }.joinToString("")
+        val farmRef = db.collection("fermes").document()
+        val farmId = farmRef.id
+        
+        val farmData = hashMapOf("id" to farmId, "name" to farmName, "code" to farmCode, "ownerId" to uid)
+        farmRef.set(farmData).await()
+        
+        val initialFarmInfo = hashMapOf(
+            "farmName" to farmName,
+            "currency" to currency, 
+            "setupDate" to System.currentTimeMillis()
+        )
+        db.collection("fermes").document(farmId).collection("config").document("farm_info").set(initialFarmInfo).await()
+
+        // Créer le lot initial
+        val initialBatch = hashMapOf(
+            "name" to "Lot 1",
+            "hensCount" to hensCount,
+            "henBreed" to henBreed,
+            "arrivalDate" to arrivalDate,
+            "chickBirthDate" to birthDate,
+            "status" to "ACTIVE"
+        )
+        db.collection("fermes").document(farmId).collection("batches").add(initialBatch).await()
+        
+        val userData = hashMapOf(
+            "username" to username,
+            "email" to email,
+            "farmId" to farmId, 
+            "role" to "RESPONSABLE", 
+            "active" to true,
+            "isPending" to true,
+            "createdAt" to System.currentTimeMillis()
+        )
+        db.collection("users").document(uid).set(userData, SetOptions.merge()).await()
+
+        // Envoi de l'e-mail de validation via Brevo
+        sendValidationEmailViaBrevo(farmName, uid, email)
+        
+        _farmIdFlow.value = farmId
+        return farmCode
+    }
+
+    private suspend fun sendValidationEmailViaBrevo(farmName: String, uid: String, email: String) {
+        try {
+            val emailRequest = BrevoEmailRequest(
+                sender = BrevoSender("KOURKOUROU App", "kourkourou@gmail.com"),
+                to = listOf(BrevoReceiver("hadietou@gmail.com", "Hadietou")),
+                subject = "Nouvelle demande de création de ferme : $farmName",
+                htmlContent = """
+                    <html>
+                    <body>
+                        <h1>Nouvelle Ferme Créée</h1>
+                        <p>Une nouvelle ferme a été créée et attend votre validation.</p>
+                        <ul>
+                            <li><b>Nom de la ferme :</b> $farmName</li>
+                            <li><b>ID Responsable :</b> $uid</li>
+                            <li><b>Email Responsable :</b> $email</li>
+                        </ul>
+                        <p>Pour valider, connectez-vous à la console Firebase et passez <b>isPending</b> à <b>false</b> pour cet utilisateur.</p>
+                        <p> https://console.firebase.google.com/u/0/project/pondeuses-eec3f/firestore/databases/-default-/data/~2Fusers~2F$uid </p>
+                    </body>
+                    </html>
+                """.trimIndent()
+            )
+
+            val response = RetrofitClient.brevoApi.sendEmail(BREVO_API_KEY, emailRequest)
+            if (response.isSuccessful) {
+                Log.d("Brevo", "Email envoyé avec succès : ${response.body()?.messageId}")
+            } else {
+                Log.e("Brevo", "Erreur lors de l'envoi : ${response.errorBody()?.string()}")
+            }
+        } catch (e: Exception) {
+            Log.e("Brevo", "Exception lors de l'envoi de l'email", e)
+        }
+    }
+
+    suspend fun joinFarm(farmCode: String): Boolean {
+        val uid = auth.currentUser?.uid ?: return false
+        val farmQuery = db.collection("fermes").whereEqualTo("code", farmCode.uppercase().trim()).get().await()
+        if (farmQuery.isEmpty) return false
+        
+        val farmId = farmQuery.documents[0].id
+        val userLink = hashMapOf("farmId" to farmId, "role" to "AGENT", "active" to true)
+        db.collection("users").document(uid).set(userLink, SetOptions.merge()).await()
+        _farmIdFlow.value = farmId
+        return true
+    }
+
+    suspend fun getUserProfile(uid: String): User? = try {
+        val doc = db.collection("users").document(uid).get().await()
+        if (doc.exists()) {
+            val fId = doc.getString("farmId")
+            if (fId != null) _farmIdFlow.value = fId
+            User(
+                id = 0L, 
+                uid = uid, 
+                username = doc.getString("username") ?: "Utilisateur", 
+                password = "", 
+                role = doc.getString("role") ?: "AGENT", 
+                active = doc.getBoolean("active") ?: true, 
+                farmId = fId,
+                isPending = doc.getBoolean("isPending") ?: false,
+                createdAt = doc.getLong("createdAt") ?: 0L
+            )
+        } else null
+    } catch (e: Exception) { null }
+
+    suspend fun getCurrentUserProfile(): User? = auth.currentUser?.uid?.let { getUserProfile(it) }
+
+    suspend fun createUserProfile(uid: String, username: String, email: String, role: String, isPending: Boolean = false) {
+        val data = hashMapOf(
+            "username" to username, 
+            "email" to email, 
+            "role" to role, 
+            "active" to true,
+            "isPending" to isPending,
+            "createdAt" to System.currentTimeMillis()
+        )
+        db.collection("users").document(uid).set(data, SetOptions.merge()).await()
+    }
+
+    suspend fun getFarmInfo(): FarmInfo? {
+        val id = getFarmId() ?: return null
+        return try {
+            val s = db.collection("fermes").document(id).collection("config").document("farm_info").get().await()
+            if (s.exists()) {
+                FarmInfo(1, s.getString("farmName") ?: "", s.getString("currency") ?: "MRU", s.getLong("setupDate") ?: System.currentTimeMillis())
+            } else null
+        } catch (e: Exception) { null }
+    }
+
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    fun getBatchesFlow(): Flow<List<Batch>> = farmIdFlow.flatMapLatest { fId ->
+        val id = fId ?: getFarmId()
+        if (id == null) flowOf(emptyList())
+        else callbackFlow {
+            val sub = db.collection("fermes").document(id).collection("batches")
+                .addSnapshotListener { s, e ->
+                    val list = s?.documents?.mapNotNull { doc ->
+                        Batch(
+                            id = 0L,
+                            name = doc.getString("name") ?: "",
+                            hensCount = doc.getLong("hensCount")?.toInt() ?: 0,
+                            henBreed = doc.getString("henBreed") ?: "",
+                            arrivalDate = doc.getLong("arrivalDate") ?: 0L,
+                            chickBirthDate = doc.getLong("chickBirthDate") ?: 0L,
+                            status = doc.getString("status") ?: "ACTIVE",
+                            firestoreId = doc.id,
+                            farmId = id
+                        )
+                    } ?: emptyList()
+                    trySend(list)
+                }
+            awaitClose { sub.remove() }
+        }
+    }
+
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    fun getEggEntriesFlow(): Flow<List<EggEntry>> = farmIdFlow.flatMapLatest { fId ->
+        val id = fId ?: getFarmId()
+        if (id == null) flowOf(emptyList())
+        else callbackFlow {
+            val sub = db.collection("egg_entries").whereEqualTo("farmId", id)
+                .addSnapshotListener { s, e ->
+                    val list = s?.documents?.mapNotNull { doc ->
+                        EggEntry(0L, doc.getString("userId") ?: "", doc.getLong("date") ?: 0L, doc.getLong("eggsCount")?.toInt() ?: 0, doc.getLong("brokenEggsCount")?.toInt() ?: 0, doc.getString("remarks"), doc.id, id, doc.getString("batchId"))
+                    }?.sortedByDescending { it.date } ?: emptyList()
+                    trySend(list)
+                }
+            awaitClose { sub.remove() }
+        }
+    }
+
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    fun getMortalityFlow(): Flow<List<Mortality>> = farmIdFlow.flatMapLatest { fId ->
+        val id = fId ?: getFarmId()
+        if (id == null) flowOf(emptyList())
+        else callbackFlow {
+            val sub = db.collection("mortality").whereEqualTo("farmId", id)
+                .addSnapshotListener { s, e ->
+                    val list = s?.documents?.mapNotNull { doc ->
+                        Mortality(0L, doc.getLong("count")?.toInt() ?: 0, doc.getLong("date") ?: 0L, doc.id, id, doc.getString("batchId"))
+                    }?.sortedByDescending { it.date } ?: emptyList()
+                    trySend(list)
+                }
+            awaitClose { sub.remove() }
+        }
+    }
+
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    fun getSalesFlow(): Flow<List<EggSale>> = farmIdFlow.flatMapLatest { fId ->
+        val id = fId ?: getFarmId()
+        if (id == null) flowOf(emptyList())
+        else callbackFlow {
+            val sub = db.collection("sales").whereEqualTo("farmId", id)
+                .addSnapshotListener { s, e ->
+                    val list = s?.documents?.mapNotNull { doc ->
+                        EggSale(0L, doc.getString("userId") ?: "", doc.getLong("date") ?: 0L, doc.getLong("quantity")?.toInt() ?: 0, doc.getDouble("pricePerUnit") ?: 0.0, doc.getDouble("totalPrice") ?: 0.0, doc.getString("buyer"), doc.getString("phoneNumber"), doc.id, id, doc.getString("batchId"))
+                    }?.sortedByDescending { it.date } ?: emptyList()
+                    trySend(list)
+                }
+            awaitClose { sub.remove() }
+        }
+    }
+
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    fun getExpensesFlow(): Flow<List<Expense>> = farmIdFlow.flatMapLatest { fId ->
+        val id = fId ?: getFarmId()
+        if (id == null) flowOf(emptyList())
+        else callbackFlow {
+            val sub = db.collection("expenses").whereEqualTo("farmId", id)
+                .addSnapshotListener { s, e ->
+                    val list = s?.documents?.mapNotNull { doc ->
+                        Expense(0L, doc.getLong("date") ?: 0L, doc.getString("category") ?: "", doc.getDouble("amount") ?: 0.0, doc.getDouble("quantityKg"), doc.getString("description"), doc.id, id, doc.getString("batchId"))
+                    }?.sortedByDescending { it.date } ?: emptyList()
+                    trySend(list)
+                }
+            awaitClose { sub.remove() }
+        }
+    }
+
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    fun getVaccinesFlow(): Flow<List<VaccineEntry>> = farmIdFlow.flatMapLatest { fId ->
+        val id = fId ?: getFarmId()
+        if (id == null) flowOf(emptyList())
+        else callbackFlow {
+            val sub = db.collection("vaccines").whereEqualTo("farmId", id)
+                .addSnapshotListener { s, e ->
+                    val list = s?.documents?.mapNotNull { doc ->
+                        VaccineEntry(0L, doc.getString("name") ?: "", doc.getLong("date") ?: 0L, doc.getString("remarks"), doc.id, id, doc.getString("batchId"))
+                    }?.sortedByDescending { it.date } ?: emptyList()
+                    trySend(list)
+                }
+            awaitClose { sub.remove() }
+        }
+    }
+
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    fun getFarmInfoFlow(): Flow<FarmInfo?> = farmIdFlow.flatMapLatest { fId ->
+        val id = fId ?: getFarmId()
+        if (id == null) flowOf(null)
+        else callbackFlow {
+            val sub = db.collection("fermes").document(id).collection("config").document("farm_info")
+                .addSnapshotListener { s, e ->
+                    val info = if (s != null && s.exists()) {
+                        FarmInfo(1, s.getString("farmName") ?: "", s.getString("currency") ?: "MRU", s.getLong("setupDate") ?: System.currentTimeMillis())
+                    } else null
+                    trySend(info)
+                }
+            awaitClose { sub.remove() }
+        }
+    }
+
+    suspend fun saveFarmInfo(info: FarmInfo) {
+        val fId = requireFarmId()
+        db.collection("fermes").document(fId).collection("config").document("farm_info").set(hashMapOf("farmName" to info.farmName, "currency" to info.currency), SetOptions.merge()).await()
+    }
+
+    suspend fun addBatch(batch: Batch) {
+        val fId = requireFarmId()
+        db.collection("fermes").document(fId).collection("batches").add(hashMapOf(
+            "name" to batch.name,
+            "hensCount" to batch.hensCount,
+            "henBreed" to batch.henBreed,
+            "arrivalDate" to batch.arrivalDate,
+            "chickBirthDate" to batch.chickBirthDate,
+            "status" to batch.status
+        )).await()
+    }
+
+    suspend fun updateBatch(batch: Batch) {
+        val fId = requireFarmId()
+        batch.firestoreId?.let { 
+            db.collection("fermes").document(fId).collection("batches").document(it).update(hashMapOf(
+                "name" to batch.name,
+                "hensCount" to batch.hensCount,
+                "henBreed" to batch.henBreed,
+                "arrivalDate" to batch.arrivalDate,
+                "chickBirthDate" to batch.chickBirthDate,
+                "status" to batch.status
+            ) as Map<String, Any>).await()
+        }
+    }
+
+    suspend fun deleteBatch(batchId: String) {
+        val fId = requireFarmId()
+        db.collection("fermes").document(fId).collection("batches").document(batchId).delete().await()
+    }
+
+    suspend fun addEggEntry(e: EggEntry) {
+        val fId = requireFarmId()
+        db.collection("egg_entries").add(hashMapOf("userId" to auth.currentUser?.uid, "date" to e.date, "eggsCount" to e.eggsCount, "brokenEggsCount" to e.brokenEggsCount, "remarks" to e.remarks, "farmId" to fId, "batchId" to e.batchId)).await()
+    }
+
+    suspend fun addMortality(c: Int, d: Long, batchId: String?) {
+        val fId = requireFarmId()
+        db.collection("mortality").add(hashMapOf("count" to c, "date" to d, "farmId" to fId, "batchId" to batchId)).await()
+    }
+
+    suspend fun addSale(s: EggSale) {
+        val fId = requireFarmId()
+        db.collection("sales").add(hashMapOf("userId" to auth.currentUser?.uid, "date" to s.date, "quantity" to s.quantity, "pricePerUnit" to s.pricePerUnit, "totalPrice" to s.totalPrice, "buyer" to s.buyer, "phoneNumber" to s.phoneNumber, "farmId" to fId, "batchId" to s.batchId)).await()
+    }
+
+    suspend fun addExpense(e: Expense) {
+        val fId = requireFarmId()
+        db.collection("expenses").add(hashMapOf("date" to e.date, "category" to e.category, "description" to e.description, "amount" to e.amount, "quantityKg" to e.quantityKg, "farmId" to fId, "batchId" to e.batchId)).await()
+    }
+
+    suspend fun addVaccine(v: VaccineEntry) {
+        val fId = requireFarmId()
+        db.collection("vaccines").add(hashMapOf("name" to v.name, "date" to v.date, "remarks" to v.remarks, "farmId" to fId, "batchId" to v.batchId)).await()
+    }
+
+    suspend fun updateEggEntry(e: EggEntry) { e.firestoreId?.let { db.collection("egg_entries").document(it).update(hashMapOf("date" to e.date, "eggsCount" to e.eggsCount, "brokenEggsCount" to e.brokenEggsCount, "remarks" to e.remarks, "batchId" to e.batchId) as Map<String, Any>).await() } }
+    suspend fun updateMortality(m: Mortality) { m.firestoreId?.let { db.collection("mortality").document(it).update(hashMapOf("count" to m.count, "date" to m.date, "batchId" to m.batchId) as Map<String, Any>).await() } }
+    suspend fun updateSale(s: EggSale) { s.firestoreId?.let { db.collection("sales").document(it).update(hashMapOf("date" to s.date, "quantity" to s.quantity, "pricePerUnit" to s.pricePerUnit, "totalPrice" to s.totalPrice, "buyer" to s.buyer, "phoneNumber" to s.phoneNumber, "batchId" to s.batchId) as Map<String, Any>).await() } }
+    suspend fun updateVaccine(v: VaccineEntry) { v.firestoreId?.let { db.collection("vaccines").document(it).update(hashMapOf("name" to v.name, "date" to v.date, "remarks" to v.remarks, "batchId" to v.batchId) as Map<String, Any>).await() } }
+    suspend fun updateExpense(e: Expense) { e.firestoreId?.let { db.collection("expenses").document(it).update(hashMapOf("date" to e.date, "category" to e.category, "description" to e.description, "amount" to e.amount, "quantityKg" to e.quantityKg, "batchId" to e.batchId) as Map<String, Any>).await() } }
+
+    suspend fun deleteEggEntry(id: String) = db.collection("egg_entries").document(id).delete().await()
+    suspend fun deleteMortality(id: String) = db.collection("mortality").document(id).delete().await()
+    suspend fun deleteSale(id: String) = db.collection("sales").document(id).delete().await()
+    suspend fun deleteVaccine(id: String) = db.collection("vaccines").document(id).delete().await()
+    suspend fun deleteExpense(id: String) = db.collection("expenses").document(id).delete().await()
+
+    suspend fun getFarmCode(): String? = requireFarmId().let { db.collection("fermes").document(it).get().await().getString("code") }
+    
+    suspend fun recordLogin(uid: String, username: String) { 
+        getFarmId()?.let { fId -> db.collection("login_history").add(hashMapOf("uid" to uid, "username" to username, "timestamp" to System.currentTimeMillis(), "farmId" to fId)).await() }
+    }
+    
+    suspend fun updateUserStatus(uid: String, active: Boolean) { db.collection("users").document(uid).update("active", active).await() }
+
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    fun getAllUsersFlow(): Flow<List<Map<String, Any>>> = farmIdFlow.flatMapLatest { fId ->
+        val id = fId ?: getFarmId()
+        if (id == null) flowOf(emptyList())
+        else callbackFlow {
+            val sub = db.collection("users").whereEqualTo("farmId", id)
+                .addSnapshotListener { s, e ->
+                    val list = s?.documents?.mapNotNull { doc ->
+                        val data = doc.data?.toMutableMap() ?: mutableMapOf()
+                        data["uid"] = doc.id
+                        data as Map<String, Any>
+                    } ?: emptyList()
+                    trySend(list)
+                }
+            awaitClose { sub.remove() }
+        }
+    }
+
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    fun getLoginHistoryFlow(): Flow<List<Map<String, Any>>> = farmIdFlow.flatMapLatest { fId ->
+        val id = fId ?: getFarmId()
+        if (id == null) flowOf(emptyList())
+        else callbackFlow {
+            val sub = db.collection("login_history").whereEqualTo("farmId", id)
+                .addSnapshotListener { s, e -> trySend(s?.documents?.mapNotNull { it.data } ?: emptyList()) }
+            awaitClose { sub.remove() }
+        }
+    }
+
+    fun shareInviteCode(context: Context, farmCode: String) {
+        val apkDownloadLink = "https://drive.google.com/file/d/1oC4RejQmRnzNCDyOxV6GH50A8AHCR7Sf/view?usp=sharing"
+        
+        val message = """
+            ?? Rejoignez mon exploitation sur l'application KOURKOUROU!
+            
+            1. Téléchargez et installez l'application (Fichier APK) :
+            $apkDownloadLink
+            
+            2. Une fois installée, utilisez ce code pour rejoindre ma ferme :
+            ?? $farmCode ??
+        """.trimIndent()
+
+        val shareIntent = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_SUBJECT, "Invitation exploitation")
+            putExtra(Intent.EXTRA_TEXT, message)
+        }
+        context.startActivity(Intent.createChooser(shareIntent, "Partager l'invitation"))
+    }
+
+    fun shareAgentCredentials(context: Context, agentLogin: String, agentPass: String) {
+        val apkDownloadLink = "https://play.google.com/store/apps/details?id=com.hadietou.poulailler"
+        val message = """
+            ?? Bienvenue dans la ferme ! Voici vos accès pour l'application KOURKOUROU :
+            
+            1. Téléchargez l'application : $apkDownloadLink
+            
+            2. Connectez-vous avec :
+               Identifiant : $agentLogin
+               Mot de passe : $agentPass
+            
+            À bientôt !
+        """.trimIndent()
+
+        val shareIntent = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_SUBJECT, "Vos accès KOURKOUROU")
+            putExtra(Intent.EXTRA_TEXT, message)
+        }
+        context.startActivity(Intent.createChooser(shareIntent, "Partager les accès"))
+    }
+}

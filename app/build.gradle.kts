@@ -1,31 +1,35 @@
 plugins {
-    alias(libs.plugins.android.application)
+    alias(libs.plugins.androidApplication)
     alias(libs.plugins.kotlinAndroid)
     alias(libs.plugins.ksp)
-    alias(libs.plugins.compose.compiler)
-    id("com.google.gms.google-services")
+    alias(libs.plugins.composeCompiler)
+    alias(libs.plugins.googleGmsGoogleServices)
 }
 
 android {
-    namespace = "com.example.poulailler_copilot"
-    compileSdk = 34
+    namespace = "com.hadietou.poulailler"
+    compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.example.poulailler_copilot"
+        applicationId = "com.hadietou.poulailler"
         minSdk = 24
-        targetSdk = 34
-        versionCode = 1
-        versionName = "1.0"
+        targetSdk = 35
+        versionCode = 5
+        versionName = "28.04.2026"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
             useSupportLibrary = true
         }
+        
+        // On pourrait ajouter la clé Brevo ici via BuildConfig si besoin
+        // buildConfigField("String", "BREVO_API_KEY", "\"VOTRE_CLE_ICI\"")
     }
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -41,6 +45,7 @@ android {
     buildFeatures {
         compose = true
         viewBinding = true
+        buildConfig = true
     }
 
     packaging {
@@ -68,7 +73,7 @@ dependencies {
     implementation(libs.material)
     implementation(libs.androidx.constraintlayout)
 
-    // Room (Keeping it for local cache/offline mode)
+    // Room
     implementation("androidx.room:room-runtime:2.6.1")
     ksp("androidx.room:room-compiler:2.6.1")
     implementation("androidx.room:room-ktx:2.6.1")
@@ -82,12 +87,18 @@ dependencies {
     // Graphiques
     implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
 
-    // Firebase (Using direct strings to avoid version catalog sync issues during migration)
-    implementation(platform("com.google.firebase:firebase-bom:33.1.2"))
-    implementation("com.google.firebase:firebase-auth-ktx")
-    implementation("com.google.firebase:firebase-firestore-ktx")
-    implementation("com.google.firebase:firebase-analytics-ktx")
+    // Firebase
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.auth)
+    implementation(libs.firebase.firestore)
+    implementation(libs.firebase.analytics)
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.8.1")
+
+    // Retrofit & Brevo Email
+    implementation(libs.retrofit)
+    implementation(libs.retrofit.gson)
+    implementation(libs.gson)
+    implementation(libs.okhttp.logging)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

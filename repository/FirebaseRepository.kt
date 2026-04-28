@@ -1,9 +1,9 @@
-package com.example.poulailler_copilot.repository
+package com.hadietou.poulailler.repository
 
 import android.content.Context
 import android.content.Intent
 import android.util.Log
-import com.example.poulailler_copilot.data.*
+import com.hadietou.poulailler.data.*
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
