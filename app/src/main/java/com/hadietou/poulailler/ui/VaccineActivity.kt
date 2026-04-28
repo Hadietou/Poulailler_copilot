@@ -60,7 +60,7 @@ class VaccineActivity : AppCompatActivity(), NavigationView.OnNavigationItemSele
         setupNavigation()
         setupRecyclerView()
         observeVaccines()
-        loadProphylaxisGuide()
+        loadEnhancedSanitaryGuide()
 
         binding.fabAddVaccine.setOnClickListener {
             showAddVaccineDialog()
@@ -84,11 +84,10 @@ class VaccineActivity : AppCompatActivity(), NavigationView.OnNavigationItemSele
         binding.navigationView.setNavigationItemSelectedListener(this)
         
         val menu = binding.navigationView.menu
-        menu.findItem(R.id.nav_users).isVisible = userRole == "RESPONSABLE"
-        menu.findItem(R.id.nav_expenses).isVisible = userRole == "RESPONSABLE"
-        menu.findItem(R.id.nav_vaccines).isVisible = userRole == "RESPONSABLE"
-        menu.findItem(R.id.nav_farm_info).isVisible = userRole == "RESPONSABLE"
-        menu.findItem(R.id.nav_batches).isVisible = userRole == "RESPONSABLE"
+        menu.findItem(R.id.nav_users)?.isVisible = userRole == "RESPONSABLE"
+        menu.findItem(R.id.nav_expenses)?.isVisible = userRole == "RESPONSABLE"
+        menu.findItem(R.id.nav_batches)?.isVisible = userRole == "RESPONSABLE"
+        menu.findItem(R.id.nav_vaccines).isVisible = true
 
         updateNavHeader()
     }
@@ -264,14 +263,22 @@ class VaccineActivity : AppCompatActivity(), NavigationView.OnNavigationItemSele
         dialog.show()
     }
 
-    private fun loadProphylaxisGuide() {
+    private fun loadEnhancedSanitaryGuide() {
         val guideHtml = """
-            <font color='#FFFFFF'><b>J1 :</b></font> Bronchite Infectieuse (H120)<br/>
-            <font color='#FFFFFF'><b>J7 :</b></font> Newcastle (HB1)<br/>
-            <font color='#FFFFFF'><b>J14 :</b></font> Gumboro (Intermédiaire)<br/>
-            <font color='#FFFFFF'><b>J21 :</b></font> Newcastle (La Sota) + Rappel Gumboro<br/>
-            <font color='#FFFFFF'><b>S8 :</b></font> Typhose (Variole)<br/>
-            <font color='#FFFFFF'><b>S12 :</b></font> Newcastle + BI (Inactivé)
+            <font color='#FFFFFF'><b>🗓️ PLAN DE VACCINATION TYPE (Hens):</b></font><br/>
+            • <b>J1:</b> Bronchite Infectieuse (H120) + Marek (Hatchery)<br/>
+            • <b>J7:</b> Newcastle (Peste aviaire) - Souche HB1<br/>
+            • <b>J14:</b> Gumboro (1ère dose - Eau de boisson)<br/>
+            • <b>J21:</b> Newcastle (Rappel La Sota) + Gumboro (Rappel)<br/>
+            • <b>S8:</b> Typhose aviaire (Injection)<br/>
+            • <b>S12:</b> Coryza infectieux (Prévention respiratoire)<br/>
+            • <b>S16:</b> Newcastle + BI (Inactivé - Protection longue durée)<br/><br/>
+            <font color='#FFD700'><b>⚠️ RAPPEL CHALEUR (Sahel):</b></font><br/>
+            En Mauritanie, Mali, Sénégal, évitez de vacciner entre 11h et 16h. Utilisez de l'eau fraîche et ajoutez des anti-stress (Vitamines/Électrolytes) avant et après.<br/><br/>
+            <font color='#4CAF50'><b>🧼 HYGIÈNE & BIOSÉCURITÉ:</b></font><br/>
+            • <b>Pédiluve:</b> Indispensable à l'entrée avec désinfectant renouvelé.<br/>
+            • <b>Lutte contre les vecteurs:</b> Grillage fin pour empêcher les oiseaux sauvages (porteurs de grippe aviaire).<br/>
+            • <b>Alimentation:</b> Stockage au sec, loin des rongeurs.
         """.trimIndent()
         
         binding.tvProphylaxisInfo.text = Html.fromHtml(guideHtml, Html.FROM_HTML_MODE_LEGACY)
@@ -298,17 +305,10 @@ class VaccineActivity : AppCompatActivity(), NavigationView.OnNavigationItemSele
                 intent.putExtra("userIdString", userId)
                 startActivity(intent)
             }
-            R.id.nav_farm_info -> {
-                val intent = Intent(this, FarmInfoActivity::class.java)
-                intent.putExtra("role", userRole)
-                intent.putExtra("userIdString", userId)
-                startActivity(intent)
-            }
             R.id.nav_collect -> {
                 val intent = Intent(this, AgentActivity::class.java)
                 intent.putExtra("userIdString", userId)
                 intent.putExtra("role", userRole)
-                intent.putExtra("selectedBatchId", selectedBatchId)
                 startActivity(intent)
             }
             R.id.nav_vaccines -> {}
@@ -316,24 +316,22 @@ class VaccineActivity : AppCompatActivity(), NavigationView.OnNavigationItemSele
                 val intent = Intent(this, ExpensesActivity::class.java)
                 intent.putExtra("role", userRole)
                 intent.putExtra("userIdString", userId)
-                intent.putExtra("selectedBatchId", selectedBatchId)
                 startActivity(intent)
             }
             R.id.nav_sales -> {
                 val intent = Intent(this, SalesActivity::class.java)
-                intent.putExtra("userIdString", userId)
                 intent.putExtra("role", userRole)
-                intent.putExtra("selectedBatchId", selectedBatchId)
+                intent.putExtra("userIdString", userId)
                 startActivity(intent)
             }
             R.id.nav_mortality -> {
                 val intent = Intent(this, MortalityActivity::class.java)
-                intent.putExtra("role", userRole)
                 intent.putExtra("userIdString", userId)
-                intent.putExtra("selectedBatchId", selectedBatchId)
+                intent.putExtra("role", userRole)
                 startActivity(intent)
             }
             R.id.nav_logout -> {
+                FirebaseAuth.getInstance().signOut()
                 val intent = Intent(this, LoginActivity::class.java)
                 intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                 startActivity(intent)

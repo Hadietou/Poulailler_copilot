@@ -82,11 +82,12 @@ class MortalityActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
         binding.navigationView.setNavigationItemSelectedListener(this)
         
         val menu = binding.navigationView.menu
-        menu.findItem(R.id.nav_users).isVisible = userRole == "RESPONSABLE"
-        menu.findItem(R.id.nav_expenses).isVisible = userRole == "RESPONSABLE"
-        menu.findItem(R.id.nav_vaccines).isVisible = userRole == "RESPONSABLE"
-        menu.findItem(R.id.nav_farm_info).isVisible = userRole == "RESPONSABLE"
-        menu.findItem(R.id.nav_batches).isVisible = userRole == "RESPONSABLE"
+        menu.findItem(R.id.nav_users)?.isVisible = userRole == "RESPONSABLE"
+        menu.findItem(R.id.nav_expenses)?.isVisible = userRole == "RESPONSABLE"
+        menu.findItem(R.id.nav_batches)?.isVisible = userRole == "RESPONSABLE"
+        
+        // Agents now have access to Sanitary Follow-up
+        menu.findItem(R.id.nav_vaccines)?.isVisible = true
 
         updateNavHeader()
     }
@@ -272,12 +273,6 @@ class MortalityActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
                 intent.putExtra("userIdString", userId)
                 startActivity(intent)
             }
-            R.id.nav_farm_info -> {
-                val intent = Intent(this, FarmInfoActivity::class.java)
-                intent.putExtra("role", userRole)
-                intent.putExtra("userIdString", userId)
-                startActivity(intent)
-            }
             R.id.nav_collect -> {
                 val intent = Intent(this, AgentActivity::class.java)
                 intent.putExtra("userIdString", userId)
@@ -301,8 +296,8 @@ class MortalityActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
             }
             R.id.nav_sales -> {
                 val intent = Intent(this, SalesActivity::class.java)
-                intent.putExtra("userIdString", userId)
                 intent.putExtra("role", userRole)
+                intent.putExtra("userIdString", userId)
                 intent.putExtra("selectedBatchId", selectedBatchId)
                 startActivity(intent)
             }

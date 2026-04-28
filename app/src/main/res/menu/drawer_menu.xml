@@ -13,11 +13,6 @@
             android:title="Gestion des Lots" />
 
         <item
-            android:id="@+id/nav_farm_info"
-            android:icon="@android:drawable/ic_menu_gallery"
-            android:title="Paramètres Ferme" />
-
-        <item
             android:id="@+id/nav_users"
             android:icon="@android:drawable/ic_menu_myplaces"
             android:title="Gestion des Agents" />
@@ -30,7 +25,7 @@
         <item
             android:id="@+id/nav_vaccines"
             android:icon="@android:drawable/ic_menu_info_details"
-            android:title="Vaccins / Médicaments" />
+            android:title="Suivi Sanitaire" />
 
         <item
             android:id="@+id/nav_collect"

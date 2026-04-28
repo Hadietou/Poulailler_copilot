@@ -86,8 +86,8 @@ class ResponsableActivity : AppCompatActivity(), NavigationView.OnNavigationItem
         val menu = binding.navigationView.menu
         menu.findItem(R.id.nav_users).isVisible = userRole == "RESPONSABLE"
         menu.findItem(R.id.nav_expenses).isVisible = userRole == "RESPONSABLE"
-        menu.findItem(R.id.nav_vaccines).isVisible = userRole == "RESPONSABLE"
-        menu.findItem(R.id.nav_farm_info).isVisible = userRole == "RESPONSABLE"
+        menu.findItem(R.id.nav_vaccines).isVisible = true
+        menu.findItem(R.id.nav_batches).isVisible = userRole == "RESPONSABLE"
 
         updateNavHeader()
     }
@@ -175,12 +175,6 @@ class ResponsableActivity : AppCompatActivity(), NavigationView.OnNavigationItem
                 finish()
             }
             R.id.nav_users -> {}
-            R.id.nav_farm_info -> {
-                val intent = Intent(this, FarmInfoActivity::class.java)
-                intent.putExtra("role", userRole)
-                intent.putExtra("userIdString", userId)
-                startActivity(intent)
-            }
             R.id.nav_collect -> {
                 val intent = Intent(this, AgentActivity::class.java)
                 intent.putExtra("userIdString", userId)

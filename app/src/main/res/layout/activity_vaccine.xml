@@ -50,7 +50,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="GUIDE DE PROPHYLAXIE"
+                        android:text="CONSEILS ET VACCINATION (AFRIQUE DE L'OUEST)"
                         android:textColor="#1E90FF"
                         android:textSize="14sp"
                         android:textStyle="bold"
@@ -58,40 +58,80 @@
                         android:letterSpacing="0.1" />
                 </LinearLayout>
 
+                <!-- Plan de Vaccination -->
                 <com.google.android.material.card.MaterialCardView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
                     app:cardBackgroundColor="#111111"
                     app:cardCornerRadius="16dp"
                     app:strokeColor="#222222"
                     app:strokeWidth="1dp"
                     app:cardElevation="0dp">
-
                     <LinearLayout
-                        android:id="@+id/llProphylaxisContainer"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
                         android:padding="16dp">
-                        <!-- Les items seront ajoutés dynamiquement ou via tvProphylaxisInfo -->
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Plan type (Mauritanie, Sénégal, Mali, CI)"
+                            android:textColor="@color/white"
+                            android:textSize="16sp"
+                            android:textStyle="bold"
+                            android:layout_marginBottom="8dp"/>
                         <TextView
                             android:id="@+id/tvProphylaxisInfo"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:textColor="#B0B0B0"
-                            android:textSize="14sp"
-                            android:lineSpacingExtra="8dp"
-                            android:text="Chargement du guide..." />
+                            android:textSize="13sp"
+                            android:lineSpacingExtra="4dp" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
-                <!-- Section Historique Améliorée -->
+                <!-- Bonnes Pratiques -->
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    app:cardBackgroundColor="#111111"
+                    app:cardCornerRadius="16dp"
+                    app:strokeColor="#222222"
+                    app:strokeWidth="1dp"
+                    app:cardElevation="0dp">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="16dp">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Bonnes Pratiques de Biosécurité"
+                            android:textColor="#FFD700"
+                            android:textSize="16sp"
+                            android:textStyle="bold"
+                            android:layout_marginBottom="8dp"/>
+                        <TextView
+                            android:id="@+id/tvGoodPractices"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:textColor="#B0B0B0"
+                            android:textSize="13sp"
+                            android:lineSpacingExtra="4dp"
+                            android:text="• Vide sanitaire : Respectez 2 semaines minimum.\n• Désinfection : Utilisez du grésil ou de la chaux.\n• Eau de boisson : Toujours propre et fraîche.\n• Visites : Limitez l'accès aux étrangers au poulailler.\n• Pédiluve : Installez un bac de désinfection à l'entrée." />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Section Historique -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
                     android:gravity="center_vertical"
-                    android:layout_marginTop="32dp"
+                    android:layout_marginTop="16dp"
                     android:layout_marginBottom="16dp">
                     <View
                         android:layout_width="4dp"
@@ -125,7 +165,6 @@
                     style="@style/Widget.MaterialComponents.Button.TextButton"
                     android:visibility="gone" />
 
-                <!-- Espace pour ne pas que le FAB cache le dernier item -->
                 <View
                     android:layout_width="match_parent"
                     android:layout_height="100dp" />

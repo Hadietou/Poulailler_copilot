@@ -61,6 +61,9 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
             setupBatchSpinner()
             observeViewModel()
             
+            // Apply default role visibility immediately
+            updateUIBasedOnRole()
+            
             lifecycleScope.launch {
                 try {
                     val profile = firebaseRepo.getUserProfile(userId!!)
@@ -123,13 +126,19 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
         val menu = binding.navigationView.menu
         menu.findItem(R.id.nav_users)?.isVisible = isResp
         menu.findItem(R.id.nav_expenses)?.isVisible = isResp
-        menu.findItem(R.id.nav_vaccines)?.isVisible = isResp
-        menu.findItem(R.id.nav_farm_info)?.isVisible = isResp
         menu.findItem(R.id.nav_batches)?.isVisible = isResp
+        
+        // Agents now have access to Sanitary Follow-up (Vaccines)
+        menu.findItem(R.id.nav_vaccines)?.isVisible = true
         
         binding.titleFinance.visibility = if (isResp) View.VISIBLE else View.GONE
         binding.cardNetProfit.visibility = if (isResp) View.VISIBLE else View.GONE
         binding.cardExpensesChart.visibility = if (isResp) View.VISIBLE else View.GONE
+        
+        // Hide farm name info on the dashboard and header for agents as requested
+        binding.tvDashboardFarmName.visibility = if (isResp) View.VISIBLE else View.GONE
+        val headerView = binding.navigationView.getHeaderView(0)
+        headerView?.findViewById<View>(R.id.tvFarmNameNav)?.visibility = if (isResp) View.VISIBLE else View.GONE
     }
 
     private fun observeViewModel() {
@@ -381,12 +390,6 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
             R.id.nav_dashboard -> {}
             R.id.nav_users -> {
                 val intent = Intent(this, ResponsableActivity::class.java)
-                intent.putExtra("role", userRole)
-                intent.putExtra("userIdString", userId)
-                startActivity(intent)
-            }
-            R.id.nav_farm_info -> {
-                val intent = Intent(this, FarmInfoActivity::class.java)
                 intent.putExtra("role", userRole)
                 intent.putExtra("userIdString", userId)
                 startActivity(intent)

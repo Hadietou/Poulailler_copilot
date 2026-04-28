@@ -71,11 +71,10 @@ class FarmInfoActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
         binding.navigationView.setNavigationItemSelectedListener(this)
         
         val menu = binding.navigationView.menu
-        menu.findItem(R.id.nav_users).isVisible = userRole == "RESPONSABLE"
-        menu.findItem(R.id.nav_expenses).isVisible = userRole == "RESPONSABLE"
-        menu.findItem(R.id.nav_vaccines).isVisible = userRole == "RESPONSABLE"
-        menu.findItem(R.id.nav_farm_info).isVisible = userRole == "RESPONSABLE"
-        menu.findItem(R.id.nav_batches).isVisible = userRole == "RESPONSABLE"
+        menu.findItem(R.id.nav_users)?.isVisible = userRole == "RESPONSABLE"
+        menu.findItem(R.id.nav_expenses)?.isVisible = userRole == "RESPONSABLE"
+        menu.findItem(R.id.nav_vaccines)?.isVisible = true
+        menu.findItem(R.id.nav_batches)?.isVisible = userRole == "RESPONSABLE"
 
         updateNavHeader()
     }
@@ -195,7 +194,6 @@ class FarmInfoActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
                 intent.putExtra("userIdString", userId)
                 startActivity(intent)
             }
-            R.id.nav_farm_info -> {}
             R.id.nav_collect -> {
                 val intent = Intent(this, AgentActivity::class.java)
                 intent.putExtra("userIdString", userId)
