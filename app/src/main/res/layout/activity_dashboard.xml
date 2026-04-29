@@ -25,14 +25,6 @@
                 app:title=""
                 app:navigationIconTint="@color/text_primary"
                 app:navigationIcon="@android:drawable/ic_menu_sort_by_size">
-
-                <Spinner
-                    android:id="@+id/spinnerBatches"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="end"
-                    android:layout_marginEnd="16dp"
-                    android:backgroundTint="@color/primary" />
             </com.google.android.material.appbar.MaterialToolbar>
         </com.google.android.material.appbar.AppBarLayout>
 
@@ -62,17 +54,43 @@
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toTopOf="parent" />
 
-                <TextView
-                    android:id="@+id/tvDashboardFarmName"
+                <LinearLayout
+                    android:id="@+id/layoutFarmHeader"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:text="Ma Ferme"
-                    android:textColor="@color/primary"
-                    android:textSize="16sp"
-                    android:textStyle="italic"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@id/tvWelcome" />
+                    app:layout_constraintTop_toBottomOf="@id/tvWelcome">
+
+                    <TextView
+                        android:id="@+id/tvDashboardFarmName"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Ma Ferme"
+                        android:textColor="@color/primary"
+                        android:textSize="16sp"
+                        android:textStyle="italic" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:text="•"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="14sp" />
+
+                    <Spinner
+                        android:id="@+id/spinnerBatches"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="0dp"
+                        android:backgroundTint="@color/primary"
+                        android:dropDownWidth="200dp"
+                        android:paddingStart="4dp"
+                        android:paddingEnd="0dp" />
+                </LinearLayout>
 
                 <!-- Age Indicator (High Visibility) -->
                 <com.google.android.material.card.MaterialCardView
@@ -87,14 +105,14 @@
                     app:strokeWidth="1dp"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintTop_toBottomOf="@id/tvDashboardFarmName">
+                    app:layout_constraintTop_toBottomOf="@id/layoutFarmHeader">
                     <TextView
                         android:id="@+id/tvHensAgeHeader"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:paddingHorizontal="16dp"
                         android:paddingVertical="10dp"
-                        android:text="Lot actuel : -- Poules\nAge : -- semaines"
+                        android:text="-- Sujets • Age : -- semaines"
                         android:textColor="@color/primary"
                         android:textSize="14sp"
                         android:textStyle="bold"
@@ -385,7 +403,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="4dp"
-                            android:text="Poules: --"
+                            android:text="Sujets: --"
                             android:textColor="@color/emerald_soft"
                             android:textSize="12sp"
                             android:textStyle="bold" />

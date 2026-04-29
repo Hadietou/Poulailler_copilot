@@ -12,6 +12,7 @@ data class Batch(
     val arrivalDate: Long,
     val chickBirthDate: Long,
     val status: String = "ACTIVE", // ACTIVE, COMPLETED
+    val typeLot: String = "PONDEUSE", // PONDEUSE, CHAIR
     val firestoreId: String? = null,
     val farmId: String? = null
 )

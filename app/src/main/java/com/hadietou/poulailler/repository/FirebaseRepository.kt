@@ -51,8 +51,7 @@ class FirebaseRepository {
     }
 
     suspend fun createFarmExtended(
-        farmName: String, hensCount: Int, henBreed: String,
-        arrivalDate: Long, birthDate: Long, currency: String,
+        farmName: String, currency: String,
         username: String, email: String
     ): String {
         val uid = auth.currentUser?.uid ?: throw Exception("Non connecté")
@@ -70,17 +69,6 @@ class FirebaseRepository {
         )
         db.collection("fermes").document(farmId).collection("config").document("farm_info").set(initialFarmInfo).await()
 
-        // Créer le lot initial
-        val initialBatch = hashMapOf(
-            "name" to "Lot 1",
-            "hensCount" to hensCount,
-            "henBreed" to henBreed,
-            "arrivalDate" to arrivalDate,
-            "chickBirthDate" to birthDate,
-            "status" to "ACTIVE"
-        )
-        db.collection("fermes").document(farmId).collection("batches").add(initialBatch).await()
-        
         val userData = hashMapOf(
             "username" to username,
             "email" to email,
@@ -92,7 +80,6 @@ class FirebaseRepository {
         )
         db.collection("users").document(uid).set(userData, SetOptions.merge()).await()
 
-        // Envoi de l'e-mail de validation via Brevo
         sendValidationEmailViaBrevo(farmName, uid, email)
         
         _farmIdFlow.value = farmId
@@ -204,6 +191,7 @@ class FirebaseRepository {
                             arrivalDate = doc.getLong("arrivalDate") ?: 0L,
                             chickBirthDate = doc.getLong("chickBirthDate") ?: 0L,
                             status = doc.getString("status") ?: "ACTIVE",
+                            typeLot = doc.getString("typeLot") ?: "PONDEUSE",
                             firestoreId = doc.id,
                             farmId = id
                         )
@@ -323,7 +311,8 @@ class FirebaseRepository {
             "henBreed" to batch.henBreed,
             "arrivalDate" to batch.arrivalDate,
             "chickBirthDate" to batch.chickBirthDate,
-            "status" to batch.status
+            "status" to batch.status,
+            "typeLot" to batch.typeLot
         )).await()
     }
 
@@ -336,7 +325,8 @@ class FirebaseRepository {
                 "henBreed" to batch.henBreed,
                 "arrivalDate" to batch.arrivalDate,
                 "chickBirthDate" to batch.chickBirthDate,
-                "status" to batch.status
+                "status" to batch.status,
+                "typeLot" to batch.typeLot
             ) as Map<String, Any>).await()
         }
     }
@@ -350,20 +340,81 @@ class FirebaseRepository {
         val fId = requireFarmId()
         db.collection("egg_entries").add(hashMapOf("userId" to auth.currentUser?.uid, "date" to e.date, "eggsCount" to e.eggsCount, "brokenEggsCount" to e.brokenEggsCount, "remarks" to e.remarks, "farmId" to fId, "batchId" to e.batchId)).await()
     }
+    
+    suspend fun updateEggEntry(e: EggEntry) {
+        e.firestoreId?.let {
+            db.collection("egg_entries").document(it).update(hashMapOf(
+                "date" to e.date,
+                "eggsCount" to e.eggsCount,
+                "brokenEggsCount" to e.brokenEggsCount,
+                "remarks" to e.remarks
+            ) as Map<String, Any>).await()
+        }
+    }
+    
+    suspend fun deleteEggEntry(id: String) {
+        db.collection("egg_entries").document(id).delete().await()
+    }
 
     suspend fun addMortality(c: Int, d: Long, batchId: String?) {
         val fId = requireFarmId()
         db.collection("mortality").add(hashMapOf("count" to c, "date" to d, "farmId" to fId, "batchId" to batchId)).await()
     }
 
+    suspend fun updateMortality(m: Mortality) {
+        m.firestoreId?.let {
+            db.collection("mortality").document(it).update(hashMapOf(
+                "count" to m.count,
+                "date" to m.date
+            ) as Map<String, Any>).await()
+        }
+    }
+
+    suspend fun deleteMortality(id: String) {
+        db.collection("mortality").document(id).delete().await()
+    }
+
     suspend fun addSale(s: EggSale) {
         val fId = requireFarmId()
         db.collection("sales").add(hashMapOf("userId" to auth.currentUser?.uid, "date" to s.date, "quantity" to s.quantity, "pricePerUnit" to s.pricePerUnit, "totalPrice" to s.totalPrice, "buyer" to s.buyer, "phoneNumber" to s.phoneNumber, "farmId" to fId, "batchId" to s.batchId)).await()
     }
+    
+    suspend fun updateSale(s: EggSale) {
+        s.firestoreId?.let {
+            db.collection("sales").document(it).update(hashMapOf(
+                "date" to s.date,
+                "quantity" to s.quantity,
+                "pricePerUnit" to s.pricePerUnit,
+                "totalPrice" to s.totalPrice,
+                "buyer" to s.buyer,
+                "phoneNumber" to s.phoneNumber
+            ) as Map<String, Any>).await()
+        }
+    }
+
+    suspend fun deleteSale(saleId: String) {
+        db.collection("sales").document(saleId).delete().await()
+    }
 
     suspend fun addExpense(e: Expense) {
         val fId = requireFarmId()
-        db.collection("expenses").add(hashMapOf("date" to e.date, "category" to e.category, "description" to e.description, "amount" to e.amount, "quantityKg" to e.quantityKg, "farmId" to fId, "batchId" to e.batchId)).await()
+        db.collection("expenses").add(hashMapOf("date" to e.date, "category" to e.category, "amount" to e.amount, "quantityKg" to e.quantityKg, "description" to e.description, "farmId" to fId, "batchId" to e.batchId)).await()
+    }
+
+    suspend fun updateExpense(e: Expense) {
+        e.firestoreId?.let {
+            db.collection("expenses").document(it).update(hashMapOf(
+                "date" to e.date,
+                "category" to e.category,
+                "amount" to e.amount,
+                "quantityKg" to e.quantityKg,
+                "description" to e.description
+            ) as Map<String, Any>).await()
+        }
+    }
+
+    suspend fun deleteExpense(id: String) {
+        db.collection("expenses").document(id).delete().await()
     }
 
     suspend fun addVaccine(v: VaccineEntry) {
@@ -371,37 +422,44 @@ class FirebaseRepository {
         db.collection("vaccines").add(hashMapOf("name" to v.name, "date" to v.date, "remarks" to v.remarks, "farmId" to fId, "batchId" to v.batchId)).await()
     }
 
-    suspend fun updateEggEntry(e: EggEntry) { e.firestoreId?.let { db.collection("egg_entries").document(it).update(hashMapOf("date" to e.date, "eggsCount" to e.eggsCount, "brokenEggsCount" to e.brokenEggsCount, "remarks" to e.remarks, "batchId" to e.batchId) as Map<String, Any>).await() } }
-    suspend fun updateMortality(m: Mortality) { m.firestoreId?.let { db.collection("mortality").document(it).update(hashMapOf("count" to m.count, "date" to m.date, "batchId" to m.batchId) as Map<String, Any>).await() } }
-    suspend fun updateSale(s: EggSale) { s.firestoreId?.let { db.collection("sales").document(it).update(hashMapOf("date" to s.date, "quantity" to s.quantity, "pricePerUnit" to s.pricePerUnit, "totalPrice" to s.totalPrice, "buyer" to s.buyer, "phoneNumber" to s.phoneNumber, "batchId" to s.batchId) as Map<String, Any>).await() } }
-    suspend fun updateVaccine(v: VaccineEntry) { v.firestoreId?.let { db.collection("vaccines").document(it).update(hashMapOf("name" to v.name, "date" to v.date, "remarks" to v.remarks, "batchId" to v.batchId) as Map<String, Any>).await() } }
-    suspend fun updateExpense(e: Expense) { e.firestoreId?.let { db.collection("expenses").document(it).update(hashMapOf("date" to e.date, "category" to e.category, "description" to e.description, "amount" to e.amount, "quantityKg" to e.quantityKg, "batchId" to e.batchId) as Map<String, Any>).await() } }
-
-    suspend fun deleteEggEntry(id: String) = db.collection("egg_entries").document(id).delete().await()
-    suspend fun deleteMortality(id: String) = db.collection("mortality").document(id).delete().await()
-    suspend fun deleteSale(id: String) = db.collection("sales").document(id).delete().await()
-    suspend fun deleteVaccine(id: String) = db.collection("vaccines").document(id).delete().await()
-    suspend fun deleteExpense(id: String) = db.collection("expenses").document(id).delete().await()
-
-    suspend fun getFarmCode(): String? = requireFarmId().let { db.collection("fermes").document(it).get().await().getString("code") }
-    
-    suspend fun recordLogin(uid: String, username: String) { 
-        getFarmId()?.let { fId -> db.collection("login_history").add(hashMapOf("uid" to uid, "username" to username, "timestamp" to System.currentTimeMillis(), "farmId" to fId)).await() }
+    suspend fun updateVaccine(v: VaccineEntry) {
+        v.firestoreId?.let {
+            db.collection("vaccines").document(it).update(hashMapOf(
+                "name" to v.name,
+                "date" to v.date,
+                "remarks" to v.remarks
+            ) as Map<String, Any>).await()
+        }
     }
-    
-    suspend fun updateUserStatus(uid: String, active: Boolean) { db.collection("users").document(uid).update("active", active).await() }
+
+    suspend fun deleteVaccine(id: String) {
+        db.collection("vaccines").document(id).delete().await()
+    }
+
+    suspend fun recordLogin(uid: String, username: String) {
+        val fId = getFarmId()
+        db.collection("logins").add(hashMapOf("uid" to uid, "username" to username, "date" to System.currentTimeMillis(), "farmId" to fId)).await()
+    }
 
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
-    fun getAllUsersFlow(): Flow<List<Map<String, Any>>> = farmIdFlow.flatMapLatest { fId ->
+    fun getAllUsersFlow(): Flow<List<User>> = farmIdFlow.flatMapLatest { fId ->
         val id = fId ?: getFarmId()
         if (id == null) flowOf(emptyList())
         else callbackFlow {
             val sub = db.collection("users").whereEqualTo("farmId", id)
                 .addSnapshotListener { s, e ->
                     val list = s?.documents?.mapNotNull { doc ->
-                        val data = doc.data?.toMutableMap() ?: mutableMapOf()
-                        data["uid"] = doc.id
-                        data as Map<String, Any>
+                        User(
+                            id = 0L,
+                            uid = doc.id,
+                            username = doc.getString("username") ?: "",
+                            password = "",
+                            role = doc.getString("role") ?: "AGENT",
+                            active = doc.getBoolean("active") ?: true,
+                            farmId = id,
+                            isPending = doc.getBoolean("isPending") ?: false,
+                            createdAt = doc.getLong("createdAt") ?: 0L
+                        )
                     } ?: emptyList()
                     trySend(list)
                 }
@@ -410,56 +468,46 @@ class FirebaseRepository {
     }
 
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
-    fun getLoginHistoryFlow(): Flow<List<Map<String, Any>>> = farmIdFlow.flatMapLatest { fId ->
+    fun getLoginHistoryFlow(): Flow<List<LoginEntry>> = farmIdFlow.flatMapLatest { fId ->
         val id = fId ?: getFarmId()
         if (id == null) flowOf(emptyList())
         else callbackFlow {
-            val sub = db.collection("login_history").whereEqualTo("farmId", id)
-                .addSnapshotListener { s, e -> trySend(s?.documents?.mapNotNull { it.data } ?: emptyList()) }
+            val sub = db.collection("logins").whereEqualTo("farmId", id)
+                .addSnapshotListener { s, e ->
+                    val list = s?.documents?.mapNotNull { doc ->
+                        LoginEntry(0L, doc.getString("uid") ?: "", doc.getString("username") ?: "", doc.getLong("date") ?: 0L)
+                    }?.sortedByDescending { it.timestamp } ?: emptyList()
+                    trySend(list)
+                }
             awaitClose { sub.remove() }
         }
     }
 
-    fun shareInviteCode(context: Context, farmCode: String) {
-        val apkDownloadLink = "https://drive.google.com/file/d/1oC4RejQmRnzNCDyOxV6GH50A8AHCR7Sf/view?usp=sharing"
-        
-        val message = """
-            ?? Rejoignez mon exploitation sur l'application KOURKOUROU!
-            
-            1. Téléchargez et installez l'application (Fichier APK) :
-            $apkDownloadLink
-            
-            2. Une fois installée, utilisez ce code pour rejoindre ma ferme :
-            ?? $farmCode ??
-        """.trimIndent()
-
-        val shareIntent = Intent(Intent.ACTION_SEND).apply {
-            type = "text/plain"
-            putExtra(Intent.EXTRA_SUBJECT, "Invitation exploitation")
-            putExtra(Intent.EXTRA_TEXT, message)
-        }
-        context.startActivity(Intent.createChooser(shareIntent, "Partager l'invitation"))
+    suspend fun updateUserStatus(uid: String, active: Boolean) {
+        db.collection("users").document(uid).update("active", active).await()
     }
 
-    fun shareAgentCredentials(context: Context, agentLogin: String, agentPass: String) {
-        val apkDownloadLink = "https://play.google.com/store/apps/details?id=com.hadietou.poulailler"
-        val message = """
-            ?? Bienvenue dans la ferme ! Voici vos accès pour l'application KOURKOUROU :
-            
-            1. Téléchargez l'application : $apkDownloadLink
-            
-            2. Connectez-vous avec :
-               Identifiant : $agentLogin
-               Mot de passe : $agentPass
-            
-            À bientôt !
-        """.trimIndent()
+    suspend fun getFarmCode(): String? {
+        val id = getFarmId() ?: return null
+        return try {
+            db.collection("fermes").document(id).get().await().getString("code")
+        } catch (e: Exception) { null }
+    }
 
-        val shareIntent = Intent(Intent.ACTION_SEND).apply {
+    fun shareAgentCredentials(context: Context, login: String, pass: String) {
+        val message = """
+            Voici les identifiants pour accéder à l'application KOURKOUROU :
+            
+            Login : ${login}
+            Mot de passe : ${pass}
+            
+            Téléchargez l'application et connectez-vous.
+        """.trimIndent()
+        
+        val intent = Intent(Intent.ACTION_SEND).apply {
             type = "text/plain"
-            putExtra(Intent.EXTRA_SUBJECT, "Vos accès KOURKOUROU")
             putExtra(Intent.EXTRA_TEXT, message)
         }
-        context.startActivity(Intent.createChooser(shareIntent, "Partager les accès"))
+        context.startActivity(Intent.createChooser(intent, "Partager les identifiants"))
     }
 }

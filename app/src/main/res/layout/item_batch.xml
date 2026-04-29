@@ -31,6 +31,20 @@
                 android:textStyle="bold" />
 
             <TextView
+                android:id="@+id/tvBatchType"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:background="@drawable/table_border"
+                android:backgroundTint="@color/accent_blue_container"
+                android:paddingHorizontal="8dp"
+                android:paddingVertical="2dp"
+                android:text="PONDEUSE"
+                android:textColor="@color/accent_blue"
+                android:textSize="11sp"
+                android:textStyle="bold" />
+
+            <TextView
                 android:id="@+id/tvBatchStatus"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -40,7 +54,7 @@
                 android:paddingVertical="2dp"
                 android:text="ACTIF"
                 android:textColor="@color/primary"
-                android:textSize="12sp"
+                android:textSize="11sp"
                 android:textStyle="bold" />
         </LinearLayout>
 

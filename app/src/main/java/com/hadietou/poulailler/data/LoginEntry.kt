@@ -6,6 +6,7 @@ import androidx.room.PrimaryKey
 @Entity(tableName = "login_history")
 data class LoginEntry(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
-    val userId: Long,
+    val userId: String,
+    val username: String = "",
     val timestamp: Long
 )

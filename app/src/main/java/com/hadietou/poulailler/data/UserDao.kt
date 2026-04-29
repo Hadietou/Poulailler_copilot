@@ -11,6 +11,9 @@ interface UserDao {
     @Query("SELECT * FROM users WHERE id = :id")
     suspend fun getById(id: Long): User?
 
+    @Query("SELECT * FROM users WHERE uid = :uid LIMIT 1")
+    suspend fun getByUid(uid: String): User?
+
     @Query("SELECT * FROM users WHERE role = 'AGENT'")
     suspend fun getAgents(): List<User>
 
