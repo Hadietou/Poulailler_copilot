@@ -22,7 +22,8 @@ class BatchActivity : AppCompatActivity() {
     private val calendar = Calendar.getInstance()
     private val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
     private lateinit var adapter: BatchAdapter
-    private val breeds = arrayOf("Lohmann Brown", "Isa Brown", "Leghorn", "Rhode Island Red", "SASSO / Améliorée")
+    private val breeds = arrayOf("Lohmann Brown", "Isa Brown", "Leghorn", "Rhode Island Red", "SASSO / Améliorée", "COBB 500 (Chair)", "ROSS 308 (Chair)")
+    private val batchTypes = arrayOf("PONDEUSE", "CHAIR")
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -61,6 +62,10 @@ class BatchActivity : AppCompatActivity() {
             .setView(dialogBinding.root)
             .create()
 
+        val typeAdapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, batchTypes)
+        dialogBinding.actvBatchType.setAdapter(typeAdapter)
+        dialogBinding.actvBatchType.setText(batchTypes[0], false)
+
         val breedAdapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, breeds)
         dialogBinding.actvHenBreed.setAdapter(breedAdapter)
         dialogBinding.actvHenBreed.setText(breeds[0], false)
@@ -89,13 +94,14 @@ class BatchActivity : AppCompatActivity() {
             val name = dialogBinding.etBatchName.text.toString().trim()
             val countStr = dialogBinding.etHensCount.text.toString().trim()
             val breed = dialogBinding.actvHenBreed.text.toString().trim()
+            val typeLot = dialogBinding.actvBatchType.text.toString().trim()
 
-            if (name.isEmpty() || countStr.isEmpty() || breed.isEmpty()) {
+            if (name.isEmpty() || countStr.isEmpty() || breed.isEmpty() || typeLot.isEmpty()) {
                 Toast.makeText(this, "Veuillez remplir tous les champs", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
-            viewModel.addBatch(name, countStr.toInt(), breed, arrivalDate, birthDate)
+            viewModel.addBatch(name, countStr.toInt(), breed, arrivalDate, birthDate, typeLot)
             dialog.dismiss()
         }
 

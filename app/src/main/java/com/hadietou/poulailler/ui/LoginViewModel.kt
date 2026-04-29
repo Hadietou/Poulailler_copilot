@@ -101,7 +101,7 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun register(emailInput: String, password: String, username: String, role: String, farmName: String, farmCode: String, hensCount: Int = 0, henBreed: String = "", arrivalDate: Long = 0, birthDate: Long = 0, currency: String = "MRU", onResult: (Boolean, String) -> Unit) {
+    fun register(emailInput: String, password: String, username: String, role: String, farmName: String, farmCode: String, currency: String = "MRU", onResult: (Boolean, String) -> Unit) {
         val email = emailInput.trim().lowercase()
         viewModelScope.launch {
             try {
@@ -109,7 +109,7 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
                 val uid = result.user?.uid
                 if (uid != null) {
                     if (role == "RESPONSABLE") {
-                        val code = firebaseRepo.createFarmExtended(farmName, hensCount, henBreed, arrivalDate, birthDate, currency, username, email)
+                        val code = firebaseRepo.createFarmExtended(farmName, currency, username, email)
                         onResult(true, "Ferme créée ! Code : $code")
                     } else {
                         if (firebaseRepo.joinFarm(farmCode)) {

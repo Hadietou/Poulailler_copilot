@@ -41,8 +41,8 @@ class LoginHistoryActivity : AppCompatActivity() {
             val logins = db.loginDao().getAll()
             
             val dataList = logins.map { entry ->
-                val user = db.userDao().getById(entry.userId)
-                val username = user?.username ?: "Inconnu"
+                val user = db.userDao().getByUid(entry.userId)
+                val username = user?.username ?: entry.username.ifEmpty { "Inconnu" }
                 LoginDisplayItem(username, entry.timestamp)
             }
 

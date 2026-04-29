@@ -26,7 +26,7 @@ class BatchViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun addBatch(name: String, count: Int, breed: String, arrival: Long, birth: Long) {
+    fun addBatch(name: String, count: Int, breed: String, arrival: Long, birth: Long, typeLot: String) {
         viewModelScope.launch {
             try {
                 val batch = Batch(
@@ -35,7 +35,8 @@ class BatchViewModel(application: Application) : AndroidViewModel(application) {
                     henBreed = breed,
                     arrivalDate = arrival,
                     chickBirthDate = birth,
-                    status = "ACTIVE"
+                    status = "ACTIVE",
+                    typeLot = typeLot
                 )
                 firebaseRepo.addBatch(batch)
                 operationSuccess.postValue(true)

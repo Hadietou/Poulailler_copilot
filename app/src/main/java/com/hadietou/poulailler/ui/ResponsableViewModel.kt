@@ -26,7 +26,14 @@ class ResponsableViewModel(application: Application) : AndroidViewModel(applicat
     fun observeAgents() {
         viewModelScope.launch {
             firebaseRepo.getAllUsersFlow().collectLatest { list ->
-                agents.postValue(list)
+                agents.postValue(list.map { user ->
+                    mapOf(
+                        "uid" to user.uid,
+                        "username" to user.username,
+                        "role" to user.role,
+                        "active" to user.active
+                    )
+                })
             }
         }
     }
@@ -34,7 +41,12 @@ class ResponsableViewModel(application: Application) : AndroidViewModel(applicat
     fun observeLoginHistory() {
         viewModelScope.launch {
             firebaseRepo.getLoginHistoryFlow().collectLatest { list ->
-                loginHistory.postValue(list)
+                loginHistory.postValue(list.map { entry ->
+                    mapOf(
+                        "username" to entry.username,
+                        "timestamp" to entry.timestamp
+                    )
+                })
             }
         }
     }

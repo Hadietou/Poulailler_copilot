@@ -1,25 +1,19 @@
 package com.hadietou.poulailler.ui
 
-import android.app.DatePickerDialog
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
-import android.text.InputType
 import android.view.View
 import android.widget.ArrayAdapter
-import android.widget.EditText
 import android.widget.Toast
 import androidx.activity.viewModels
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.hadietou.poulailler.BuildConfig
 import com.hadietou.poulailler.databinding.ActivityLoginBinding
 import com.hadietou.poulailler.repository.FirebaseRepository
 import com.google.firebase.auth.FirebaseAuth
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
 import java.util.*
 
 class LoginActivity : AppCompatActivity() {
@@ -30,11 +24,7 @@ class LoginActivity : AppCompatActivity() {
     private var isRegisterMode = false
     private var selectedRole: String? = null // "RESPONSABLE" or "AGENT"
     
-    private var arrivalDateMs: Long = System.currentTimeMillis()
-    private var birthDateMs: Long = System.currentTimeMillis()
-    private val calendar = Calendar.getInstance()
     private val currencies = arrayOf("MRU", "CFA")
-    private val breeds = arrayOf("Lohmann Brown", "Isa Brown", "Leghorn", "Rhode Island Red", "SASSO / Améliorée")
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -42,9 +32,7 @@ class LoginActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         setupUI()
-        setupDatePickers()
         setupCurrencyDropdown()
-        setupBreedDropdown()
         
         handleIntentData(intent)
         
@@ -73,12 +61,10 @@ class LoginActivity : AppCompatActivity() {
     private fun setupUI() {
         binding.btnToggleRegister.setOnClickListener {
             if (!isRegisterMode) {
-                // On veut créer une ferme -> On passe directement au formulaire responsable
                 isRegisterMode = true
                 selectedRole = "RESPONSABLE"
                 updateUIState()
             } else {
-                // Retour à la connexion
                 isRegisterMode = false
                 selectedRole = null
                 updateUIState()
@@ -112,40 +98,10 @@ class LoginActivity : AppCompatActivity() {
         }
     }
 
-    private fun setupDatePickers() {
-        val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-        binding.etArrivalDate.setText(sdf.format(Date()))
-        binding.etBirthDate.setText(sdf.format(Date()))
-
-        binding.etArrivalDate.setOnClickListener {
-            DatePickerDialog(this, { _, y, m, d ->
-                val cal = Calendar.getInstance()
-                cal.set(y, m, d)
-                arrivalDateMs = cal.timeInMillis
-                binding.etArrivalDate.setText(sdf.format(cal.time))
-            }, calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH), calendar.get(Calendar.DAY_OF_MONTH)).show()
-        }
-
-        binding.etBirthDate.setOnClickListener {
-            DatePickerDialog(this, { _, y, m, d ->
-                val cal = Calendar.getInstance()
-                cal.set(y, m, d)
-                birthDateMs = cal.timeInMillis
-                binding.etBirthDate.setText(sdf.format(cal.time))
-            }, calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH), calendar.get(Calendar.DAY_OF_MONTH)).show()
-        }
-    }
-
     private fun setupCurrencyDropdown() {
         val adapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, currencies)
         binding.actvCurrencySignup.setAdapter(adapter)
         binding.actvCurrencySignup.setText(currencies[0], false)
-    }
-
-    private fun setupBreedDropdown() {
-        val adapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, breeds)
-        binding.actvHenBreed.setAdapter(adapter)
-        binding.actvHenBreed.setText(breeds[0], false)
     }
 
     private fun updateUIState() {
@@ -206,7 +162,6 @@ class LoginActivity : AppCompatActivity() {
                 Toast.makeText(this, errorMsg, Toast.LENGTH_LONG).show()
             } else {
                 lifecycleScope.launch {
-                    firebaseRepo.recordLogin(userId, email.split("@")[0])
                     goToDashboard(msgOrRole, userId)
                 }
             }
@@ -225,16 +180,14 @@ class LoginActivity : AppCompatActivity() {
 
         if (selectedRole == "RESPONSABLE") {
             val farmName = binding.etFarmName.text.toString().trim()
-            val hensCount = binding.etHensCount.text.toString().toIntOrNull() ?: 0
-            val breed = binding.actvHenBreed.text.toString().trim()
             val currency = binding.actvCurrencySignup.text.toString()
 
-            if (farmName.isEmpty() || hensCount <= 0) {
+            if (farmName.isEmpty()) {
                 Toast.makeText(this, "Informations de ferme manquantes", Toast.LENGTH_SHORT).show()
                 return
             }
 
-            vm.register(email, password, username, "RESPONSABLE", farmName, "", hensCount, breed, arrivalDateMs, birthDateMs, currency) { success, msg ->
+            vm.register(email, password, username, "RESPONSABLE", farmName, "", currency) { success, msg ->
                 if (success) {
                     Toast.makeText(this, msg, Toast.LENGTH_LONG).show()
                     goToDashboard("RESPONSABLE", FirebaseAuth.getInstance().currentUser?.uid ?: "")
