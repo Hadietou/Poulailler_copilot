@@ -165,8 +165,8 @@ class FirebaseRepository {
             val createdAt = ownerDoc.getLong("createdAt") ?: 0L
             
             if (isPending) {
-                val fiveMinutesMillis = 5L * 60 * 1000
-                if (System.currentTimeMillis() - createdAt > fiveMinutesMillis) {
+                val twentyDaysMillis = 20L * 24 * 60 * 60 * 1000
+                if (System.currentTimeMillis() - createdAt > twentyDaysMillis) {
                     return true
                 }
             }
@@ -178,7 +178,7 @@ class FirebaseRepository {
 
     private suspend fun checkAndThrowIfBlocked() {
         if (isFarmAccessBlocked()) {
-            throw Exception("Accès bloqué : validation requise après 5 minutes.")
+            throw Exception("Accès bloqué : validation requise après 20 jours.")
         }
     }
 

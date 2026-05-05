@@ -53,7 +53,8 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
             }
             if (profile.role == "RESPONSABLE" && profile.isPending) {
                 val now = System.currentTimeMillis()
-                if (now - profile.createdAt > 24 * 60 * 60 * 1000L) {
+                val twentyDaysMillis = 20L * 24 * 60 * 60 * 1000
+                if (now - profile.createdAt > twentyDaysMillis) {
                     auth.signOut()
                     onResult(false, "VALIDATION_REQUIS_EXPIRRE", "")
                     return
