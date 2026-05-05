@@ -12,6 +12,7 @@ import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.viewModels
 import androidx.appcompat.app.ActionBarDrawerToggle
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.GravityCompat
 import androidx.lifecycle.lifecycleScope
@@ -43,6 +44,7 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
     private var userRole: String = "AGENT"
     private var userId: String? = null
     private val firebaseRepo = FirebaseRepository()
+    private var isBlocked = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -157,6 +159,13 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
     }
 
     private fun observeViewModel() {
+        viewModel.isAccessBlocked.observe(this) { blocked ->
+            isBlocked = blocked
+            if (blocked) {
+                showBlockingDialog()
+            }
+        }
+
         viewModel.userName.observe(this) { binding.tvWelcome.text = "BONJOUR ${it.uppercase()} !" }
         
         viewModel.farmInfo.observe(this) { info ->
@@ -180,7 +189,11 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
         }
 
         viewModel.selectedBatch.observe(this) { batch ->
-            // Le nom du lot est maintenant géré directement par le Spinner
+            if (batch != null) {
+                binding.tvDashboardBatchName.text = batch.name
+            } else {
+                binding.tvDashboardBatchName.text = ""
+            }
             updateHensAgeHeader()
             updateUIBasedOnBatchType()
         }
@@ -241,6 +254,15 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
         viewModel.expensesByCategory.observe(this) { list ->
             setupBarChart(list)
         }
+    }
+
+    private fun showBlockingDialog() {
+        AlertDialog.Builder(this)
+            .setTitle("Mode Lecture Seule")
+            .setMessage("Veuillez envoyer un email à hadietou@gmail.com pour lui demander de valider la ferme afin de continuer à utiliser l'application. En attendant, vous pouvez uniquement consulter vos données.")
+            .setCancelable(true)
+            .setPositiveButton("OK", null)
+            .show()
     }
 
     private fun setupLineChart(production: List<Pair<Long, Int>>) {
@@ -369,6 +391,9 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
     }
 
     private fun setupClickListeners() {
+        binding.ivSelectBatch.setOnClickListener { binding.spinnerBatches.performClick() }
+        binding.tvDashboardBatchName.setOnClickListener { binding.spinnerBatches.performClick() }
+
         binding.cardLayingRate.setOnClickListener {
             val batch = viewModel.selectedBatch.value
             if (batch != null && batch.typeLot != "CHAIR") {

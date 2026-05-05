@@ -47,6 +47,7 @@ class VaccineActivity : AppCompatActivity(), NavigationView.OnNavigationItemSele
     
     private var allVaccines: List<VaccineEntry> = emptyList()
     private var isShowingAll = false
+    private var isBlocked = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -61,8 +62,10 @@ class VaccineActivity : AppCompatActivity(), NavigationView.OnNavigationItemSele
         setupRecyclerView()
         observeVaccines()
         loadEnhancedSanitaryGuide()
+        checkAccessStatus()
 
         binding.fabAddVaccine.setOnClickListener {
+            if (isBlocked) { showBlockingDialog(); return@setOnClickListener }
             showAddVaccineDialog()
         }
 
@@ -70,6 +73,28 @@ class VaccineActivity : AppCompatActivity(), NavigationView.OnNavigationItemSele
             isShowingAll = true
             refreshDisplay()
         }
+    }
+
+    private fun checkAccessStatus() {
+        lifecycleScope.launch {
+            val blocked = firebaseRepo.isFarmAccessBlocked()
+            isBlocked = blocked
+            if (blocked) {
+                withContext(Dispatchers.Main) {
+                    binding.fabAddVaccine.visibility = View.GONE
+                    showBlockingDialog()
+                }
+            }
+        }
+    }
+
+    private fun showBlockingDialog() {
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("Mode Lecture Seule")
+            .setMessage("Veuillez envoyer un email à hadietou@gmail.com pour lui demander de valider la ferme afin de continuer à utiliser l'application. En attendant, vous pouvez uniquement consulter vos données.")
+            .setCancelable(true)
+            .setPositiveButton("OK", null)
+            .show()
     }
 
     private fun setupNavigation() {
@@ -94,6 +119,7 @@ class VaccineActivity : AppCompatActivity(), NavigationView.OnNavigationItemSele
 
     private fun setupRecyclerView() {
         adapter = VaccineAdapter { entry ->
+            if (isBlocked) { showBlockingDialog(); return@VaccineAdapter }
             if (userRole == "RESPONSABLE") {
                 showEditVaccineDialog(entry)
             }
@@ -170,16 +196,22 @@ class VaccineActivity : AppCompatActivity(), NavigationView.OnNavigationItemSele
             }
 
             lifecycleScope.launch(Dispatchers.IO) {
-                val entry = VaccineEntry(
-                    name = name,
-                    date = selectedDateMs,
-                    remarks = remarks,
-                    batchId = selectedBatchId
-                )
-                firebaseRepo.addVaccine(entry)
-                withContext(Dispatchers.Main) {
-                    Toast.makeText(this@VaccineActivity, "Soin enregistré", Toast.LENGTH_SHORT).show()
-                    dialog.dismiss()
+                try {
+                    val entry = VaccineEntry(
+                        name = name,
+                        date = selectedDateMs,
+                        remarks = remarks,
+                        batchId = selectedBatchId
+                    )
+                    firebaseRepo.addVaccine(entry)
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(this@VaccineActivity, "Soin enregistré", Toast.LENGTH_SHORT).show()
+                        dialog.dismiss()
+                    }
+                } catch (e: Exception) {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(this@VaccineActivity, e.message ?: "Erreur", Toast.LENGTH_SHORT).show()
+                    }
                 }
             }
         }
@@ -221,15 +253,21 @@ class VaccineActivity : AppCompatActivity(), NavigationView.OnNavigationItemSele
             }
 
             lifecycleScope.launch(Dispatchers.IO) {
-                val updatedEntry = entry.copy(
-                    date = editDateMs,
-                    name = name,
-                    remarks = remarks
-                )
-                firebaseRepo.updateVaccine(updatedEntry)
-                withContext(Dispatchers.Main) {
-                    Toast.makeText(this@VaccineActivity, "Soin modifié", Toast.LENGTH_SHORT).show()
-                    dialog.dismiss()
+                try {
+                    val updatedEntry = entry.copy(
+                        date = editDateMs,
+                        name = name,
+                        remarks = remarks
+                    )
+                    firebaseRepo.updateVaccine(updatedEntry)
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(this@VaccineActivity, "Soin modifié", Toast.LENGTH_SHORT).show()
+                        dialog.dismiss()
+                    }
+                } catch (e: Exception) {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(this@VaccineActivity, e.message ?: "Erreur", Toast.LENGTH_SHORT).show()
+                    }
                 }
             }
         }
@@ -245,12 +283,18 @@ class VaccineActivity : AppCompatActivity(), NavigationView.OnNavigationItemSele
                     .setMessage("Voulez-vous supprimer cet enregistrement ?")
                     .setPositiveButton("Supprimer") { _, _ ->
                         lifecycleScope.launch(Dispatchers.IO) {
-                            if (entry.firestoreId != null) {
-                                firebaseRepo.deleteVaccine(entry.firestoreId)
-                            }
-                            withContext(Dispatchers.Main) {
-                                Toast.makeText(this@VaccineActivity, "Soin supprimé", Toast.LENGTH_SHORT).show()
-                                dialog.dismiss()
+                            try {
+                                if (entry.firestoreId != null) {
+                                    firebaseRepo.deleteVaccine(entry.firestoreId)
+                                }
+                                withContext(Dispatchers.Main) {
+                                    Toast.makeText(this@VaccineActivity, "Soin supprimé", Toast.LENGTH_SHORT).show()
+                                    dialog.dismiss()
+                                }
+                            } catch (e: Exception) {
+                                withContext(Dispatchers.Main) {
+                                    Toast.makeText(this@VaccineActivity, e.message ?: "Erreur", Toast.LENGTH_SHORT).show()
+                                }
                             }
                         }
                     }
@@ -285,6 +329,11 @@ class VaccineActivity : AppCompatActivity(), NavigationView.OnNavigationItemSele
     }
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
+        if (isBlocked && item.itemId != R.id.nav_logout && item.itemId != R.id.nav_dashboard) {
+            showBlockingDialog()
+            return false
+        }
+
         when (item.itemId) {
             R.id.nav_dashboard -> {
                 val intent = Intent(this, DashboardActivity::class.java)
@@ -345,6 +394,7 @@ class VaccineActivity : AppCompatActivity(), NavigationView.OnNavigationItemSele
     override fun onResume() {
         super.onResume()
         updateNavHeader()
+        checkAccessStatus()
     }
 
     override fun onBackPressed() {

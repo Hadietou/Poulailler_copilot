@@ -9,6 +9,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.ActionBarDrawerToggle
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.GravityCompat
 import androidx.lifecycle.lifecycleScope
@@ -36,6 +37,7 @@ class ResponsableActivity : AppCompatActivity(), NavigationView.OnNavigationItem
 
     private var userRole: String = "RESPONSABLE"
     private var userId: String? = null
+    private var isBlocked = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -58,6 +60,8 @@ class ResponsableActivity : AppCompatActivity(), NavigationView.OnNavigationItem
 
     private fun setupClickListeners() {
         binding.btnCreateAgent.setOnClickListener {
+            if (isBlocked) { showBlockingDialog(); return@setOnClickListener }
+            
             val name = binding.etAgentName.text.toString().trim()
             if (name.isEmpty()) {
                 Toast.makeText(this, "Veuillez saisir le nom de l'agent", Toast.LENGTH_SHORT).show()
@@ -123,9 +127,20 @@ class ResponsableActivity : AppCompatActivity(), NavigationView.OnNavigationItem
     }
 
     private fun observeViewModel() {
+        vm.isAccessBlocked.observe(this) { blocked ->
+            isBlocked = blocked
+            if (blocked) {
+                binding.btnCreateAgent.isEnabled = false
+                binding.btnCreateAgent.alpha = 0.5f
+                binding.etAgentName.isEnabled = false
+                showBlockingDialog()
+            }
+        }
+
         vm.agents.observe(this) { list ->
             binding.rvAgents.adapter = AgentAdapter(list, userId) { uid, active ->
-                vm.setAgentActive(uid, active)
+                if (isBlocked) { showBlockingDialog() }
+                else { vm.setAgentActive(uid, active) }
             }
         }
 
@@ -139,15 +154,8 @@ class ResponsableActivity : AppCompatActivity(), NavigationView.OnNavigationItem
         }
 
         vm.isUserPending.observe(this) { isPending ->
-            if (isPending) {
-                binding.btnCreateAgent.isEnabled = false
-                binding.btnCreateAgent.alpha = 0.5f
-                binding.tilAgentName.isEnabled = false
-                Toast.makeText(this, "Création d'agents bloquée : Compte en attente de validation", Toast.LENGTH_LONG).show()
-            } else {
-                binding.btnCreateAgent.isEnabled = true
-                binding.btnCreateAgent.alpha = 1.0f
-                binding.tilAgentName.isEnabled = true
+            if (isPending && !isBlocked) {
+                Toast.makeText(this, "Note : Votre ferme est en attente de validation.", Toast.LENGTH_SHORT).show()
             }
         }
 
@@ -159,6 +167,15 @@ class ResponsableActivity : AppCompatActivity(), NavigationView.OnNavigationItem
         }
     }
 
+    private fun showBlockingDialog() {
+        AlertDialog.Builder(this)
+            .setTitle("Mode Lecture Seule")
+            .setMessage("Veuillez envoyer un email à hadietou@gmail.com pour lui demander de valider la ferme afin de continuer à utiliser l'application. En attendant, vous pouvez uniquement consulter vos données.")
+            .setCancelable(true)
+            .setPositiveButton("OK", null)
+            .show()
+    }
+
     override fun onResume() {
         super.onResume()
         updateNavHeader()
@@ -166,6 +183,7 @@ class ResponsableActivity : AppCompatActivity(), NavigationView.OnNavigationItem
     }
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
+        // La navigation est autorisée pour permettre la visualisation des données
         when (item.itemId) {
             R.id.nav_dashboard -> {
                 val intent = Intent(this, DashboardActivity::class.java)
@@ -195,6 +213,12 @@ class ResponsableActivity : AppCompatActivity(), NavigationView.OnNavigationItem
             }
             R.id.nav_sales -> {
                 val intent = Intent(this, SalesActivity::class.java)
+                intent.putExtra("role", userRole)
+                intent.putExtra("userIdString", userId)
+                startActivity(intent)
+            }
+            R.id.nav_mortality -> {
+                val intent = Intent(this, MortalityActivity::class.java)
                 intent.putExtra("role", userRole)
                 intent.putExtra("userIdString", userId)
                 startActivity(intent)

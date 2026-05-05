@@ -47,6 +47,7 @@ class AgentActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
     
     private var allEntries: List<EggEntry> = emptyList()
     private var isShowingAll = false
+    private var isBlocked = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -62,6 +63,7 @@ class AgentActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
         observeCollections()
 
         binding.fabAddCollection.setOnClickListener {
+            if (isBlocked) { showBlockingDialog(); return@setOnClickListener }
             showAddCollectionDialog()
         }
 
@@ -93,6 +95,7 @@ class AgentActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
 
     private fun setupRecyclerView() {
         adapter = CollectionAdapter { entry ->
+            if (isBlocked) { showBlockingDialog(); return@CollectionAdapter }
             if (userRole == "RESPONSABLE") {
                 showEditCollectionDialog(entry)
             }
@@ -102,8 +105,15 @@ class AgentActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
     }
 
     private fun observeCollections() {
+        viewModel.isAccessBlocked.observe(this) { blocked ->
+            isBlocked = blocked
+            if (blocked) {
+                binding.fabAddCollection.visibility = View.GONE
+                showBlockingDialog()
+            }
+        }
+
         viewModel.entries.observe(this) { list ->
-            // Filter entries by selected batch if provided
             allEntries = if (selectedBatchId != null) {
                 list.filter { it.batchId == selectedBatchId }
             } else {
@@ -111,6 +121,15 @@ class AgentActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
             }
             refreshDisplay()
         }
+    }
+
+    private fun showBlockingDialog() {
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("Mode Lecture Seule")
+            .setMessage("Veuillez envoyer un email à hadietou@gmail.com pour lui demander de valider la ferme afin de continuer à utiliser l'application. En attendant, vous pouvez uniquement consulter vos données.")
+            .setCancelable(true)
+            .setPositiveButton("OK", null)
+            .show()
     }
 
     private fun refreshDisplay() {
@@ -221,16 +240,22 @@ class AgentActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
             }
 
             lifecycleScope.launch(Dispatchers.IO) {
-                val updatedEntry = entry.copy(
-                    date = editDateMs,
-                    eggsCount = count,
-                    brokenEggsCount = broken,
-                    remarks = remarks
-                )
-                firebaseRepo.updateEggEntry(updatedEntry)
-                withContext(Dispatchers.Main) {
-                    Toast.makeText(this@AgentActivity, "Collecte modifiée", Toast.LENGTH_SHORT).show()
-                    dialog.dismiss()
+                try {
+                    val updatedEntry = entry.copy(
+                        date = editDateMs,
+                        eggsCount = count,
+                        brokenEggsCount = broken,
+                        remarks = remarks
+                    )
+                    firebaseRepo.updateEggEntry(updatedEntry)
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(this@AgentActivity, "Collecte modifiée", Toast.LENGTH_SHORT).show()
+                        dialog.dismiss()
+                    }
+                } catch (e: Exception) {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(this@AgentActivity, e.message ?: "Erreur", Toast.LENGTH_SHORT).show()
+                    }
                 }
             }
         }
@@ -246,12 +271,18 @@ class AgentActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
                     .setMessage("Voulez-vous vraiment supprimer cette collecte ?")
                     .setPositiveButton("Supprimer") { _, _ ->
                         lifecycleScope.launch(Dispatchers.IO) {
-                            if (entry.firestoreId != null) {
-                                firebaseRepo.deleteEggEntry(entry.firestoreId)
-                            }
-                            withContext(Dispatchers.Main) {
-                                Toast.makeText(this@AgentActivity, "Collecte supprimée", Toast.LENGTH_SHORT).show()
-                                dialog.dismiss()
+                            try {
+                                if (entry.firestoreId != null) {
+                                    firebaseRepo.deleteEggEntry(entry.firestoreId)
+                                }
+                                withContext(Dispatchers.Main) {
+                                    Toast.makeText(this@AgentActivity, "Collecte supprimée", Toast.LENGTH_SHORT).show()
+                                    dialog.dismiss()
+                                }
+                            } catch (e: Exception) {
+                                withContext(Dispatchers.Main) {
+                                    Toast.makeText(this@AgentActivity, e.message ?: "Erreur", Toast.LENGTH_SHORT).show()
+                                }
                             }
                         }
                     }
@@ -265,6 +296,7 @@ class AgentActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
     }
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
+        // Navigation is allowed even if blocked for visualization
         when (item.itemId) {
             R.id.nav_dashboard -> {
                 val intent = Intent(this, DashboardActivity::class.java)
@@ -325,6 +357,7 @@ class AgentActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
     override fun onResume() {
         super.onResume()
         updateNavHeader()
+        viewModel.checkAccessStatus()
     }
 
     override fun onBackPressed() {

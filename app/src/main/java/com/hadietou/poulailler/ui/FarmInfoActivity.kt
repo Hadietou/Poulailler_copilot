@@ -8,6 +8,7 @@ import android.widget.ArrayAdapter
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.ActionBarDrawerToggle
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.GravityCompat
 import androidx.lifecycle.lifecycleScope
@@ -33,6 +34,7 @@ class FarmInfoActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
     private val currencies = arrayOf("MRU", "CFA")
     private var userRole: String = "AGENT"
     private var userId: String? = null
+    private var isBlocked = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -45,18 +47,43 @@ class FarmInfoActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
         setupNavigation()
         setupCurrencyDropdown()
         loadExistingData()
+        checkAccessStatus()
 
         binding.btnSaveFarmInfo.setOnClickListener {
+            if (isBlocked) { showBlockingDialog(); return@setOnClickListener }
             saveData()
         }
 
         binding.btnEditInfo.setOnClickListener {
+            if (isBlocked) { showBlockingDialog(); return@setOnClickListener }
             showEditMode(true)
         }
 
         binding.btnCancelEdit.setOnClickListener {
             showEditMode(false)
         }
+    }
+
+    private fun checkAccessStatus() {
+        lifecycleScope.launch {
+            val blocked = firebaseRepo.isFarmAccessBlocked()
+            isBlocked = blocked
+            if (blocked) {
+                withContext(Dispatchers.Main) {
+                    binding.btnEditInfo.visibility = View.GONE
+                    showBlockingDialog()
+                }
+            }
+        }
+    }
+
+    private fun showBlockingDialog() {
+        AlertDialog.Builder(this)
+            .setTitle("Mode Lecture Seule")
+            .setMessage("Veuillez envoyer un email à hadietou@gmail.com pour lui demander de valider la ferme afin de continuer à utiliser l'application. En attendant, vous pouvez uniquement consulter vos données.")
+            .setCancelable(true)
+            .setPositiveButton("OK", null)
+            .show()
     }
 
     private fun setupNavigation() {
@@ -112,7 +139,7 @@ class FarmInfoActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
                 if (info != null && info.farmName.isNotEmpty()) {
                     currentFarmInfo = info
                     displayInfo(info)
-                    showEditMode(false)
+                    if (!isBlocked) showEditMode(false)
                 } else {
                     showEditMode(true)
                 }
@@ -127,7 +154,6 @@ class FarmInfoActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
         binding.etFarmName.setText(info.farmName)
         binding.actvCurrency.setText(info.currency, false)
 
-        // Hide old fields that are now in Batch
         binding.tvDisplayHensCount.visibility = View.GONE
         binding.tvDisplayBreed.visibility = View.GONE
         binding.tvDisplayArrival.visibility = View.GONE
@@ -160,20 +186,31 @@ class FarmInfoActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
         }
 
         lifecycleScope.launch(Dispatchers.IO) {
-            val info = FarmInfo(
-                id = 1,
-                farmName = name,
-                currency = currency
-            )
-            firebaseRepo.saveFarmInfo(info)
-            withContext(Dispatchers.Main) {
-                Toast.makeText(this@FarmInfoActivity, "Informations enregistrées", Toast.LENGTH_SHORT).show()
-                loadExistingData()
+            try {
+                val info = FarmInfo(
+                    id = 1,
+                    farmName = name,
+                    currency = currency
+                )
+                firebaseRepo.saveFarmInfo(info)
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(this@FarmInfoActivity, "Informations enregistrées", Toast.LENGTH_SHORT).show()
+                    loadExistingData()
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(this@FarmInfoActivity, e.message ?: "Erreur", Toast.LENGTH_SHORT).show()
+                }
             }
         }
     }
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
+        if (isBlocked && item.itemId != R.id.nav_logout && item.itemId != R.id.nav_dashboard) {
+            showBlockingDialog()
+            return false
+        }
+
         when (item.itemId) {
             R.id.nav_dashboard -> {
                 val intent = Intent(this, DashboardActivity::class.java)
@@ -239,6 +276,7 @@ class FarmInfoActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
     override fun onResume() {
         super.onResume()
         updateNavHeader()
+        checkAccessStatus()
     }
 
     override fun onBackPressed() {

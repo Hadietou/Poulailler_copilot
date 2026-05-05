@@ -46,6 +46,7 @@ class SalesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
     
     private var allSales: List<EggSale> = emptyList()
     private var isShowingAll = false
+    private var isBlocked = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -60,8 +61,10 @@ class SalesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
         loadCurrency()
         setupRecyclerView()
         observeSales()
+        checkAccessStatus()
 
         binding.fabAddSale.setOnClickListener {
+            if (isBlocked) { showBlockingDialog(); return@setOnClickListener }
             showAddSaleDialog()
         }
 
@@ -69,6 +72,28 @@ class SalesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
             isShowingAll = true
             refreshDisplay()
         }
+    }
+
+    private fun checkAccessStatus() {
+        lifecycleScope.launch {
+            val blocked = firebaseRepo.isFarmAccessBlocked()
+            isBlocked = blocked
+            if (blocked) {
+                withContext(Dispatchers.Main) {
+                    binding.fabAddSale.visibility = View.GONE
+                    showBlockingDialog()
+                }
+            }
+        }
+    }
+
+    private fun showBlockingDialog() {
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("Mode Lecture Seule")
+            .setMessage("Veuillez envoyer un email à hadietou@gmail.com pour lui demander de valider la ferme afin de continuer à utiliser l'application. En attendant, vous pouvez uniquement consulter vos données.")
+            .setCancelable(true)
+            .setPositiveButton("OK", null)
+            .show()
     }
 
     private fun setupNavigation() {
@@ -93,6 +118,7 @@ class SalesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
 
     private fun setupRecyclerView() {
         adapter = SaleAdapter(currency) { sale ->
+            if (isBlocked) { showBlockingDialog(); return@SaleAdapter }
             if (userRole == "RESPONSABLE") {
                 showEditSaleDialog(sale)
             }
@@ -196,10 +222,16 @@ class SalesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
             )
 
             lifecycleScope.launch(Dispatchers.IO) {
-                firebaseRepo.addSale(sale)
-                withContext(Dispatchers.Main) {
-                    Toast.makeText(this@SalesActivity, "Vente enregistrée !", Toast.LENGTH_LONG).show()
-                    dialog.dismiss()
+                try {
+                    firebaseRepo.addSale(sale)
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(this@SalesActivity, "Vente enregistrée !", Toast.LENGTH_LONG).show()
+                        dialog.dismiss()
+                    }
+                } catch (e: Exception) {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(this@SalesActivity, e.message ?: "Erreur", Toast.LENGTH_SHORT).show()
+                    }
                 }
             }
         }
@@ -248,18 +280,24 @@ class SalesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
 
             val totalPrice = quantity * unitPrice
             lifecycleScope.launch(Dispatchers.IO) {
-                val updatedSale = sale.copy(
-                    date = editDateMs,
-                    quantity = quantity,
-                    pricePerUnit = unitPrice,
-                    totalPrice = totalPrice,
-                    buyer = if (buyer.isBlank()) null else buyer,
-                    phoneNumber = if (phone.isBlank()) null else phone
-                )
-                firebaseRepo.updateSale(updatedSale)
-                withContext(Dispatchers.Main) {
-                    Toast.makeText(this@SalesActivity, "Vente modifiée", Toast.LENGTH_SHORT).show()
-                    dialog.dismiss()
+                try {
+                    val updatedSale = sale.copy(
+                        date = editDateMs,
+                        quantity = quantity,
+                        pricePerUnit = unitPrice,
+                        totalPrice = totalPrice,
+                        buyer = if (buyer.isBlank()) null else buyer,
+                        phoneNumber = if (phone.isBlank()) null else phone
+                    )
+                    firebaseRepo.updateSale(updatedSale)
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(this@SalesActivity, "Vente modifiée", Toast.LENGTH_SHORT).show()
+                        dialog.dismiss()
+                    }
+                } catch (e: Exception) {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(this@SalesActivity, e.message ?: "Erreur", Toast.LENGTH_SHORT).show()
+                    }
                 }
             }
         }
@@ -275,12 +313,18 @@ class SalesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
                     .setMessage("Voulez-vous vraiment supprimer cette vente ?")
                     .setPositiveButton("Supprimer") { _, _ ->
                         lifecycleScope.launch(Dispatchers.IO) {
-                            if (sale.firestoreId != null) {
-                                firebaseRepo.deleteSale(sale.firestoreId)
-                            }
-                            withContext(Dispatchers.Main) {
-                                Toast.makeText(this@SalesActivity, "Vente supprimée", Toast.LENGTH_SHORT).show()
-                                dialog.dismiss()
+                            try {
+                                if (sale.firestoreId != null) {
+                                    firebaseRepo.deleteSale(sale.firestoreId)
+                                }
+                                withContext(Dispatchers.Main) {
+                                    Toast.makeText(this@SalesActivity, "Vente supprimée", Toast.LENGTH_SHORT).show()
+                                    dialog.dismiss()
+                                }
+                            } catch (e: Exception) {
+                                withContext(Dispatchers.Main) {
+                                    Toast.makeText(this@SalesActivity, e.message ?: "Erreur", Toast.LENGTH_SHORT).show()
+                                }
                             }
                         }
                     }
@@ -294,6 +338,11 @@ class SalesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
     }
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
+        if (isBlocked && item.itemId != R.id.nav_logout && item.itemId != R.id.nav_dashboard) {
+            showBlockingDialog()
+            return false
+        }
+
         when (item.itemId) {
             R.id.nav_dashboard -> {
                 val intent = Intent(this, DashboardActivity::class.java)
@@ -358,6 +407,7 @@ class SalesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
     override fun onResume() {
         super.onResume()
         updateNavHeader()
+        checkAccessStatus()
     }
 
     override fun onBackPressed() {

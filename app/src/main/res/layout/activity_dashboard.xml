@@ -56,11 +56,10 @@
 
                 <LinearLayout
                     android:id="@+id/layoutFarmHeader"
-                    android:layout_width="0dp"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
                     android:gravity="center_vertical"
-                    app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@id/tvWelcome">
 
@@ -81,15 +80,31 @@
                         android:textColor="@color/text_secondary"
                         android:textSize="14sp" />
 
-                    <Spinner
-                        android:id="@+id/spinnerBatches"
+                    <TextView
+                        android:id="@+id/tvDashboardBatchName"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="0dp"
-                        android:backgroundTint="@color/primary"
-                        android:dropDownWidth="200dp"
-                        android:paddingStart="4dp"
-                        android:paddingEnd="0dp" />
+                        android:layout_marginStart="4dp"
+                        android:text="Chargement..."
+                        android:textColor="@color/text_secondary"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+
+                    <ImageView
+                        android:id="@+id/ivSelectBatch"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:layout_marginStart="2dp"
+                        android:padding="4dp"
+                        android:src="@android:drawable/ic_menu_sort_by_size"
+                        app:tint="@color/primary"
+                        android:background="?attr/selectableItemBackgroundBorderless" />
+
+                    <Spinner
+                        android:id="@+id/spinnerBatches"
+                        android:layout_width="0dp"
+                        android:layout_height="0dp"
+                        android:visibility="invisible" />
                 </LinearLayout>
 
                 <!-- Age Indicator (High Visibility) -->
@@ -589,8 +604,7 @@
                                     android:layout_height="wrap_content"
                                     android:text="0 MRU"
                                     android:textColor="@color/emerald_soft"
-                                    android:textSize="16sp"
-                                    android:textStyle="bold" />
+                                    android:textSize="16sp"                                     android:textStyle="bold" />
                             </LinearLayout>
 
                             <LinearLayout
