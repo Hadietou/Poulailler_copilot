@@ -156,7 +156,7 @@ class LoginActivity : AppCompatActivity() {
             if (!success) {
                 val errorMsg = when(msgOrRole) {
                     "COMPTE_DESACTIVE" -> "Votre compte a été désactivé."
-                    "VALIDATION_REQUIS_EXPIRRE" -> "Validation requise. Le délai de 24h est dépassé. Contactez hadietou@gmail.com"
+                    "VALIDATION_REQUIS_EXPIRRE" -> "Validation requise. Le délai de 20 jours est dépassé. Contactez hadietou@gmail.com"
                     else -> msgOrRole
                 }
                 Toast.makeText(this, errorMsg, Toast.LENGTH_LONG).show()
