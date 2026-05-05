@@ -3,6 +3,7 @@ package com.hadietou.poulailler.ui
 import android.app.DatePickerDialog
 import android.os.Bundle
 import android.view.LayoutInflater
+import android.view.View
 import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.activity.viewModels
@@ -24,6 +25,7 @@ class BatchActivity : AppCompatActivity() {
     private lateinit var adapter: BatchAdapter
     private val breeds = arrayOf("Lohmann Brown", "Isa Brown", "Leghorn", "Rhode Island Red", "SASSO / Améliorée", "COBB 500 (Chair)", "ROSS 308 (Chair)")
     private val batchTypes = arrayOf("PONDEUSE", "CHAIR")
+    private var isBlocked = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -44,7 +46,8 @@ class BatchActivity : AppCompatActivity() {
 
     private fun setupRecyclerView() {
         adapter = BatchAdapter { batch ->
-            showBatchOptions(batch)
+            if (isBlocked) { showBlockingDialog() }
+            else { showBatchOptions(batch) }
         }
         binding.rvBatches.layoutManager = LinearLayoutManager(this)
         binding.rvBatches.adapter = adapter
@@ -52,8 +55,18 @@ class BatchActivity : AppCompatActivity() {
 
     private fun setupClickListeners() {
         binding.fabAddBatch.setOnClickListener {
+            if (isBlocked) { showBlockingDialog(); return@setOnClickListener }
             showAddBatchDialog()
         }
+    }
+
+    private fun showBlockingDialog() {
+        AlertDialog.Builder(this)
+            .setTitle("Mode Lecture Seule")
+            .setMessage("Veuillez envoyer un email à hadietou@gmail.com pour lui demander de valider la ferme afin de continuer à utiliser l'application. En attendant, vous pouvez uniquement consulter vos données.")
+            .setCancelable(true)
+            .setPositiveButton("OK", null)
+            .show()
     }
 
     private fun showAddBatchDialog() {
@@ -151,6 +164,14 @@ class BatchActivity : AppCompatActivity() {
     }
 
     private fun observeViewModel() {
+        viewModel.isAccessBlocked.observe(this) { blocked ->
+            isBlocked = blocked
+            if (blocked) {
+                binding.fabAddBatch.visibility = View.GONE
+                showBlockingDialog()
+            }
+        }
+
         viewModel.allBatches.observe(this) { batches ->
             adapter.submitList(batches)
         }
@@ -159,8 +180,17 @@ class BatchActivity : AppCompatActivity() {
             if (success) {
                 Toast.makeText(this, "Opération réussie", Toast.LENGTH_SHORT).show()
             } else {
-                Toast.makeText(this, "Une erreur est survenue", Toast.LENGTH_SHORT).show()
+                if (isBlocked) {
+                    showBlockingDialog()
+                } else {
+                    Toast.makeText(this, "Une erreur est survenue", Toast.LENGTH_SHORT).show()
+                }
             }
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        viewModel.checkAccessStatus()
     }
 }

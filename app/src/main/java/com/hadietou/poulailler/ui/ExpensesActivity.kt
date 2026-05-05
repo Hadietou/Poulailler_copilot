@@ -48,6 +48,7 @@ class ExpensesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
     
     private var allExpenses: List<Expense> = emptyList()
     private var isShowingAll = false
+    private var isBlocked = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -62,8 +63,10 @@ class ExpensesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
         loadCurrency()
         setupRecyclerView()
         observeExpenses()
+        checkAccessStatus()
 
         binding.fabAddExpense.setOnClickListener {
+            if (isBlocked) { showBlockingDialog(); return@setOnClickListener }
             showAddExpenseDialog()
         }
 
@@ -71,6 +74,28 @@ class ExpensesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
             isShowingAll = true
             refreshDisplay()
         }
+    }
+
+    private fun checkAccessStatus() {
+        lifecycleScope.launch {
+            val blocked = firebaseRepo.isFarmAccessBlocked()
+            isBlocked = blocked
+            if (blocked) {
+                withContext(Dispatchers.Main) {
+                    binding.fabAddExpense.visibility = View.GONE
+                    showBlockingDialog()
+                }
+            }
+        }
+    }
+
+    private fun showBlockingDialog() {
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("Mode Lecture Seule")
+            .setMessage("Veuillez envoyer un email à hadietou@gmail.com pour lui demander de valider la ferme afin de continuer à utiliser l'application. En attendant, vous pouvez uniquement consulter vos données.")
+            .setCancelable(true)
+            .setPositiveButton("OK", null)
+            .show()
     }
 
     private fun setupNavigation() {
@@ -95,6 +120,7 @@ class ExpensesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
 
     private fun setupRecyclerView() {
         adapter = ExpenseAdapter(currency) { expense ->
+            if (isBlocked) { showBlockingDialog(); return@ExpenseAdapter }
             if (userRole == "RESPONSABLE") {
                 showEditExpenseDialog(expense)
             }
@@ -199,18 +225,24 @@ class ExpensesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
             }
 
             lifecycleScope.launch(Dispatchers.IO) {
-                val expense = Expense(
-                    date = selectedDateMs,
-                    category = category,
-                    amount = amount,
-                    quantityKg = if (category == "Aliment") qty else 0.0,
-                    description = description,
-                    batchId = selectedBatchId
-                )
-                firebaseRepo.addExpense(expense)
-                withContext(Dispatchers.Main) {
-                    Toast.makeText(this@ExpensesActivity, "Dépense enregistrée", Toast.LENGTH_SHORT).show()
-                    dialog.dismiss()
+                try {
+                    val expense = Expense(
+                        date = selectedDateMs,
+                        category = category,
+                        amount = amount,
+                        quantityKg = if (category == "Aliment") qty else 0.0,
+                        description = description,
+                        batchId = selectedBatchId
+                    )
+                    firebaseRepo.addExpense(expense)
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(this@ExpensesActivity, "Dépense enregistrée", Toast.LENGTH_SHORT).show()
+                        dialog.dismiss()
+                    }
+                } catch (e: Exception) {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(this@ExpensesActivity, e.message ?: "Erreur", Toast.LENGTH_SHORT).show()
+                    }
                 }
             }
         }
@@ -275,17 +307,23 @@ class ExpensesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
             }
 
             lifecycleScope.launch(Dispatchers.IO) {
-                val updatedExpense = expense.copy(
-                    date = editDateMs,
-                    category = category,
-                    amount = amount,
-                    quantityKg = if (category == "Aliment") qty else 0.0,
-                    description = description
-                )
-                firebaseRepo.updateExpense(updatedExpense)
-                withContext(Dispatchers.Main) {
-                    Toast.makeText(this@ExpensesActivity, "Dépense modifiée", Toast.LENGTH_SHORT).show()
-                    dialog.dismiss()
+                try {
+                    val updatedExpense = expense.copy(
+                        date = editDateMs,
+                        category = category,
+                        amount = amount,
+                        quantityKg = if (category == "Aliment") qty else 0.0,
+                        description = description
+                    )
+                    firebaseRepo.updateExpense(updatedExpense)
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(this@ExpensesActivity, "Dépense modifiée", Toast.LENGTH_SHORT).show()
+                        dialog.dismiss()
+                    }
+                } catch (e: Exception) {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(this@ExpensesActivity, e.message ?: "Erreur", Toast.LENGTH_SHORT).show()
+                    }
                 }
             }
         }
@@ -301,12 +339,18 @@ class ExpensesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
                     .setMessage("Voulez-vous vraiment supprimer cette dépense ?")
                     .setPositiveButton("Supprimer") { _, _ ->
                         lifecycleScope.launch(Dispatchers.IO) {
-                            if (expense.firestoreId != null) {
-                                firebaseRepo.deleteExpense(expense.firestoreId)
-                            }
-                            withContext(Dispatchers.Main) {
-                                Toast.makeText(this@ExpensesActivity, "Dépense supprimée", Toast.LENGTH_SHORT).show()
-                                dialog.dismiss()
+                            try {
+                                if (expense.firestoreId != null) {
+                                    firebaseRepo.deleteExpense(expense.firestoreId)
+                                }
+                                withContext(Dispatchers.Main) {
+                                    Toast.makeText(this@ExpensesActivity, "Dépense supprimée", Toast.LENGTH_SHORT).show()
+                                    dialog.dismiss()
+                                }
+                            } catch (e: Exception) {
+                                withContext(Dispatchers.Main) {
+                                    Toast.makeText(this@ExpensesActivity, e.message ?: "Erreur", Toast.LENGTH_SHORT).show()
+                                }
                             }
                         }
                     }
@@ -320,6 +364,11 @@ class ExpensesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
     }
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
+        if (isBlocked && item.itemId != R.id.nav_logout && item.itemId != R.id.nav_dashboard) {
+            showBlockingDialog()
+            return false
+        }
+
         when (item.itemId) {
             R.id.nav_dashboard -> {
                 val intent = Intent(this, DashboardActivity::class.java)
@@ -384,6 +433,7 @@ class ExpensesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
     override fun onResume() {
         super.onResume()
         updateNavHeader()
+        checkAccessStatus()
     }
 
     override fun onBackPressed() {

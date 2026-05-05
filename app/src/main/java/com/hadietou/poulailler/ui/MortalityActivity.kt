@@ -46,6 +46,7 @@ class MortalityActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
     
     private var allMortalities: List<Mortality> = emptyList()
     private var isShowingAll = false
+    private var isBlocked = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -59,8 +60,10 @@ class MortalityActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
         setupNavigation()
         setupRecyclerView()
         observeMortality()
+        checkAccessStatus()
 
         binding.fabAddMortality.setOnClickListener {
+            if (isBlocked) { showBlockingDialog(); return@setOnClickListener }
             showAddMortalityDialog()
         }
 
@@ -68,6 +71,28 @@ class MortalityActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
             isShowingAll = true
             refreshDisplay()
         }
+    }
+
+    private fun checkAccessStatus() {
+        lifecycleScope.launch {
+            val blocked = firebaseRepo.isFarmAccessBlocked()
+            isBlocked = blocked
+            if (blocked) {
+                withContext(Dispatchers.Main) {
+                    binding.fabAddMortality.visibility = View.GONE
+                    showBlockingDialog()
+                }
+            }
+        }
+    }
+
+    private fun showBlockingDialog() {
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("Mode Lecture Seule")
+            .setMessage("Veuillez envoyer un email à hadietou@gmail.com pour lui demander de valider la ferme afin de continuer à utiliser l'application. En attendant, vous pouvez uniquement consulter vos données.")
+            .setCancelable(true)
+            .setPositiveButton("OK", null)
+            .show()
     }
 
     private fun setupNavigation() {
@@ -94,6 +119,7 @@ class MortalityActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
 
     private fun setupRecyclerView() {
         adapter = MortalityAdapter { mortality ->
+            if (isBlocked) { showBlockingDialog(); return@MortalityAdapter }
             if (userRole == "RESPONSABLE") {
                 showEditMortalityDialog(mortality)
             }
@@ -170,10 +196,16 @@ class MortalityActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
             }
 
             lifecycleScope.launch(Dispatchers.IO) {
-                firebaseRepo.addMortality(count, selectedDateMs, selectedBatchId)
-                withContext(Dispatchers.Main) {
-                    Toast.makeText(this@MortalityActivity, "Mortalité enregistrée", Toast.LENGTH_SHORT).show()
-                    dialog.dismiss()
+                try {
+                    firebaseRepo.addMortality(count, selectedDateMs, selectedBatchId)
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(this@MortalityActivity, "Mortalité enregistrée", Toast.LENGTH_SHORT).show()
+                        dialog.dismiss()
+                    }
+                } catch (e: Exception) {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(this@MortalityActivity, e.message ?: "Erreur", Toast.LENGTH_SHORT).show()
+                    }
                 }
             }
         }
@@ -211,14 +243,20 @@ class MortalityActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
             }
 
             lifecycleScope.launch(Dispatchers.IO) {
-                val updated = mortality.copy(
-                    count = count,
-                    date = editDateMs
-                )
-                firebaseRepo.updateMortality(updated)
-                withContext(Dispatchers.Main) {
-                    Toast.makeText(this@MortalityActivity, "Mortalité modifiée", Toast.LENGTH_SHORT).show()
-                    dialog.dismiss()
+                try {
+                    val updated = mortality.copy(
+                        count = count,
+                        date = editDateMs
+                    )
+                    firebaseRepo.updateMortality(updated)
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(this@MortalityActivity, "Mortalité modifiée", Toast.LENGTH_SHORT).show()
+                        dialog.dismiss()
+                    }
+                } catch (e: Exception) {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(this@MortalityActivity, e.message ?: "Erreur", Toast.LENGTH_SHORT).show()
+                    }
                 }
             }
         }
@@ -234,12 +272,18 @@ class MortalityActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
                     .setMessage("Voulez-vous supprimer cette mortalité ?")
                     .setPositiveButton("Supprimer") { _, _ ->
                         lifecycleScope.launch(Dispatchers.IO) {
-                            if (mortality.firestoreId != null) {
-                                firebaseRepo.deleteMortality(mortality.firestoreId)
-                            }
-                            withContext(Dispatchers.Main) {
-                                Toast.makeText(this@MortalityActivity, "Supprimé", Toast.LENGTH_SHORT).show()
-                                dialog.dismiss()
+                            try {
+                                if (mortality.firestoreId != null) {
+                                    firebaseRepo.deleteMortality(mortality.firestoreId)
+                                }
+                                withContext(Dispatchers.Main) {
+                                    Toast.makeText(this@MortalityActivity, "Supprimé", Toast.LENGTH_SHORT).show()
+                                    dialog.dismiss()
+                                }
+                            } catch (e: Exception) {
+                                withContext(Dispatchers.Main) {
+                                    Toast.makeText(this@MortalityActivity, e.message ?: "Erreur", Toast.LENGTH_SHORT).show()
+                                }
                             }
                         }
                     }
@@ -253,6 +297,11 @@ class MortalityActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
     }
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
+        if (isBlocked && item.itemId != R.id.nav_logout && item.itemId != R.id.nav_dashboard) {
+            showBlockingDialog()
+            return false
+        }
+
         when (item.itemId) {
             R.id.nav_dashboard -> {
                 val intent = Intent(this, DashboardActivity::class.java)
@@ -317,6 +366,7 @@ class MortalityActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
     override fun onResume() {
         super.onResume()
         updateNavHeader()
+        checkAccessStatus()
     }
 
     override fun onBackPressed() {

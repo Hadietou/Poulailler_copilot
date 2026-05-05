@@ -13,9 +13,11 @@ class BatchViewModel(application: Application) : AndroidViewModel(application) {
     private val firebaseRepo = FirebaseRepository()
     val allBatches = MutableLiveData<List<Batch>>(emptyList())
     val operationSuccess = MutableLiveData<Boolean>()
+    val isAccessBlocked = MutableLiveData<Boolean>(false)
 
     init {
         loadBatches()
+        checkAccessStatus()
     }
 
     private fun loadBatches() {
@@ -26,9 +28,21 @@ class BatchViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun checkAccessStatus() {
+        viewModelScope.launch {
+            val blocked = firebaseRepo.isFarmAccessBlocked()
+            isAccessBlocked.postValue(blocked)
+        }
+    }
+
     fun addBatch(name: String, count: Int, breed: String, arrival: Long, birth: Long, typeLot: String) {
         viewModelScope.launch {
             try {
+                if (firebaseRepo.isFarmAccessBlocked()) {
+                    operationSuccess.postValue(false)
+                    return@launch
+                }
+                
                 val batch = Batch(
                     name = name,
                     hensCount = count,
@@ -49,6 +63,11 @@ class BatchViewModel(application: Application) : AndroidViewModel(application) {
     fun toggleBatchStatus(batch: Batch) {
         viewModelScope.launch {
             try {
+                if (firebaseRepo.isFarmAccessBlocked()) {
+                    operationSuccess.postValue(false)
+                    return@launch
+                }
+                
                 val newStatus = if (batch.status == "ACTIVE") "ARCHIVED" else "ACTIVE"
                 firebaseRepo.updateBatch(batch.copy(status = newStatus))
                 operationSuccess.postValue(true)
@@ -61,6 +80,11 @@ class BatchViewModel(application: Application) : AndroidViewModel(application) {
     fun deleteBatch(firestoreId: String) {
         viewModelScope.launch {
             try {
+                if (firebaseRepo.isFarmAccessBlocked()) {
+                    operationSuccess.postValue(false)
+                    return@launch
+                }
+
                 firebaseRepo.deleteBatch(firestoreId)
                 operationSuccess.postValue(true)
             } catch (e: Exception) {

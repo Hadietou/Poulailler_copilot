@@ -47,9 +47,20 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     val effectiveHensCount = MutableLiveData<Int>(0)
     val totalMortalityCount = MutableLiveData<Int>(0)
 
+    val isAccessBlocked = MutableLiveData<Boolean>(false)
+
     fun loadData() {
         Log.d("DashboardVM", "Loading dashboard data...")
         
+        viewModelScope.launch {
+            try {
+                val blocked = firebaseRepo.isFarmAccessBlocked()
+                isAccessBlocked.postValue(blocked)
+            } catch (e: Exception) {
+                Log.e("DashboardVM", "Error checking access status", e)
+            }
+        }
+
         viewModelScope.launch {
             try {
                 val user = firebaseRepo.getCurrentUserProfile()

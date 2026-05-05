@@ -22,6 +22,7 @@ class ResponsableViewModel(application: Application) : AndroidViewModel(applicat
     val farmName = MutableLiveData<String>()
     val createAgentStatus = MutableLiveData<Pair<Boolean, String>>()
     val isUserPending = MutableLiveData<Boolean>(true)
+    val isAccessBlocked = MutableLiveData<Boolean>(false)
 
     fun observeAgents() {
         viewModelScope.launch {
@@ -65,21 +66,28 @@ class ResponsableViewModel(application: Application) : AndroidViewModel(applicat
         viewModelScope.launch {
             val profile = firebaseRepo.getCurrentUserProfile()
             isUserPending.postValue(profile?.isPending ?: true)
+            
+            val blocked = firebaseRepo.isFarmAccessBlocked()
+            isAccessBlocked.postValue(blocked)
         }
     }
 
     fun setAgentActive(uid: String, active: Boolean) {
         viewModelScope.launch {
-            firebaseRepo.updateUserStatus(uid, active)
+            try {
+                firebaseRepo.updateUserStatus(uid, active)
+            } catch (e: Exception) {
+                createAgentStatus.postValue(Pair(false, e.message ?: "Erreur lors de la mise à jour"))
+            }
         }
     }
 
     fun createAgentSimplified(agentName: String, onComplete: (String, String) -> Unit) {
         viewModelScope.launch {
             try {
-                val profile = firebaseRepo.getCurrentUserProfile()
-                if (profile?.isPending == true) {
-                    createAgentStatus.postValue(Pair(false, "Action bloquée : Votre compte est en attente de validation."))
+                // Vérification du blocage avant création
+                if (firebaseRepo.isFarmAccessBlocked()) {
+                    createAgentStatus.postValue(Pair(false, "Action impossible : Votre ferme doit être validée pour continuer."))
                     return@launch
                 }
 
@@ -87,7 +95,6 @@ class ResponsableViewModel(application: Application) : AndroidViewModel(applicat
                 val cleanAgentName = agentName.replace(" ", "_").lowercase()
                 val login = "${cleanAgentName}@${currentFarmName}.com"
                 
-                // Firebase nécessite au moins 6 caractères pour le mot de passe
                 val password = (100000..999999).random().toString()
                 
                 val fId = firebaseRepo.getFarmId() ?: throw Exception("ID de ferme non trouvé")
@@ -107,7 +114,7 @@ class ResponsableViewModel(application: Application) : AndroidViewModel(applicat
                 onComplete(login, password)
                 
             } catch (e: Exception) {
-                createAgentStatus.postValue(Pair(false, e.message ?: "Erreur"))
+                createAgentStatus.postValue(Pair(false, e.message ?: "Erreur lors de la création de l'agent"))
             }
         }
     }
