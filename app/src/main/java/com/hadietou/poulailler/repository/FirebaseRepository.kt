@@ -5,6 +5,7 @@ import android.content.Intent
 import android.util.Log
 import com.hadietou.poulailler.data.*
 import com.hadietou.poulailler.network.*
+import com.hadietou.poulailler.BuildConfig
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
@@ -16,8 +17,8 @@ class FirebaseRepository {
     private val auth = FirebaseAuth.getInstance()
     private val db = FirebaseFirestore.getInstance()
 
-    // REMPLACEZ PAR VOTRE CLÉ API BREVO RÉELLE
-    private val BREVO_API_KEY = "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"
+    // La clé est maintenant récupérée de local.properties via BuildConfig
+    private val BREVO_API_KEY = BuildConfig.BREVO_API_KEY
 
     companion object {
         private val _farmIdFlow = MutableStateFlow<String?>(null)
@@ -394,120 +395,5 @@ class FirebaseRepository {
 
     suspend fun deleteSale(saleId: String) {
         db.collection("sales").document(saleId).delete().await()
-    }
-
-    suspend fun addExpense(e: Expense) {
-        val fId = requireFarmId()
-        db.collection("expenses").add(hashMapOf("date" to e.date, "category" to e.category, "amount" to e.amount, "quantityKg" to e.quantityKg, "description" to e.description, "farmId" to fId, "batchId" to e.batchId)).await()
-    }
-
-    suspend fun updateExpense(e: Expense) {
-        e.firestoreId?.let {
-            db.collection("expenses").document(it).update(hashMapOf(
-                "date" to e.date,
-                "category" to e.category,
-                "amount" to e.amount,
-                "quantityKg" to e.quantityKg,
-                "description" to e.description
-            ) as Map<String, Any>).await()
-        }
-    }
-
-    suspend fun deleteExpense(id: String) {
-        db.collection("expenses").document(id).delete().await()
-    }
-
-    suspend fun addVaccine(v: VaccineEntry) {
-        val fId = requireFarmId()
-        db.collection("vaccines").add(hashMapOf("name" to v.name, "date" to v.date, "remarks" to v.remarks, "farmId" to fId, "batchId" to v.batchId)).await()
-    }
-
-    suspend fun updateVaccine(v: VaccineEntry) {
-        v.firestoreId?.let {
-            db.collection("vaccines").document(it).update(hashMapOf(
-                "name" to v.name,
-                "date" to v.date,
-                "remarks" to v.remarks
-            ) as Map<String, Any>).await()
-        }
-    }
-
-    suspend fun deleteVaccine(id: String) {
-        db.collection("vaccines").document(id).delete().await()
-    }
-
-    suspend fun recordLogin(uid: String, username: String) {
-        val fId = getFarmId()
-        db.collection("logins").add(hashMapOf("uid" to uid, "username" to username, "date" to System.currentTimeMillis(), "farmId" to fId)).await()
-    }
-
-    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
-    fun getAllUsersFlow(): Flow<List<User>> = farmIdFlow.flatMapLatest { fId ->
-        val id = fId ?: getFarmId()
-        if (id == null) flowOf(emptyList())
-        else callbackFlow {
-            val sub = db.collection("users").whereEqualTo("farmId", id)
-                .addSnapshotListener { s, e ->
-                    val list = s?.documents?.mapNotNull { doc ->
-                        User(
-                            id = 0L,
-                            uid = doc.id,
-                            username = doc.getString("username") ?: "",
-                            password = "",
-                            role = doc.getString("role") ?: "AGENT",
-                            active = doc.getBoolean("active") ?: true,
-                            farmId = id,
-                            isPending = doc.getBoolean("isPending") ?: false,
-                            createdAt = doc.getLong("createdAt") ?: 0L
-                        )
-                    } ?: emptyList()
-                    trySend(list)
-                }
-            awaitClose { sub.remove() }
-        }
-    }
-
-    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
-    fun getLoginHistoryFlow(): Flow<List<LoginEntry>> = farmIdFlow.flatMapLatest { fId ->
-        val id = fId ?: getFarmId()
-        if (id == null) flowOf(emptyList())
-        else callbackFlow {
-            val sub = db.collection("logins").whereEqualTo("farmId", id)
-                .addSnapshotListener { s, e ->
-                    val list = s?.documents?.mapNotNull { doc ->
-                        LoginEntry(0L, doc.getString("uid") ?: "", doc.getString("username") ?: "", doc.getLong("date") ?: 0L)
-                    }?.sortedByDescending { it.timestamp } ?: emptyList()
-                    trySend(list)
-                }
-            awaitClose { sub.remove() }
-        }
-    }
-
-    suspend fun updateUserStatus(uid: String, active: Boolean) {
-        db.collection("users").document(uid).update("active", active).await()
-    }
-
-    suspend fun getFarmCode(): String? {
-        val id = getFarmId() ?: return null
-        return try {
-            db.collection("fermes").document(id).get().await().getString("code")
-        } catch (e: Exception) { null }
-    }
-
-    fun shareAgentCredentials(context: Context, login: String, pass: String) {
-        val message = """
-            Voici les identifiants pour accéder à l'application KOURKOUROU :
-            
-            Login : ${login}
-            Mot de passe : ${pass}
-            
-            Téléchargez l'application et connectez-vous.
-        """.trimIndent()
-        
-        val intent = Intent(Intent.ACTION_SEND).apply {
-            type = "text/plain"
-            putExtra(Intent.EXTRA_TEXT, message)
-        }
-        context.startActivity(Intent.createChooser(intent, "Partager les identifiants"))
     }
 }
