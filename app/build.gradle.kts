@@ -1,9 +1,17 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.kotlinAndroid)
     alias(libs.plugins.ksp)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.googleGmsGoogleServices)
+}
+
+val localProperties = Properties()
+val localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    localProperties.load(localPropertiesFile.inputStream())
 }
 
 android {
@@ -22,8 +30,8 @@ android {
             useSupportLibrary = true
         }
         
-        // On pourrait ajouter la clé Brevo ici via BuildConfig si besoin
-        // buildConfigField("String", "BREVO_API_KEY", "\"VOTRE_CLE_ICI\"")
+        val brevoApiKey = localProperties.getProperty("BREVO_API_KEY") ?: ""
+        buildConfigField("String", "BREVO_API_KEY", "\"$brevoApiKey\"")
     }
 
     buildTypes {
