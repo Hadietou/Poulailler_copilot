@@ -3,6 +3,7 @@ package com.hadietou.poulailler.ui
 import android.app.AlertDialog
 import android.app.DatePickerDialog
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.MenuItem
@@ -340,6 +341,11 @@ class AgentActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
                 val intent = Intent(this, MortalityActivity::class.java)
                 intent.putExtra("role", userRole)
                 intent.putExtra("userIdString", userId)
+                startActivity(intent)
+            }
+            R.id.nav_delete_account -> {
+                val url = getString(R.string.delete_account_url)
+                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
                 startActivity(intent)
             }
             R.id.nav_logout -> {

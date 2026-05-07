@@ -10,4 +10,7 @@
     <string name="eggs_today_label">Production du jour</string>
     <string name="sales_label">Ventes</string>
     <string name="expenses_label">Dépenses</string>
+
+    <string name="nav_delete_account">Supprimer mon compte</string>
+    <string name="delete_account_url" translatable="false">https://hadietou.github.io/poulailler-privacy/delete-account.html</string>
 </resources>
