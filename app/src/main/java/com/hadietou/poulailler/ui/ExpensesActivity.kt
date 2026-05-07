@@ -3,6 +3,7 @@ package com.hadietou.poulailler.ui
 import android.app.AlertDialog
 import android.app.DatePickerDialog
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.MenuItem
@@ -364,7 +365,7 @@ class ExpensesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
     }
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
-        if (isBlocked && item.itemId != R.id.nav_logout && item.itemId != R.id.nav_dashboard) {
+        if (isBlocked && item.itemId != R.id.nav_logout && item.itemId != R.id.nav_dashboard && item.itemId != R.id.nav_delete_account) {
             showBlockingDialog()
             return false
         }
@@ -416,6 +417,10 @@ class ExpensesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
                 intent.putExtra("userIdString", userId)
                 intent.putExtra("role", userRole)
                 intent.putExtra("selectedBatchId", selectedBatchId)
+                startActivity(intent)
+            }
+            R.id.nav_delete_account -> {
+                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(getString(R.string.delete_account_url)))
                 startActivity(intent)
             }
             R.id.nav_logout -> {

@@ -3,6 +3,7 @@ package com.hadietou.poulailler.ui
 import android.app.AlertDialog
 import android.app.DatePickerDialog
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.text.Html
 import android.view.LayoutInflater
@@ -329,7 +330,7 @@ class VaccineActivity : AppCompatActivity(), NavigationView.OnNavigationItemSele
     }
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
-        if (isBlocked && item.itemId != R.id.nav_logout && item.itemId != R.id.nav_dashboard) {
+        if (isBlocked && item.itemId != R.id.nav_logout && item.itemId != R.id.nav_dashboard && item.itemId != R.id.nav_delete_account) {
             showBlockingDialog()
             return false
         }
@@ -377,6 +378,10 @@ class VaccineActivity : AppCompatActivity(), NavigationView.OnNavigationItemSele
                 val intent = Intent(this, MortalityActivity::class.java)
                 intent.putExtra("userIdString", userId)
                 intent.putExtra("role", userRole)
+                startActivity(intent)
+            }
+            R.id.nav_delete_account -> {
+                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(getString(R.string.delete_account_url)))
                 startActivity(intent)
             }
             R.id.nav_logout -> {

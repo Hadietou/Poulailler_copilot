@@ -1,6 +1,7 @@
 package com.hadietou.poulailler.ui
 
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.view.MenuItem
@@ -210,18 +211,27 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
         }
 
         viewModel.layingTrend.observe(this) { trend ->
-            val sign = if (trend >= 0) "+" else ""
-            binding.tvLayingTrend.text = "$sign${trend.toInt()}% vs hier"
-            if (trend >= 0) {
-                binding.tvLayingTrend.setTextColor(getColor(R.color.emerald_soft))
-                binding.tvLayingTrend.backgroundTintList = android.content.res.ColorStateList.valueOf(getColor(R.color.emerald_container))
-            } else {
-                binding.tvLayingTrend.setTextColor(getColor(R.color.error))
-                binding.tvLayingTrend.backgroundTintList = android.content.res.ColorStateList.valueOf(getColor(R.color.error_container))
+            val trendInt = trend.toInt()
+            val sign = if (trendInt > 0) "+" else ""
+            binding.tvLayingTrend.text = "$sign$trendInt% vs hier"
+            
+            when {
+                trendInt > 0 -> {
+                    binding.tvLayingTrend.setTextColor(getColor(R.color.white))
+                    binding.tvLayingTrend.backgroundTintList = android.content.res.ColorStateList.valueOf(getColor(R.color.emerald_soft))
+                }
+                trendInt < 0 -> {
+                    binding.tvLayingTrend.setTextColor(getColor(R.color.white))
+                    binding.tvLayingTrend.backgroundTintList = android.content.res.ColorStateList.valueOf(getColor(R.color.error))
+                }
+                else -> {
+                    binding.tvLayingTrend.setTextColor(getColor(R.color.text_secondary))
+                    binding.tvLayingTrend.backgroundTintList = android.content.res.ColorStateList.valueOf(getColor(R.color.off_white))
+                }
             }
         }
         
-        viewModel.todayEggs.observe(this) { binding.tvTodayEggsDetail.text = "$it œufs aujourd'hui" }
+        viewModel.lastCollectedCount.observe(this) { binding.tvTodayEggsDetail.text = "$it œufs collectés" }
         viewModel.totalMortalityCount.observe(this) { binding.tvTotalMortality.text = it.toString() }
         viewModel.currentStockKg.observe(this) { binding.tvTotalFeed.text = "${it.toInt()} kg" }
         viewModel.feedAutonomyDays.observe(this) { binding.tvFeedAutonomy.text = "$it j restants" }
@@ -283,6 +293,11 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
             setDrawValues(true)
             valueTextColor = getColor(R.color.text_primary)
             valueTextSize = 10f
+            valueFormatter = object : ValueFormatter() {
+                override fun getFormattedValue(value: Float): String {
+                    return value.toInt().toString()
+                }
+            }
             mode = LineDataSet.Mode.CUBIC_BEZIER
             setDrawFilled(true)
             fillColor = getColor(R.color.emerald_container)
@@ -309,7 +324,15 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
                 }
             }
             
-            axisLeft.textColor = textColor
+            axisLeft.apply {
+                this.textColor = textColor
+                granularity = 1f
+                valueFormatter = object : ValueFormatter() {
+                    override fun getFormattedValue(value: Float): String {
+                        return value.toInt().toString()
+                    }
+                }
+            }
             axisRight.isEnabled = false
             legend.textColor = textColor
             
@@ -505,6 +528,11 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
                 intent.putExtra("role", userRole)
                 intent.putExtra("userIdString", userId)
                 intent.putExtra("selectedBatchId", viewModel.selectedBatch.value?.firestoreId)
+                startActivity(intent)
+            }
+            R.id.nav_delete_account -> {
+                val url = getString(R.string.delete_account_url)
+                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
                 startActivity(intent)
             }
             R.id.nav_logout -> {

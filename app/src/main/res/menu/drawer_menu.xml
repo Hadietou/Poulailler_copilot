@@ -46,6 +46,10 @@
     <item android:title="Compte">
         <menu>
             <item
+                android:id="@+id/nav_delete_account"
+                android:icon="@android:drawable/ic_menu_delete"
+                android:title="Supprimer mon compte" />
+            <item
                 android:id="@+id/nav_logout"
                 android:icon="@android:drawable/ic_lock_power_off"
                 android:title="Déconnexion" />

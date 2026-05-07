@@ -1,6 +1,7 @@
 package com.hadietou.poulailler.ui
 
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.MenuItem
@@ -183,7 +184,11 @@ class ResponsableActivity : AppCompatActivity(), NavigationView.OnNavigationItem
     }
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
-        // La navigation est autorisée pour permettre la visualisation des données
+        if (isBlocked && item.itemId != R.id.nav_logout && item.itemId != R.id.nav_dashboard && item.itemId != R.id.nav_delete_account) {
+            showBlockingDialog()
+            return false
+        }
+
         when (item.itemId) {
             R.id.nav_dashboard -> {
                 val intent = Intent(this, DashboardActivity::class.java)
@@ -221,6 +226,10 @@ class ResponsableActivity : AppCompatActivity(), NavigationView.OnNavigationItem
                 val intent = Intent(this, MortalityActivity::class.java)
                 intent.putExtra("role", userRole)
                 intent.putExtra("userIdString", userId)
+                startActivity(intent)
+            }
+            R.id.nav_delete_account -> {
+                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(getString(R.string.delete_account_url)))
                 startActivity(intent)
             }
             R.id.nav_logout -> {

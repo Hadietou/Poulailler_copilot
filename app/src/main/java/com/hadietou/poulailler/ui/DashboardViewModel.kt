@@ -19,6 +19,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     val userName = MutableLiveData<String>("")
     val farmInfo = MutableLiveData<FarmInfo?>()
     val todayEggs = MutableLiveData<Int>(0)
+    val lastCollectedCount = MutableLiveData<Int>(0)
     val totalSales = MutableLiveData<Double>(0.0)
     val totalExpenses = MutableLiveData<Double>(0.0)
     val netProfit = MutableLiveData<Double>(0.0)
@@ -171,6 +172,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         if (isChair) {
             // Stats spécifiques CHAIR : On ignore les œufs
             todayEggs.postValue(0)
+            lastCollectedCount.postValue(0)
             layingRate.postValue(0.0)
             layingTrend.postValue(0.0)
             totalCollected.postValue(0)
@@ -190,10 +192,18 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
             val eggsYesterday = entries.filter { it.date in yesterdayStart until todayStart }.sumOf { it.eggsCount }
             
             val divisor = if (currentHens > 0) currentHens else 1
+            
+            // Calcul du taux basé sur la DERNIÈRE collecte au lieu du total du jour
+            val lastEntry = entries.maxByOrNull { it.date }
+            val lastEggsCount = lastEntry?.eggsCount ?: 0
+            lastCollectedCount.postValue(lastEggsCount)
+
+            val lastRate = (lastEggsCount.toDouble() / divisor.toDouble()) * 100
+            
             val currentRate = (eggsToday.toDouble() / divisor.toDouble()) * 100
             val yesterdayRate = (eggsYesterday.toDouble() / divisor.toDouble()) * 100
             
-            layingRate.postValue(currentRate)
+            layingRate.postValue(lastRate)
             layingTrend.postValue(currentRate - yesterdayRate)
 
             val totalColl = entries.sumOf { it.eggsCount }
