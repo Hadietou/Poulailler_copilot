@@ -18,87 +18,63 @@
             android:background="@android:color/transparent"
             app:elevation="0dp">
 
-            <com.google.android.material.appbar.MaterialToolbar
+            <androidx.appcompat.widget.Toolbar
                 android:id="@+id/toolbar"
                 android:layout_width="match_parent"
                 android:layout_height="?attr/actionBarSize"
-                app:title=""
-                app:navigationIconTint="@color/text_primary"
-                app:navigationIcon="@android:drawable/ic_menu_sort_by_size">
-            </com.google.android.material.appbar.MaterialToolbar>
+                app:navigationIcon="@android:drawable/ic_menu_sort_by_size"
+                app:title="" />
         </com.google.android.material.appbar.AppBarLayout>
 
         <androidx.core.widget.NestedScrollView
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:fillViewport="true"
             app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
             <androidx.constraintlayout.widget.ConstraintLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:paddingHorizontal="20dp"
-                android:paddingBottom="40dp">
+                android:padding="20dp">
 
-                <!-- Welcome Header -->
                 <TextView
                     android:id="@+id/tvWelcome"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:text="BONJOUR !"
-                    android:textColor="@color/text_primary"
-                    android:textSize="20sp"
-                    android:textStyle="bold"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toTopOf="parent" />
-
-                <LinearLayout
-                    android:id="@+id/layoutFarmHeader"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
+                    android:text="@string/loading"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    tools:text="MA FERME" />
+
+                <LinearLayout
+                    android:id="@+id/layoutHeaderInfo"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
                     android:gravity="center_vertical"
+                    android:orientation="horizontal"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@id/tvWelcome">
-
-                    <TextView
-                        android:id="@+id/tvDashboardFarmName"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Ma Ferme"
-                        android:textColor="@color/primary"
-                        android:textSize="16sp"
-                        android:textStyle="italic" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="4dp"
-                        android:text="•"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="14sp" />
 
                     <TextView
                         android:id="@+id/tvDashboardBatchName"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="4dp"
-                        android:text="Chargement..."
-                        android:textColor="@color/text_secondary"
+                        android:text="@string/current_batch"
+                        android:textColor="@color/emerald_soft"
                         android:textSize="14sp"
                         android:textStyle="bold" />
 
                     <ImageView
                         android:id="@+id/ivSelectBatch"
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
-                        android:layout_marginStart="2dp"
-                        android:padding="4dp"
-                        android:src="@android:drawable/ic_menu_sort_by_size"
-                        app:tint="@color/primary"
-                        android:background="?attr/selectableItemBackgroundBorderless" />
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:layout_marginStart="4dp"
+                        android:contentDescription="@string/desc_edit_batch"
+                        android:src="@android:drawable/ic_menu_edit"
+                        app:tint="@color/emerald_soft" />
 
                     <Spinner
                         android:id="@+id/spinnerBatches"
@@ -107,95 +83,82 @@
                         android:visibility="invisible" />
                 </LinearLayout>
 
-                <!-- Age Indicator (High Visibility) -->
-                <com.google.android.material.card.MaterialCardView
-                    android:id="@+id/cardAge"
-                    android:layout_width="match_parent"
+                <TextView
+                    android:id="@+id/tvAppTitle"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    app:cardBackgroundColor="@color/emerald_container"
-                    app:cardCornerRadius="16dp"
-                    app:cardElevation="0dp"
-                    app:strokeColor="@color/emerald_soft"
-                    app:strokeWidth="1dp"
-                    app:layout_constraintStart_toStartOf="parent"
+                    android:layout_marginTop="16dp"
+                    android:background="@drawable/bg_stats_header"
+                    android:backgroundTint="@color/primary"
+                    android:gravity="center"
+                    android:maxLines="1"
+                    android:text="@string/loading"
+                    android:textColor="@color/white"
+                    android:textStyle="bold"
+                    app:autoSizeMaxTextSize="15sp"
+                    app:autoSizeMinTextSize="8sp"
+                    app:autoSizeStepGranularity="1sp"
+                    app:autoSizeTextType="uniform"
                     app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintTop_toBottomOf="@id/layoutFarmHeader">
-                    <TextView
-                        android:id="@+id/tvHensAgeHeader"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:paddingHorizontal="16dp"
-                        android:paddingVertical="10dp"
-                        android:text="-- Sujets • Age : -- semaines"
-                        android:textColor="@color/primary"
-                        android:textSize="14sp"
-                        android:textStyle="bold"
-                        android:gravity="center"
-                        android:maxLines="2" />
-                </com.google.android.material.card.MaterialCardView>
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/layoutHeaderInfo"
+                    tools:text="1,250 sujets • Age : 12 Sem" />
 
-                <!-- Circular Laying Rate -->
+                <!-- Quick Stats Row -->
                 <com.google.android.material.card.MaterialCardView
                     android:id="@+id/cardLayingRate"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="24dp"
                     app:cardBackgroundColor="@color/surface"
-                    app:cardCornerRadius="28dp"
+                    app:cardCornerRadius="24dp"
                     app:cardElevation="0dp"
-                    app:strokeColor="@color/emerald_container"
-                    app:strokeWidth="1dp"
-                    app:layout_constraintTop_toBottomOf="@id/cardAge">
+                    app:layout_constraintTop_toBottomOf="@id/tvAppTitle">
 
                     <androidx.constraintlayout.widget.ConstraintLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:padding="20dp">
 
-                        <FrameLayout
-                            android:id="@+id/progressContainer"
-                            android:layout_width="110dp"
-                            android:layout_height="110dp"
-                            app:layout_constraintBottom_toBottomOf="parent"
+                        <com.google.android.material.progressindicator.CircularProgressIndicator
+                            android:id="@+id/progressLayingRate"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:progress="0"
+                            app:indicatorColor="@color/emerald_soft"
+                            app:indicatorSize="80dp"
                             app:layout_constraintStart_toStartOf="parent"
-                            app:layout_constraintTop_toTopOf="parent">
+                            app:layout_constraintTop_toTopOf="parent"
+                            app:trackColor="@color/emerald_container"
+                            app:trackThickness="8dp" />
 
-                            <com.google.android.material.progressindicator.CircularProgressIndicator
-                                android:id="@+id/progressLayingRate"
-                                android:layout_width="match_parent"
-                                android:layout_height="match_parent"
-                                android:progress="0"
-                                app:indicatorColor="@color/emerald_soft"
-                                app:indicatorSize="110dp"
-                                app:trackColor="@color/emerald_container"
-                                app:trackThickness="12dp" />
-
-                            <TextView
-                                android:id="@+id/tvLayingRateValue"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_gravity="center"
-                                android:text="0%"
-                                android:textColor="@color/text_primary"
-                                android:textSize="22sp"
-                                android:textStyle="bold" />
-                        </FrameLayout>
+                        <TextView
+                            android:id="@+id/tvLayingRateValue"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/zero_percent"
+                            android:textColor="@color/text_primary"
+                            android:textSize="20sp"
+                            android:textStyle="bold"
+                            app:layout_constraintBottom_toBottomOf="@id/progressLayingRate"
+                            app:layout_constraintEnd_toEndOf="@id/progressLayingRate"
+                            app:layout_constraintStart_toStartOf="@id/progressLayingRate"
+                            app:layout_constraintTop_toTopOf="@id/progressLayingRate" />
 
                         <LinearLayout
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:layout_marginStart="24dp"
+                            android:layout_marginStart="20dp"
                             android:orientation="vertical"
                             app:layout_constraintBottom_toBottomOf="parent"
                             app:layout_constraintEnd_toEndOf="parent"
-                            app:layout_constraintStart_toEndOf="@id/progressContainer"
+                            app:layout_constraintStart_toEndOf="@id/progressLayingRate"
                             app:layout_constraintTop_toTopOf="parent">
 
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Taux de Ponte"
+                                android:text="@string/laying_rate"
                                 android:textColor="@color/text_primary"
                                 android:textSize="18sp"
                                 android:textStyle="bold" />
@@ -204,35 +167,34 @@
                                 android:id="@+id/tvTodayEggsDetail"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:layout_marginTop="4dp"
-                                android:text="0 œufs collectés"
+                                android:text="@string/loading"
                                 android:textColor="@color/text_secondary"
-                                android:textSize="14sp" />
+                                android:textSize="14sp"
+                                tools:text="0 œufs collectés" />
 
                             <TextView
                                 android:id="@+id/tvLayingTrend"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:layout_marginTop="12dp"
-                                android:background="@drawable/bg_trend_chip"
-                                android:backgroundTint="@color/emerald_container"
-                                android:paddingHorizontal="10dp"
-                                android:paddingVertical="6dp"
-                                android:text="+0% vs hier"
-                                android:textColor="@color/emerald_soft"
-                                android:textSize="13sp"
-                                android:textStyle="bold" />
+                                android:layout_marginTop="8dp"
+                                android:background="@drawable/table_border"
+                                android:paddingHorizontal="8dp"
+                                android:paddingVertical="2dp"
+                                android:text="@string/loading"
+                                android:textSize="12sp"
+                                android:textStyle="bold"
+                                tools:text="--% vs hier" />
                         </LinearLayout>
                     </androidx.constraintlayout.widget.ConstraintLayout>
                 </com.google.android.material.card.MaterialCardView>
 
-                <!-- Production Title (Moved Up) -->
+                <!-- Production Chart -->
                 <TextView
                     android:id="@+id/titleProduction"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="28dp"
-                    android:text="Production Hebdomadaire"
+                    android:text="@string/production_7d"
                     android:textColor="@color/text_primary"
                     android:textSize="18sp"
                     android:textStyle="bold"
@@ -262,7 +224,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="28dp"
-                    android:text="Gestion des Œufs"
+                    android:text="@string/egg_management"
                     android:textColor="@color/text_primary"
                     android:textSize="18sp"
                     android:textStyle="bold"
@@ -295,17 +257,24 @@
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Collectés"
+                                android:text="@string/collected"
                                 android:textColor="@color/text_secondary"
                                 android:textSize="12sp" />
                             <TextView
-                                android:id="@+id/tvTotalCollected"
+                                android:id="@+id/tvTotalCollectedTablettes"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="0"
+                                android:text="0 Tab"
                                 android:textColor="@color/text_primary"
-                                android:textSize="20sp"
+                                android:textSize="18sp"
                                 android:textStyle="bold" />
+                            <TextView
+                                android:id="@+id/tvTotalCollectedEggs"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="0 œufs"
+                                android:textColor="@color/text_secondary"
+                                android:textSize="11sp" />
                         </LinearLayout>
 
                         <View
@@ -323,17 +292,24 @@
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Vendus"
+                                android:text="@string/sold"
                                 android:textColor="@color/text_secondary"
                                 android:textSize="12sp" />
                             <TextView
-                                android:id="@+id/tvTotalSold"
+                                android:id="@+id/tvTotalSoldTablettes"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="0"
+                                android:text="0 Tab"
                                 android:textColor="@color/earthy_orange"
-                                android:textSize="20sp"
+                                android:textSize="18sp"
                                 android:textStyle="bold" />
+                            <TextView
+                                android:id="@+id/tvTotalSoldEggs"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="0 œufs"
+                                android:textColor="@color/text_secondary"
+                                android:textSize="11sp" />
                         </LinearLayout>
 
                         <View
@@ -351,17 +327,26 @@
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Disponible"
+                                android:text="@string/available"
                                 android:textColor="@color/text_secondary"
                                 android:textSize="12sp" />
                             <TextView
-                                android:id="@+id/tvAvailableStock"
+                                android:id="@+id/tvAvailableTablettes"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="0"
+                                android:text="@string/tablettes_count"
                                 android:textColor="@color/emerald_soft"
-                                android:textSize="20sp"
-                                android:textStyle="bold" />
+                                android:textSize="18sp"
+                                android:textStyle="bold"
+                                tools:text="0 Tab" />
+                            <TextView
+                                android:id="@+id/tvAvailableEggs"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/loading"
+                                android:textColor="@color/text_secondary"
+                                android:textSize="11sp"
+                                tools:text="0 œufs" />
                         </LinearLayout>
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
@@ -394,13 +379,14 @@
                             android:backgroundTint="@color/earthy_container"
                             android:padding="8dp"
                             android:src="@drawable/ic_heart"
+                            android:contentDescription="@string/desc_mortality_icon"
                             app:tint="@color/earthy_orange" />
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="16dp"
-                            android:text="Mortalité"
+                            android:text="@string/mortality"
                             android:textColor="@color/text_secondary"
                             android:textSize="14sp" />
 
@@ -413,15 +399,6 @@
                             android:textSize="24sp"
                             android:textStyle="bold" />
 
-                        <TextView
-                            android:id="@+id/tvHensCount"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:text="Sujets: --"
-                            android:textColor="@color/emerald_soft"
-                            android:textSize="12sp"
-                            android:textStyle="bold" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
@@ -449,7 +426,8 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:orientation="horizontal"
-                            android:gravity="top">
+                            android:gravity="top"
+                            android:baselineAligned="false">
                             <ImageView
                                 android:layout_width="36dp"
                                 android:layout_height="36dp"
@@ -457,6 +435,7 @@
                                 android:backgroundTint="@color/emerald_container"
                                 android:padding="8dp"
                                 android:src="@drawable/ic_feed"
+                                android:contentDescription="@string/desc_feed_icon"
                                 app:tint="@color/emerald_soft" />
 
                             <TextView
@@ -464,42 +443,41 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:layout_marginStart="8dp"
-                                android:text="Cumul:\n-- kg"
+                                android:text="@string/loading"
                                 android:textColor="@color/text_secondary"
                                 android:textSize="11sp"
-                                android:textStyle="bold" />
+                                android:textStyle="bold"
+                                tools:text="Cumul:\n-- kg" />
                         </LinearLayout>
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="16dp"
-                            android:text="Stock Aliment"
+                            android:text="@string/feed_stock"
                             android:textColor="@color/text_secondary"
                             android:textSize="14sp" />
 
                         <TextView
                             android:id="@+id/tvTotalFeed"
-                            android:layout_width="match_parent"
+                            android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="0 kg"
+                            android:text="@string/loading"
                             android:textColor="@color/text_primary"
                             android:textSize="24sp"
                             android:textStyle="bold"
-                            android:maxLines="1"
-                            app:autoSizeTextType="uniform"
-                            app:autoSizeMinTextSize="12sp"
-                            app:autoSizeMaxTextSize="24sp" />
+                            tools:text="0 kg" />
 
                         <TextView
                             android:id="@+id/tvFeedAutonomy"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="4dp"
-                            android:text="-- j restants"
+                            android:text="@string/loading"
                             android:textColor="@color/earthy_orange"
                             android:textSize="12sp"
-                            android:textStyle="bold" />
+                            android:textStyle="bold"
+                            tools:text="-- j restants" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
@@ -509,7 +487,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="28dp"
-                    android:text="Finances"
+                    android:text="@string/financial_situation"
                     android:textColor="@color/text_primary"
                     android:textSize="18sp"
                     android:textStyle="bold"
@@ -532,47 +510,24 @@
                         android:orientation="vertical"
                         android:padding="20dp">
 
-                        <LinearLayout
-                            android:layout_width="match_parent"
+                        <TextView
+                            android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:gravity="center_vertical"
-                            android:orientation="horizontal">
+                            android:text="@string/net_profit_global"
+                            android:textColor="@color/emerald_soft"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
 
-                            <View
-                                android:layout_width="6dp"
-                                android:layout_height="48dp"
-                                android:background="@color/emerald_soft" />
-
-                            <LinearLayout
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_marginStart="20dp"
-                                android:layout_weight="1"
-                                android:orientation="vertical">
-
-                                <TextView
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:text="Bénéfice Net Estimé"
-                                    android:textColor="@color/text_secondary"
-                                    android:textSize="14sp" />
-
-                                <TextView
-                                    android:id="@+id/tvNetProfit"
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:text="0 MRU"
-                                    android:textColor="@color/text_primary"
-                                    android:textSize="24sp"
-                                    android:textStyle="bold" />
-                            </LinearLayout>
-
-                            <ImageView
-                                android:layout_width="44dp"
-                                android:layout_height="44dp"
-                                android:src="@android:drawable/ic_menu_sort_by_size"
-                                app:tint="@color/emerald_soft" />
-                        </LinearLayout>
+                        <TextView
+                            android:id="@+id/tvNetProfit"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:text="@string/loading"
+                            android:textColor="@color/text_primary"
+                            android:textSize="28sp"
+                            android:textStyle="bold"
+                            tools:text="0 MRU" />
 
                         <View
                             android:layout_width="match_parent"
@@ -583,7 +538,8 @@
                         <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:orientation="horizontal">
+                            android:orientation="horizontal"
+                            android:baselineAligned="false">
 
                             <LinearLayout
                                 android:layout_width="0dp"
@@ -594,55 +550,59 @@
                                 <TextView
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
-                                    android:text="Total Recettes"
-                                    android:textColor="@color/text_secondary"
+                                    android:text="@string/sales_label"
+                                    android:textColor="@color/emerald_soft"
                                     android:textSize="12sp" />
 
                                 <TextView
                                     android:id="@+id/tvTotalRevenue"
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
-                                    android:text="0 MRU"
-                                    android:textColor="@color/emerald_soft"
-                                    android:textSize="16sp"                                     android:textStyle="bold" />
+                                    android:text="@string/loading"
+                                    android:textColor="@color/text_primary"
+                                    android:textSize="16sp"
+                                    android:textStyle="bold"
+                                    tools:text="0 MRU" />
                             </LinearLayout>
 
                             <LinearLayout
                                 android:layout_width="0dp"
                                 android:layout_height="wrap_content"
                                 android:layout_weight="1"
-                                android:orientation="vertical"
-                                android:gravity="end">
+                                android:orientation="vertical">
 
                                 <TextView
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
-                                    android:text="Total Dépenses"
-                                    android:textColor="@color/text_secondary"
+                                    android:text="@string/expenses_label"
+                                    android:textColor="@color/earthy_orange"
                                     android:textSize="12sp" />
 
                                 <TextView
                                     android:id="@+id/tvTotalExpenses"
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
-                                    android:text="0 MRU"
-                                    android:textColor="@color/earthy_orange"
+                                    android:text="@string/loading"
+                                    android:textColor="@color/text_primary"
                                     android:textSize="16sp"
-                                    android:textStyle="bold" />
+                                    android:textStyle="bold"
+                                    tools:text="0 MRU" />
                             </LinearLayout>
                         </LinearLayout>
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
-                <!-- Expenses Chart -->
+                <!-- Expenses Bar Chart -->
                 <com.google.android.material.card.MaterialCardView
                     android:id="@+id/cardExpensesChart"
                     android:layout_width="match_parent"
-                    android:layout_height="220dp"
-                    android:layout_marginTop="12dp"
+                    android:layout_height="250dp"
+                    android:layout_marginTop="16dp"
+                    android:layout_marginBottom="20dp"
                     app:cardBackgroundColor="@color/surface"
                     app:cardCornerRadius="24dp"
                     app:cardElevation="0dp"
+                    app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintTop_toBottomOf="@id/cardNetProfit">
 
                     <LinearLayout
@@ -650,18 +610,20 @@
                         android:layout_height="match_parent"
                         android:orientation="vertical"
                         android:padding="16dp">
+
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Dépenses par catégorie"
+                            android:text="@string/expenses_by_category"
                             android:textColor="@color/text_primary"
                             android:textSize="14sp"
-                            android:textStyle="bold"
-                            android:layout_marginBottom="8dp"/>
+                            android:textStyle="bold" />
+
                         <com.github.mikephil.charting.charts.BarChart
                             android:id="@+id/expensesBarChart"
                             android:layout_width="match_parent"
-                            android:layout_height="match_parent" />
+                            android:layout_height="match_parent"
+                            android:layout_marginTop="8dp" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
@@ -675,10 +637,10 @@
         android:layout_width="wrap_content"
         android:layout_height="match_parent"
         android:layout_gravity="start"
+        android:background="@color/surface"
         app:headerLayout="@layout/nav_header"
-        app:itemIconTint="@color/emerald_soft"
+        app:itemIconTint="@color/text_secondary"
         app:itemTextColor="@color/text_primary"
-        app:menu="@menu/drawer_menu"
-        app:itemShapeAppearanceOverlay="@style/ShapeAppearance.App.LargeComponent"/>
+        app:menu="@menu/drawer_menu" />
 
 </androidx.drawerlayout.widget.DrawerLayout>

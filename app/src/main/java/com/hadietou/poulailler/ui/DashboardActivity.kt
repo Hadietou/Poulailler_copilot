@@ -136,9 +136,8 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
         binding.cardNetProfit.visibility = if (isResp) View.VISIBLE else View.GONE
         binding.cardExpensesChart.visibility = if (isResp) View.VISIBLE else View.GONE
         
-        binding.layoutFarmHeader.visibility = if (isResp) View.VISIBLE else View.GONE
         val headerView = binding.navigationView.getHeaderView(0)
-        headerView?.findViewById<View>(R.id.tvFarmNameNav)?.visibility = if (isResp) View.VISIBLE else View.GONE
+        headerView?.findViewById<View>(R.id.tvFarmNameNav)?.visibility = View.GONE
         
         updateUIBasedOnBatchType()
     }
@@ -166,14 +165,10 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
                 showBlockingDialog()
             }
         }
-
-        viewModel.userName.observe(this) { binding.tvWelcome.text = "BONJOUR ${it.uppercase()} !" }
         
         viewModel.farmInfo.observe(this) { info ->
             if (info != null) {
-                binding.tvDashboardFarmName.text = info.farmName
-                val headerView = binding.navigationView.getHeaderView(0)
-                headerView?.findViewById<TextView>(R.id.tvFarmNameNav)?.text = info.farmName
+                binding.tvWelcome.text = info.farmName.uppercase()
             }
         }
 
@@ -200,7 +195,6 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
         }
 
         viewModel.effectiveHensCount.observe(this) { 
-            binding.tvHensCount.text = "Sujets: ${NumberFormat.getInstance().format(it)}"
             updateHensAgeHeader()
         }
         
@@ -212,8 +206,11 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
 
         viewModel.layingTrend.observe(this) { trend ->
             val trendInt = trend.toInt()
-            val sign = if (trendInt > 0) "+" else ""
-            binding.tvLayingTrend.text = "$sign$trendInt% vs hier"
+            binding.tvLayingTrend.text = if (trendInt >= 0) {
+                getString(R.string.laying_trend_positive, trendInt)
+            } else {
+                getString(R.string.laying_trend_negative, trendInt)
+            }
             
             when {
                 trendInt > 0 -> {
@@ -231,30 +228,48 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
             }
         }
         
-        viewModel.lastCollectedCount.observe(this) { binding.tvTodayEggsDetail.text = "$it œufs collectés" }
+        viewModel.lastCollectedCount.observe(this) { 
+            binding.tvTodayEggsDetail.text = getString(R.string.eggs_collected_count, it) 
+        }
         viewModel.totalMortalityCount.observe(this) { binding.tvTotalMortality.text = it.toString() }
-        viewModel.currentStockKg.observe(this) { binding.tvTotalFeed.text = "${it.toInt()} kg" }
-        viewModel.feedAutonomyDays.observe(this) { binding.tvFeedAutonomy.text = "$it j restants" }
+        viewModel.currentStockKg.observe(this) { 
+            binding.tvTotalFeed.text = getString(R.string.kg_unit, it.toInt()) 
+        }
+        viewModel.feedAutonomyDays.observe(this) { 
+            binding.tvFeedAutonomy.text = getString(R.string.feed_autonomy, it) 
+        }
         
-        viewModel.totalCollected.observe(this) { binding.tvTotalCollected.text = it.toString() }
-        viewModel.totalSold.observe(this) { binding.tvTotalSold.text = it.toString() }
-        viewModel.totalRemaining.observe(this) { binding.tvAvailableStock.text = it.toString() }
+        viewModel.totalCollected.observe(this) { total ->
+            val tablettes = total / 30
+            binding.tvTotalCollectedTablettes.text = getString(R.string.tablettes_count, tablettes)
+            binding.tvTotalCollectedEggs.text = getString(R.string.eggs_count_format, NumberFormat.getInstance().format(total))
+        }
+        viewModel.totalSold.observe(this) { total ->
+            val tablettes = total / 30
+            binding.tvTotalSoldTablettes.text = getString(R.string.tablettes_count, tablettes)
+            binding.tvTotalSoldEggs.text = getString(R.string.eggs_count_format, NumberFormat.getInstance().format(total))
+        }
+        viewModel.totalRemaining.observe(this) { total ->
+            val tablettes = total / 30
+            binding.tvAvailableTablettes.text = getString(R.string.tablettes_count, tablettes)
+            binding.tvAvailableEggs.text = getString(R.string.eggs_count_format, NumberFormat.getInstance().format(total))
+        }
 
         viewModel.netProfit.observe(this) { 
             val curr = viewModel.farmInfo.value?.currency ?: "MRU"
-            binding.tvNetProfit.text = "${NumberFormat.getInstance().format(it)} $curr"
+            binding.tvNetProfit.text = getString(R.string.currency_format, NumberFormat.getInstance().format(it), curr)
         }
         viewModel.totalSales.observe(this) {
             val curr = viewModel.farmInfo.value?.currency ?: "MRU"
-            binding.tvTotalRevenue.text = "${NumberFormat.getInstance().format(it)} $curr"
+            binding.tvTotalRevenue.text = getString(R.string.currency_format, NumberFormat.getInstance().format(it), curr)
         }
         viewModel.totalExpenses.observe(this) {
             val curr = viewModel.farmInfo.value?.currency ?: "MRU"
-            binding.tvTotalExpenses.text = "${NumberFormat.getInstance().format(it)} $curr"
+            binding.tvTotalExpenses.text = getString(R.string.currency_format, NumberFormat.getInstance().format(it), curr)
         }
         
         viewModel.totalFeedPurchasedKg.observe(this) {
-            binding.tvTotalPurchasedLabel.text = "Cumul:\n${it.toInt()} kg"
+            binding.tvTotalPurchasedLabel.text = getString(R.string.feed_cumul, it.toInt())
         }
 
         viewModel.weeklyProduction.observe(this) { list ->
@@ -409,8 +424,9 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
     private fun updateHensAgeHeader() {
         val batch = viewModel.selectedBatch.value ?: return
         val count = viewModel.effectiveHensCount.value ?: batch.hensCount
+        val formattedCount = NumberFormat.getInstance().format(count)
         val age = viewModel.getFormattedAge(batch.chickBirthDate)
-        binding.tvHensAgeHeader.text = "$count sujets • Age : $age"
+        binding.tvAppTitle.text = getString(R.string.subjects_age_format, formattedCount, age)
     }
 
     private fun setupClickListeners() {

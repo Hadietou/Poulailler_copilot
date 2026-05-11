@@ -11,6 +11,47 @@
     <string name="sales_label">Ventes</string>
     <string name="expenses_label">Dépenses</string>
 
+    <string name="welcome_back">BONJOUR %1$s !</string>
+    <string name="default_farm_name">MA FERME</string>
+    <string name="current_batch">Lot Actuel</string>
+    <string name="hens_count_label">Sujets: %1$s</string>
+    <string name="loading">Chargement&#8230;</string>
+    <string name="laying_rate">Taux de ponte</string>
+    <string name="eggs_collected_count">%1$d œufs collectés</string>
+    <string name="laying_trend_positive">+%1$d%% vs hier</string>
+    <string name="laying_trend_negative">%1$d%% vs hier</string>
+    <string name="production_7d">Production (7j)</string>
+    <string name="egg_management">Gestion des Œufs</string>
+    <string name="collected">Collectés</string>
+    <string name="sold">Vendus</string>
+    <string name="available">Disponible</string>
+    <string name="tablettes_count">%1$d Tab</string>
+    <string name="eggs_count_format">%1$s œufs</string>
+    <string name="mortality">Mortalité</string>
+    <string name="feed_stock">Stock Aliment</string>
+    <string name="feed_cumul">Cumul:\n%1$d kg</string>
+    <string name="feed_autonomy">%1$d j restants</string>
+    <string name="financial_situation">Situation Financière</string>
+    <string name="net_profit_global">Bénéfice Net Global</string>
+    <string name="expenses_by_category">Dépenses par Catégorie</string>
+    <string name="kg_unit">%1$d kg</string>
+    <string name="currency_format">%1$s %2$s</string>
+    <string name="percent_format">%1$d%%</string>
+    <string name="zero_percent">0%</string>
+    <string name="subjects_age_format">%1$s sujets • Age : %2$s</string>
+
     <string name="nav_delete_account">Supprimer mon compte</string>
     <string name="delete_account_url" translatable="false">https://hadietou.github.io/poulailler-privacy/delete-account.html</string>
+
+    <string name="desc_edit_batch">Modifier le lot</string>
+    <string name="desc_mortality_icon">Icône mortalité</string>
+    <string name="desc_feed_icon">Icône aliment</string>
+
+    <!-- Nav Header -->
+    <string name="profile_picture_desc">Photo de profil</string>
+    <string name="default_username">Utilisateur</string>
+    <string name="default_farm_name_nav">Ma Ferme</string>
+    <string name="role_label">Rôle</string>
+    <string name="version_format">v%1$s</string>
+    <string name="separator" translatable="false">|</string>
 </resources>
