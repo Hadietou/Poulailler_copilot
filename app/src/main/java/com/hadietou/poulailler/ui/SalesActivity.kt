@@ -184,7 +184,7 @@ class SalesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
             .setView(dialogBinding.root)
             .create()
 
-        dialogBinding.tilUnitPrice.hint = "Prix unitaire ($currency)"
+        dialogBinding.tilUnitPrice.hint = "Prix par tablette ($currency)"
         
         val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
         dialogBinding.etSaleDate.setText(sdf.format(selectedDate.time))
@@ -200,22 +200,25 @@ class SalesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
         }
 
         dialogBinding.btnSaveSale.setOnClickListener {
-            val quantity = dialogBinding.etQuantity.text.toString().toIntOrNull()
-            val unitPrice = dialogBinding.etUnitPrice.text.toString().toDoubleOrNull()
+            val traysCount = dialogBinding.etQuantity.text.toString().toIntOrNull()
+            val trayPrice = dialogBinding.etUnitPrice.text.toString().toDoubleOrNull()
             val buyer = dialogBinding.etBuyer.text.toString()
             val phone = dialogBinding.etPhoneNumber.text.toString()
 
-            if (quantity == null || unitPrice == null) {
+            if (traysCount == null || trayPrice == null) {
                 Toast.makeText(this, "Veuillez remplir les champs obligatoires", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
-            val totalPrice = quantity * unitPrice
+            val totalEggs = traysCount * 30
+            val unitPriceEgg = trayPrice / 30.0
+            val totalPrice = traysCount * trayPrice
+
             val sale = EggSale(
                 userId = userId ?: "",
                 date = selectedDate.timeInMillis,
-                quantity = quantity,
-                pricePerUnit = unitPrice,
+                quantity = totalEggs,
+                pricePerUnit = unitPriceEgg,
                 totalPrice = totalPrice,
                 buyer = if (buyer.isBlank()) null else buyer,
                 phoneNumber = if (phone.isBlank()) null else phone,
@@ -246,10 +249,13 @@ class SalesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
             .setView(dialogBinding.root)
             .create()
 
-        dialogBinding.tilUnitPrice.hint = "Prix unitaire ($currency)"
+        dialogBinding.tilUnitPrice.hint = "Prix par tablette ($currency)"
         
-        dialogBinding.etQuantity.setText(sale.quantity.toString())
-        dialogBinding.etUnitPrice.setText(sale.pricePerUnit.toString())
+        val trays = sale.quantity / 30
+        val trayPrice = sale.pricePerUnit * 30
+
+        dialogBinding.etQuantity.setText(trays.toString())
+        dialogBinding.etUnitPrice.setText(trayPrice.toString())
         dialogBinding.etBuyer.setText(sale.buyer ?: "")
         dialogBinding.etPhoneNumber.setText(sale.phoneNumber ?: "")
         
@@ -269,23 +275,26 @@ class SalesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
 
         dialogBinding.btnSaveSale.text = "MODIFIER"
         dialogBinding.btnSaveSale.setOnClickListener {
-            val quantity = dialogBinding.etQuantity.text.toString().toIntOrNull()
-            val unitPrice = dialogBinding.etUnitPrice.text.toString().toDoubleOrNull()
+            val traysCount = dialogBinding.etQuantity.text.toString().toIntOrNull()
+            val trayPriceInput = dialogBinding.etUnitPrice.text.toString().toDoubleOrNull()
             val buyer = dialogBinding.etBuyer.text.toString()
             val phone = dialogBinding.etPhoneNumber.text.toString()
 
-            if (quantity == null || unitPrice == null) {
+            if (traysCount == null || trayPriceInput == null) {
                 Toast.makeText(this, "Champs obligatoires", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
-            val totalPrice = quantity * unitPrice
+            val totalEggs = traysCount * 30
+            val unitPriceEgg = trayPriceInput / 30.0
+            val totalPrice = traysCount * trayPriceInput
+
             lifecycleScope.launch(Dispatchers.IO) {
                 try {
                     val updatedSale = sale.copy(
                         date = editDateMs,
-                        quantity = quantity,
-                        pricePerUnit = unitPrice,
+                        quantity = totalEggs,
+                        pricePerUnit = unitPriceEgg,
                         totalPrice = totalPrice,
                         buyer = if (buyer.isBlank()) null else buyer,
                         phoneNumber = if (phone.isBlank()) null else phone
@@ -454,7 +463,11 @@ class SalesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
                 val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
                 binding.tvDate.text = sdf.format(Date(item.date))
                 binding.tvClient.text = item.buyer ?: "Client anonyme"
-                binding.tvDetails.text = "${item.quantity} œufs x ${String.format(Locale.getDefault(), "%.0f", item.pricePerUnit)}"
+                
+                val trays = item.quantity / 30
+                val trayPrice = item.pricePerUnit * 30
+                
+                binding.tvDetails.text = String.format(Locale.getDefault(), "%d tablettes x %.0f", trays, trayPrice)
                 binding.tvTotal.text = String.format(Locale.getDefault(), "%.0f %s", item.totalPrice, currency)
             }
         }

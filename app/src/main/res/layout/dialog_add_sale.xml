@@ -38,7 +38,7 @@
     <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Nombre d'œufs vendus"
+        android:hint="Nombre de tablettes vendues"
         style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
         android:layout_marginBottom="12dp"
         app:hintTextColor="#B0B0B0"
@@ -57,7 +57,7 @@
         android:id="@+id/tilUnitPrice"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Prix unitaire ($)"
+        android:hint="Prix par tablette ($)"
         style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
         android:layout_marginBottom="12dp"
         app:hintTextColor="#B0B0B0"
