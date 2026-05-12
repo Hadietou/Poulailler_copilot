@@ -50,9 +50,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
 
     val isAccessBlocked = MutableLiveData<Boolean>(false)
 
-    fun loadData() {
-        Log.d("DashboardVM", "Loading dashboard data...")
-        
+    fun checkAccessStatus() {
         viewModelScope.launch {
             try {
                 val blocked = firebaseRepo.isFarmAccessBlocked()
@@ -61,6 +59,12 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
                 Log.e("DashboardVM", "Error checking access status", e)
             }
         }
+    }
+
+    fun loadData() {
+        Log.d("DashboardVM", "Loading dashboard data...")
+        
+        checkAccessStatus()
 
         viewModelScope.launch {
             try {
