@@ -22,6 +22,7 @@ import com.hadietou.poulailler.BuildConfig
 import com.hadietou.poulailler.databinding.ActivityDashboardBinding
 import com.hadietou.poulailler.repository.FirebaseRepository
 import com.hadietou.poulailler.data.CategoryExpense
+import com.hadietou.poulailler.util.SunUtils
 import com.google.android.material.navigation.NavigationView
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.Dispatchers
@@ -64,6 +65,7 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
             setupClickListeners()
             setupBatchSpinner()
             observeViewModel()
+            updateLightingIndicator()
             
             updateUIBasedOnRole()
             
@@ -87,6 +89,11 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
         }
     }
 
+    private fun updateLightingIndicator() {
+        val extinctionTime = SunUtils.getExtinctionTime()
+        binding.tvLightingTime.text = getString(R.string.lighting_extinguish_at, extinctionTime)
+    }
+
     private fun setupNavigation() {
         setSupportActionBar(binding.toolbar)
         val toggle = ActionBarDrawerToggle(this, binding.drawerLayout, binding.toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close)
@@ -104,6 +111,22 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
                 }
             }
         })
+    }
+
+    private fun setupClickListeners() {
+        binding.ivSelectBatch.setOnClickListener {
+            binding.spinnerBatches.performClick()
+        }
+        
+        // Header Icons
+        binding.root.findViewById<View>(R.id.ivHeaderHome)?.setOnClickListener {
+            // Already on Dashboard, scroll to top
+            binding.root.findViewById<androidx.core.widget.NestedScrollView>(R.id.nestedScrollView)?.smoothScrollTo(0, 0)
+        }
+        
+        binding.root.findViewById<View>(R.id.ivHeaderProfile)?.setOnClickListener {
+            startActivity(Intent(this, FarmInfoActivity::class.java))
+        }
     }
 
     private fun setupBatchSpinner() {
@@ -154,6 +177,9 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
         binding.titleProduction.visibility = eggVisibility
         binding.cardProductionChart.visibility = eggVisibility
         
+        // Lighting only for Layers
+        binding.cardLightingIndicator.visibility = eggVisibility
+
         // Hide "Collect" from menu if CHAIR
         binding.navigationView.menu.findItem(R.id.nav_collect)?.isVisible = !isChair
     }
@@ -407,10 +433,13 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
                     }
                 }
             }
-            
+
             axisLeft.apply {
                 this.textColor = textColor
-                axisMinimum = 0f
+                setDrawGridLines(true)
+                valueFormatter = object : ValueFormatter() {
+                    override fun getFormattedValue(value: Float): String = value.toInt().toString()
+                }
             }
             axisRight.isEnabled = false
             legend.isEnabled = false
@@ -424,142 +453,41 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
     private fun updateHensAgeHeader() {
         val batch = viewModel.selectedBatch.value ?: return
         val count = viewModel.effectiveHensCount.value ?: batch.hensCount
-        val formattedCount = NumberFormat.getInstance().format(count)
-        val age = viewModel.getFormattedAge(batch.chickBirthDate)
-        binding.tvAppTitle.text = getString(R.string.subjects_age_format, formattedCount, age)
+        val ageWeeks = calculateAgeInWeeks(batch.chickBirthDate)
+        binding.tvAppTitle.text = getString(R.string.subjects_age_format, NumberFormat.getInstance().format(count), ageWeeks.toString())
     }
 
-    private fun setupClickListeners() {
-        binding.ivSelectBatch.setOnClickListener { binding.spinnerBatches.performClick() }
-        binding.tvDashboardBatchName.setOnClickListener { binding.spinnerBatches.performClick() }
-
-        binding.cardLayingRate.setOnClickListener {
-            val batch = viewModel.selectedBatch.value
-            if (batch != null && batch.typeLot != "CHAIR") {
-                val intent = Intent(this, AgentActivity::class.java)
-                intent.putExtra("userIdString", userId)
-                intent.putExtra("role", userRole)
-                intent.putExtra("selectedBatchId", batch.firestoreId)
-                intent.putExtra("batchType", batch.typeLot)
-                startActivity(intent)
-            }
-        }
-        binding.cardNetProfit.setOnClickListener {
-            val batch = viewModel.selectedBatch.value
-            if (batch != null) {
-                val intent = Intent(this, SalesActivity::class.java)
-                intent.putExtra("role", userRole)
-                intent.putExtra("userIdString", userId)
-                intent.putExtra("selectedBatchId", batch.firestoreId)
-                intent.putExtra("batchType", batch.typeLot)
-                startActivity(intent)
-            }
-        }
-        binding.cardExpensesChart.setOnClickListener {
-            val batch = viewModel.selectedBatch.value
-            if (batch != null) {
-                val intent = Intent(this, ExpensesActivity::class.java)
-                intent.putExtra("role", userRole)
-                intent.putExtra("userIdString", userId)
-                intent.putExtra("selectedBatchId", batch.firestoreId)
-                startActivity(intent)
-            }
-        }
-        binding.cardMortality.setOnClickListener {
-            val batch = viewModel.selectedBatch.value
-            if (batch != null) {
-                val intent = Intent(this, AgentActivity::class.java)
-                intent.putExtra("userIdString", userId)
-                intent.putExtra("role", userRole)
-                intent.putExtra("openTab", 1) 
-                intent.putExtra("selectedBatchId", batch.firestoreId)
-                intent.putExtra("batchType", batch.typeLot)
-                startActivity(intent)
-            }
-        }
-        binding.cardStockFeed.setOnClickListener {
-             val batch = viewModel.selectedBatch.value
-             if (batch != null) {
-                 val intent = Intent(this, ExpensesActivity::class.java)
-                 intent.putExtra("role", userRole)
-                 intent.putExtra("userIdString", userId)
-                 intent.putExtra("selectedBatchId", batch.firestoreId)
-                 startActivity(intent)
-             }
-        }
+    private fun calculateAgeInWeeks(birthDate: Long): Int {
+        val diff = System.currentTimeMillis() - birthDate
+        return (diff / (1000 * 60 * 60 * 24 * 7)).toInt()
     }
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
             R.id.nav_dashboard -> {}
-            R.id.nav_users -> {
-                val intent = Intent(this, ResponsableActivity::class.java)
-                intent.putExtra("role", userRole)
-                intent.putExtra("userIdString", userId)
-                startActivity(intent)
-            }
-            R.id.nav_collect -> {
-                val batch = viewModel.selectedBatch.value
-                if (batch != null && batch.typeLot != "CHAIR") {
-                    val intent = Intent(this, AgentActivity::class.java)
-                    intent.putExtra("userIdString", userId)
-                    intent.putExtra("role", userRole)
-                    intent.putExtra("selectedBatchId", batch.firestoreId)
-                    intent.putExtra("batchType", batch.typeLot)
-                    startActivity(intent)
-                } else if (batch != null) {
-                    Toast.makeText(this, "Pas de collecte d'œufs pour les poulets de chair", Toast.LENGTH_SHORT).show()
-                }
-            }
-            R.id.nav_batches -> {
-                val intent = Intent(this, BatchActivity::class.java)
-                intent.putExtra("role", userRole)
-                intent.putExtra("userIdString", userId)
-                startActivity(intent)
-            }
-            R.id.nav_vaccines -> {
-                val intent = Intent(this, VaccineActivity::class.java)
-                intent.putExtra("role", userRole)
-                intent.putExtra("userIdString", userId)
-                intent.putExtra("selectedBatchId", viewModel.selectedBatch.value?.firestoreId)
-                startActivity(intent)
-            }
-            R.id.nav_expenses -> {
-                val intent = Intent(this, ExpensesActivity::class.java)
-                intent.putExtra("role", userRole)
-                intent.putExtra("userIdString", userId)
-                intent.putExtra("selectedBatchId", viewModel.selectedBatch.value?.firestoreId)
-                startActivity(intent)
-            }
-            R.id.nav_sales -> {
-                val intent = Intent(this, SalesActivity::class.java)
-                intent.putExtra("role", userRole)
-                intent.putExtra("userIdString", userId)
-                intent.putExtra("selectedBatchId", viewModel.selectedBatch.value?.firestoreId)
-                intent.putExtra("batchType", viewModel.selectedBatch.value?.typeLot)
-                startActivity(intent)
-            }
-            R.id.nav_mortality -> {
-                val intent = Intent(this, MortalityActivity::class.java)
-                intent.putExtra("role", userRole)
-                intent.putExtra("userIdString", userId)
-                intent.putExtra("selectedBatchId", viewModel.selectedBatch.value?.firestoreId)
-                startActivity(intent)
-            }
+            R.id.nav_batches -> startActivity(Intent(this, BatchActivity::class.java))
+            R.id.nav_users -> startActivity(Intent(this, AgentActivity::class.java))
+            R.id.nav_expenses -> startActivity(Intent(this, ExpensesActivity::class.java))
+            R.id.nav_vaccines -> startActivity(Intent(this, VaccineActivity::class.java))
+            R.id.nav_collect -> { /* Dashboard is already the place for stats, maybe a specific collect activity? */ }
+            R.id.nav_sales -> startActivity(Intent(this, SalesActivity::class.java))
+            R.id.nav_mortality -> startActivity(Intent(this, MortalityActivity::class.java))
             R.id.nav_delete_account -> {
-                val url = getString(R.string.delete_account_url)
-                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(getString(R.string.delete_account_url)))
                 startActivity(intent)
             }
             R.id.nav_logout -> {
                 FirebaseAuth.getInstance().signOut()
-                val intent = Intent(this, LoginActivity::class.java)
-                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                startActivity(intent)
+                startActivity(Intent(this, LoginActivity::class.java))
                 finish()
             }
         }
         binding.drawerLayout.closeDrawer(GravityCompat.START)
         return true
+    }
+
+    override fun onResume() {
+        super.onResume()
+        viewModel.checkAccessStatus()
     }
 }
