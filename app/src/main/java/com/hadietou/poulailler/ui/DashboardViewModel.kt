@@ -94,7 +94,9 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
                 firebaseRepo.getBatchesFlow().collectLatest { batches ->
                     allBatches.value = batches
                     if (selectedBatch.value == null && batches.isNotEmpty()) {
-                        selectedBatch.postValue(batches.firstOrNull { it.status == "ACTIVE" } ?: batches.first())
+                        val firstActive = batches.firstOrNull { it.status == "ACTIVE" } ?: batches.first()
+                        selectedBatch.value = firstActive
+                        refreshAllStats()
                     } else {
                         refreshAllStats()
                     }
@@ -144,7 +146,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         refreshAllStats()
     }
 
-    private fun refreshAllStats() {
+    fun refreshAllStats() {
         val batch = selectedBatch.value ?: return
         val batchId = batch.firestoreId
         val isChair = batch.typeLot == "CHAIR"
@@ -217,15 +219,15 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
             totalBroken.postValue(entries.sumOf { it.brokenEggsCount })
             totalRemaining.postValue(totalColl - totalSoldQty - (entries.sumOf { it.brokenEggsCount }))
 
-            // Weekly Production
-            val last7Days = mutableListOf<Pair<Long, Int>>()
-            for (i in 6 downTo 0) {
+            // Production history (last 15 days)
+            val history = mutableListOf<Pair<Long, Int>>()
+            for (i in 14 downTo 0) {
                 val start = todayStart - TimeUnit.DAYS.toMillis(i.toLong())
                 val end = start + TimeUnit.DAYS.toMillis(1) - 1
                 val prod = entries.filter { it.date in start..end }.sumOf { it.eggsCount }
-                last7Days.add(start to prod)
+                history.add(start to prod)
             }
-            weeklyProduction.postValue(last7Days)
+            weeklyProduction.postValue(history)
         }
 
         // Feed Stats
@@ -313,7 +315,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         val days = totalDays % 7
         
         val weeksStr = if (weeks > 1) "$weeks semaines" else "$weeks semaine"
-        val daysStr = if (days > 1) "$days jours" else "$days jour"
+        val daysStr = if (days > 0) "$days jours" else "$days jour"
         
         return when {
             weeks > 0 && days > 0 -> "$weeksStr et $daysStr"

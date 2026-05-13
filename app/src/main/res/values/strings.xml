@@ -20,7 +20,7 @@
     <string name="eggs_collected_count">%1$d œufs collectés</string>
     <string name="laying_trend_positive">+%1$d%% vs hier</string>
     <string name="laying_trend_negative">%1$d%% vs hier</string>
-    <string name="production_7d">Production (7j)</string>
+    <string name="production_15d">Production (15j)</string>
     <string name="egg_management">Gestion des Œufs</string>
     <string name="collected">Collectés</string>
     <string name="sold">Vendus</string>

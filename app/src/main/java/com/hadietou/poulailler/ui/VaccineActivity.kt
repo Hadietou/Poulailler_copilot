@@ -74,6 +74,12 @@ class VaccineActivity : AppCompatActivity(), NavigationView.OnNavigationItemSele
             isShowingAll = true
             refreshDisplay()
         }
+
+        if (intent.getBooleanExtra("scrollToLighting", false)) {
+            binding.root.post {
+                binding.nestedScrollView.smoothScrollTo(0, binding.cardLightingLogic.top)
+            }
+        }
     }
 
     private fun checkAccessStatus() {
