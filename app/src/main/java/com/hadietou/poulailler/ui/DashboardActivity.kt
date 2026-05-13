@@ -63,6 +63,7 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
 
             setupNavigation()
             setupClickListeners()
+            setupDashboardCardListeners()
             setupBatchSpinner()
             observeViewModel()
             updateLightingIndicator()
@@ -118,15 +119,43 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
             binding.spinnerBatches.performClick()
         }
         
-        // Header Icons
-        binding.root.findViewById<View>(R.id.ivHeaderHome)?.setOnClickListener {
-            // Already on Dashboard, scroll to top
-            binding.root.findViewById<androidx.core.widget.NestedScrollView>(R.id.nestedScrollView)?.smoothScrollTo(0, 0)
+        binding.toolbar.findViewById<View>(R.id.ivHeaderHome)?.setOnClickListener {
+            binding.nestedScrollView.smoothScrollTo(0, 0)
         }
         
-        binding.root.findViewById<View>(R.id.ivHeaderProfile)?.setOnClickListener {
+        binding.toolbar.findViewById<View>(R.id.ivHeaderProfile)?.setOnClickListener {
             startActivity(Intent(this, FarmInfoActivity::class.java))
         }
+    }
+
+    private fun setupDashboardCardListeners() {
+        binding.cardLightingIndicator.setOnClickListener {
+            val intent = Intent(this, VaccineActivity::class.java)
+            intent.putExtra("scrollToLighting", true)
+            intent.putExtra("role", userRole)
+            intent.putExtra("userIdString", userId)
+            intent.putExtra("selectedBatchId", viewModel.selectedBatch.value?.firestoreId)
+            startActivity(intent)
+        }
+        binding.cardLayingRate.setOnClickListener { navigateTo(AgentActivity::class.java) }
+        
+        // Liens spécifiques dans la Gestion des oeufs
+        binding.layoutCollected.setOnClickListener { navigateTo(AgentActivity::class.java) }
+        binding.layoutSold.setOnClickListener { navigateTo(SalesActivity::class.java) }
+        // Note: binding.layoutAvailable n'a pas de listener comme demandé
+
+        binding.cardMortality.setOnClickListener { navigateTo(MortalityActivity::class.java) }
+        binding.cardStockFeed.setOnClickListener { navigateTo(ExpensesActivity::class.java) }
+        binding.cardNetProfit.setOnClickListener { navigateTo(SalesActivity::class.java) }
+        binding.cardProductionChart.setOnClickListener { navigateTo(AgentActivity::class.java) }
+    }
+
+    private fun <T> navigateTo(cls: Class<T>) {
+        val intent = Intent(this, cls)
+        intent.putExtra("role", userRole)
+        intent.putExtra("userIdString", userId)
+        intent.putExtra("selectedBatchId", viewModel.selectedBatch.value?.firestoreId)
+        startActivity(intent)
     }
 
     private fun setupBatchSpinner() {
@@ -169,18 +198,14 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
         val batch = viewModel.selectedBatch.value ?: return
         val isChair = batch.typeLot == "CHAIR"
         
-        // Hide egg related UI if batch is Broiler (CHAIR)
         val eggVisibility = if (isChair) View.GONE else View.VISIBLE
         binding.cardLayingRate.visibility = eggVisibility
         binding.titleEggStock.visibility = eggVisibility
         binding.cardEggStock.visibility = eggVisibility
         binding.titleProduction.visibility = eggVisibility
         binding.cardProductionChart.visibility = eggVisibility
-        
-        // Lighting only for Layers
         binding.cardLightingIndicator.visibility = eggVisibility
 
-        // Hide "Collect" from menu if CHAIR
         binding.navigationView.menu.findItem(R.id.nav_collect)?.isVisible = !isChair
     }
 
@@ -453,25 +478,20 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
     private fun updateHensAgeHeader() {
         val batch = viewModel.selectedBatch.value ?: return
         val count = viewModel.effectiveHensCount.value ?: batch.hensCount
-        val ageWeeks = calculateAgeInWeeks(batch.chickBirthDate)
-        binding.tvAppTitle.text = getString(R.string.subjects_age_format, NumberFormat.getInstance().format(count), ageWeeks.toString())
-    }
-
-    private fun calculateAgeInWeeks(birthDate: Long): Int {
-        val diff = System.currentTimeMillis() - birthDate
-        return (diff / (1000 * 60 * 60 * 24 * 7)).toInt()
+        val ageFormatted = viewModel.getFormattedAge(batch.chickBirthDate)
+        binding.tvAppTitle.text = getString(R.string.subjects_age_format, NumberFormat.getInstance().format(count), ageFormatted)
     }
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
             R.id.nav_dashboard -> {}
-            R.id.nav_batches -> startActivity(Intent(this, BatchActivity::class.java))
-            R.id.nav_users -> startActivity(Intent(this, AgentActivity::class.java))
-            R.id.nav_expenses -> startActivity(Intent(this, ExpensesActivity::class.java))
-            R.id.nav_vaccines -> startActivity(Intent(this, VaccineActivity::class.java))
-            R.id.nav_collect -> { /* Dashboard is already the place for stats, maybe a specific collect activity? */ }
-            R.id.nav_sales -> startActivity(Intent(this, SalesActivity::class.java))
-            R.id.nav_mortality -> startActivity(Intent(this, MortalityActivity::class.java))
+            R.id.nav_batches -> navigateTo(BatchActivity::class.java)
+            R.id.nav_users -> navigateTo(ResponsableActivity::class.java)
+            R.id.nav_expenses -> navigateTo(ExpensesActivity::class.java)
+            R.id.nav_vaccines -> navigateTo(VaccineActivity::class.java)
+            R.id.nav_collect -> navigateTo(AgentActivity::class.java)
+            R.id.nav_sales -> navigateTo(SalesActivity::class.java)
+            R.id.nav_mortality -> navigateTo(MortalityActivity::class.java)
             R.id.nav_delete_account -> {
                 val intent = Intent(Intent.ACTION_VIEW, Uri.parse(getString(R.string.delete_account_url)))
                 startActivity(intent)
@@ -489,5 +509,6 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
     override fun onResume() {
         super.onResume()
         viewModel.checkAccessStatus()
+        viewModel.refreshAllStats()
     }
 }
