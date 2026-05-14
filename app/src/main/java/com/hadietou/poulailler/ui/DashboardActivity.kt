@@ -9,7 +9,6 @@ import android.view.View
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.TextView
-import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.viewModels
 import androidx.appcompat.app.ActionBarDrawerToggle
@@ -139,10 +138,8 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
         }
         binding.cardLayingRate.setOnClickListener { navigateTo(AgentActivity::class.java) }
         
-        // Liens spécifiques dans la Gestion des oeufs
         binding.layoutCollected.setOnClickListener { navigateTo(AgentActivity::class.java) }
         binding.layoutSold.setOnClickListener { navigateTo(SalesActivity::class.java) }
-        // Note: binding.layoutAvailable n'a pas de listener comme demandé
 
         binding.cardMortality.setOnClickListener { navigateTo(MortalityActivity::class.java) }
         binding.cardStockFeed.setOnClickListener { navigateTo(ExpensesActivity::class.java) }
@@ -205,6 +202,10 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
         binding.titleProduction.visibility = eggVisibility
         binding.cardProductionChart.visibility = eggVisibility
         binding.cardLightingIndicator.visibility = eggVisibility
+        
+        // Monthly KPIs
+        binding.titleMonthlyKPI.visibility = eggVisibility
+        binding.cardMonthlyKPI.visibility = eggVisibility
 
         binding.navigationView.menu.findItem(R.id.nav_collect)?.isVisible = !isChair
     }
@@ -278,6 +279,24 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
                 }
             }
         }
+
+        // Monthly KPIs Observations
+        viewModel.monthlyProduction.observe(this) { prod ->
+            val valueK = prod / 1000.0
+            binding.tvMonthlyProdValue.text = getString(R.string.k_format, valueK)
+        }
+        viewModel.monthlySales.observe(this) { sales ->
+            val valueK = sales / 1000.0
+            val curr = viewModel.farmInfo.value?.currency ?: "MRU"
+            binding.tvMonthlySalesValue.text = "${getString(R.string.k_format, valueK)} $curr"
+        }
+        viewModel.monthlyLayingRate.observe(this) { rate ->
+            binding.tvMonthlyRateValue.text = "${rate.toInt()}%"
+        }
+
+        viewModel.prodTrend.observe(this) { trend -> updateTrendUI(binding.tvMonthlyProdTrend, trend) }
+        viewModel.salesTrend.observe(this) { trend -> updateTrendUI(binding.tvMonthlySalesTrend, trend) }
+        viewModel.rateTrend.observe(this) { trend -> updateTrendUI(binding.tvMonthlyRateTrend, trend) }
         
         viewModel.lastCollectedCount.observe(this) { 
             binding.tvTodayEggsDetail.text = getString(R.string.eggs_collected_count, it) 
@@ -329,6 +348,23 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
 
         viewModel.expensesByCategory.observe(this) { list ->
             setupBarChart(list)
+        }
+    }
+
+    private fun updateTrendUI(textView: TextView, trend: Int) {
+        when {
+            trend > 0 -> {
+                textView.text = "▲ ${getString(R.string.vs_last_month)}"
+                textView.setTextColor(getColor(R.color.emerald_soft))
+            }
+            trend < 0 -> {
+                textView.text = "▼ ${getString(R.string.vs_last_month)}"
+                textView.setTextColor(getColor(R.color.error))
+            }
+            else -> {
+                textView.text = "-- ${getString(R.string.vs_last_month)}"
+                textView.setTextColor(getColor(R.color.text_secondary))
+            }
         }
     }
 
