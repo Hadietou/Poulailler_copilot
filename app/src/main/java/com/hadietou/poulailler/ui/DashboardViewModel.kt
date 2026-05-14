@@ -31,6 +31,16 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     val totalRemaining = MutableLiveData<Int>(0)
     val layingRate = MutableLiveData<Double>(0.0)
     val layingTrend = MutableLiveData<Double>(0.0)
+
+    // New Monthly KPIs
+    val monthlyProduction = MutableLiveData<Int>(0)
+    val monthlySales = MutableLiveData<Double>(0.0)
+    val monthlyLayingRate = MutableLiveData<Double>(0.0)
+    
+    // Monthly Trends (compared to last month)
+    val prodTrend = MutableLiveData<Int>(0) // 1: Up, -1: Down, 0: Neutral
+    val salesTrend = MutableLiveData<Int>(0)
+    val rateTrend = MutableLiveData<Int>(0)
     
     val totalFeedPurchasedKg = MutableLiveData<Double>(0.0)
     val feedAutonomyDays = MutableLiveData<Int>(0)
@@ -175,6 +185,23 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         val currentHens = (batch.hensCount - totalMortality).coerceAtLeast(0)
         effectiveHensCount.postValue(currentHens)
 
+        // Time calculations for monthly stats
+        val cal = Calendar.getInstance()
+        val today = cal.timeInMillis
+        
+        cal.set(Calendar.DAY_OF_MONTH, 1)
+        cal.set(Calendar.HOUR_OF_DAY, 0)
+        cal.set(Calendar.MINUTE, 0)
+        cal.set(Calendar.SECOND, 0)
+        cal.set(Calendar.MILLISECOND, 0)
+        val currentMonthStart = cal.timeInMillis
+        val daysInCurrentMonth = Calendar.getInstance().get(Calendar.DAY_OF_MONTH)
+
+        cal.add(Calendar.MONTH, -1)
+        val lastMonthStart = cal.timeInMillis
+        val lastMonthEnd = currentMonthStart - 1
+        val daysInLastMonth = cal.getActualMaximum(Calendar.DAY_OF_MONTH)
+
         if (isChair) {
             // Stats spécifiques CHAIR : On ignore les œufs
             todayEggs.postValue(0)
@@ -186,26 +213,34 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
             totalBroken.postValue(0)
             totalRemaining.postValue(0)
             weeklyProduction.postValue(emptyList())
+            
+            // Monthly stats for CHAIR (Sales only)
+            val currentMonthSales = sales.filter { it.date >= currentMonthStart }.sumOf { it.totalPrice }
+            val lastMonthSales = sales.filter { it.date in lastMonthStart..lastMonthEnd }.sumOf { it.totalPrice }
+            monthlySales.postValue(currentMonthSales)
+            salesTrend.postValue(if (currentMonthSales > lastMonthSales) 1 else if (currentMonthSales < lastMonthSales) -1 else 0)
+            
+            monthlyProduction.postValue(0)
+            monthlyLayingRate.postValue(0.0)
+            prodTrend.postValue(0)
+            rateTrend.postValue(0)
         } else {
             // Stats PONDEUSE
-            val now = Calendar.getInstance().apply { set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0) }
-            val todayStart = now.timeInMillis
-            val yesterdayStart = todayStart - TimeUnit.DAYS.toMillis(1)
+            val nowStart = Calendar.getInstance().apply { set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0) }.timeInMillis
+            val yesterdayStart = nowStart - TimeUnit.DAYS.toMillis(1)
 
-            val eggsToday = entries.filter { it.date >= todayStart }.sumOf { it.eggsCount }
+            val eggsToday = entries.filter { it.date >= nowStart }.sumOf { it.eggsCount }
             todayEggs.postValue(eggsToday)
 
-            val eggsYesterday = entries.filter { it.date in yesterdayStart until todayStart }.sumOf { it.eggsCount }
+            val eggsYesterday = entries.filter { it.date in yesterdayStart until nowStart }.sumOf { it.eggsCount }
             
             val divisor = if (currentHens > 0) currentHens else 1
             
-            // Calcul du taux basé sur la DERNIÈRE collecte au lieu du total du jour
             val lastEntry = entries.maxByOrNull { it.date }
             val lastEggsCount = lastEntry?.eggsCount ?: 0
             lastCollectedCount.postValue(lastEggsCount)
 
             val lastRate = (lastEggsCount.toDouble() / divisor.toDouble()) * 100
-            
             val currentRate = (eggsToday.toDouble() / divisor.toDouble()) * 100
             val yesterdayRate = (eggsYesterday.toDouble() / divisor.toDouble()) * 100
             
@@ -219,10 +254,29 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
             totalBroken.postValue(entries.sumOf { it.brokenEggsCount })
             totalRemaining.postValue(totalColl - totalSoldQty - (entries.sumOf { it.brokenEggsCount }))
 
+            // Monthly Stats PONDEUSE
+            val curMonthEntries = entries.filter { it.date >= currentMonthStart }
+            val curMonthProd = curMonthEntries.sumOf { it.eggsCount }
+            monthlyProduction.postValue(curMonthProd)
+            
+            val lastMonthEntries = entries.filter { it.date in lastMonthStart..lastMonthEnd }
+            val lastMonthProd = lastMonthEntries.sumOf { it.eggsCount }
+            prodTrend.postValue(if (curMonthProd > lastMonthProd) 1 else if (curMonthProd < lastMonthProd) -1 else 0)
+
+            val curMonthSales = sales.filter { it.date >= currentMonthStart }.sumOf { it.totalPrice }
+            val lastMonthSales = sales.filter { it.date in lastMonthStart..lastMonthEnd }.sumOf { it.totalPrice }
+            monthlySales.postValue(curMonthSales)
+            salesTrend.postValue(if (curMonthSales > lastMonthSales) 1 else if (curMonthSales < lastMonthSales) -1 else 0)
+
+            val curMonthRate = if (currentHens > 0) (curMonthProd.toDouble() / (currentHens * daysInCurrentMonth)) * 100 else 0.0
+            val lastMonthRate = if (currentHens > 0) (lastMonthProd.toDouble() / (currentHens * daysInLastMonth)) * 100 else 0.0
+            monthlyLayingRate.postValue(curMonthRate)
+            rateTrend.postValue(if (curMonthRate > lastMonthRate) 1 else if (curMonthRate < lastMonthRate) -1 else 0)
+
             // Production history (last 15 days)
             val history = mutableListOf<Pair<Long, Int>>()
             for (i in 14 downTo 0) {
-                val start = todayStart - TimeUnit.DAYS.toMillis(i.toLong())
+                val start = nowStart - TimeUnit.DAYS.toMillis(i.toLong())
                 val end = start + TimeUnit.DAYS.toMillis(1) - 1
                 val prod = entries.filter { it.date in start..end }.sumOf { it.eggsCount }
                 history.add(start to prod)

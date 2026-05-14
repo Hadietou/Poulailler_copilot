@@ -40,6 +40,14 @@
     <string name="zero_percent">0%</string>
     <string name="subjects_age_format">%1$s sujets • Age : %2$s</string>
 
+    <!-- New Monthly KPIs -->
+    <string name="monthly_kpi_title">Performance du Mois</string>
+    <string name="monthly_prod">T Production</string>
+    <string name="monthly_sales">T Ventes</string>
+    <string name="monthly_rate">Taux Moyen</string>
+    <string name="vs_last_month">vs mois dernier</string>
+    <string name="k_format">%1$.1fk</string>
+
     <!-- Lighting -->
     <string name="lighting_extinguish_at">Éteindre à : %1$s</string>
     <string name="lighting_logic_title">CONSEILS ÉCLAIRAGE (15H TOTAL)</string>
