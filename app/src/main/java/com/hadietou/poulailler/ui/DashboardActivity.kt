@@ -128,7 +128,7 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
     }
 
     private fun setupDashboardCardListeners() {
-        binding.cardLightingIndicator.setOnClickListener {
+        binding.cardLightingAlert.setOnClickListener {
             val intent = Intent(this, VaccineActivity::class.java)
             intent.putExtra("scrollToLighting", true)
             intent.putExtra("role", userRole)
@@ -145,6 +145,9 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
         binding.cardStockFeed.setOnClickListener { navigateTo(ExpensesActivity::class.java) }
         binding.cardNetProfit.setOnClickListener { navigateTo(SalesActivity::class.java) }
         binding.cardProductionChart.setOnClickListener { navigateTo(AgentActivity::class.java) }
+        
+        binding.cardBatchHealth.setOnClickListener { navigateTo(VaccineActivity::class.java) }
+        binding.cardSanitaryAlert.setOnClickListener { navigateTo(VaccineActivity::class.java) }
     }
 
     private fun <T> navigateTo(cls: Class<T>) {
@@ -201,11 +204,15 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
         binding.cardEggStock.visibility = eggVisibility
         binding.titleProduction.visibility = eggVisibility
         binding.cardProductionChart.visibility = eggVisibility
-        binding.cardLightingIndicator.visibility = eggVisibility
+        binding.cardLightingAlert.visibility = eggVisibility
         
         // Monthly KPIs
         binding.titleMonthlyKPI.visibility = eggVisibility
         binding.cardMonthlyKPI.visibility = eggVisibility
+        
+        // Tech KPIs
+        binding.titleTechKPI.visibility = eggVisibility
+        binding.cardTechKPI.visibility = eggVisibility
 
         binding.navigationView.menu.findItem(R.id.nav_collect)?.isVisible = !isChair
     }
@@ -228,7 +235,7 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
             val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, batches.map { it.name })
             adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
             binding.spinnerBatches.adapter = adapter
-            
+
             val selected = viewModel.selectedBatch.value
             if (selected != null) {
                 val index = batches.indexOfFirst { it.firestoreId == selected.firestoreId }
@@ -246,7 +253,7 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
             updateUIBasedOnBatchType()
         }
 
-        viewModel.effectiveHensCount.observe(this) { 
+        viewModel.effectiveHensCount.observe(this) {
             updateHensAgeHeader()
         }
         
@@ -263,7 +270,7 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
             } else {
                 getString(R.string.laying_trend_negative, trendInt)
             }
-            
+
             when {
                 trendInt > 0 -> {
                     binding.tvLayingTrend.setTextColor(getColor(R.color.white))
@@ -281,9 +288,8 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
         }
 
         // Monthly KPIs Observations
-        viewModel.monthlyProduction.observe(this) { prod ->
-            val valueK = prod / 1000.0
-            binding.tvMonthlyProdValue.text = getString(R.string.k_format, valueK)
+        viewModel.monthlyProduction.observe(this) { rate ->
+            binding.tvMonthlyProdValue.text = String.format(Locale.getDefault(), "%.1f%%", rate)
         }
         viewModel.monthlySales.observe(this) { sales ->
             val valueK = sales / 1000.0
@@ -298,15 +304,49 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
         viewModel.salesTrend.observe(this) { trend -> updateTrendUI(binding.tvMonthlySalesTrend, trend) }
         viewModel.rateTrend.observe(this) { trend -> updateTrendUI(binding.tvMonthlyRateTrend, trend) }
         
-        viewModel.lastCollectedCount.observe(this) { 
-            binding.tvTodayEggsDetail.text = getString(R.string.eggs_collected_count, it) 
+        // Technical KPIs Observations
+        viewModel.cumulativeMortalityRate.observe(this) { rate ->
+            binding.tvCumulMortalityRate.text = String.format(Locale.getDefault(), "%.1f%%", rate)
+        }
+        viewModel.feedConversionRatio.observe(this) { ic ->
+            binding.tvICValue.text = String.format(Locale.getDefault(), "%.2f", ic)
+        }
+        viewModel.layingGapVsStandard.observe(this) { gap ->
+            val prefix = if (gap > 0) "+" else ""
+            binding.tvGapStdValue.text = String.format(Locale.getDefault(), "%s%.1f%%", prefix, gap)
+            binding.tvGapStdValue.setTextColor(if (gap >= 0) getColor(R.color.emerald_soft) else getColor(R.color.error))
+        }
+
+        // Health KPIs Observations
+        viewModel.survivalRate.observe(this) { rate ->
+            binding.tvSurvivalRate.text = String.format(Locale.getDefault(), "%.1f%%", rate)
+        }
+        viewModel.healthExpenses.observe(this) { expenses ->
+            val curr = viewModel.farmInfo.value?.currency ?: "MRU"
+            binding.tvHealthExpenses.text = String.format(Locale.getDefault(), "%,.0f %s", expenses, curr)
+        }
+
+        viewModel.nextVaccine.observe(this) { vaccine ->
+            if (vaccine != null) {
+                val sdf = SimpleDateFormat("dd/MM", Locale.getDefault())
+                val dateStr = sdf.format(Date(vaccine.date))
+                binding.tvNextVaccine.text = "${vaccine.name} - ${getString(R.string.vaccine_date_format, dateStr)}"
+                binding.cardSanitaryAlert.visibility = View.VISIBLE
+            } else {
+                binding.tvNextVaccine.text = getString(R.string.no_vaccine_planned)
+                binding.cardSanitaryAlert.visibility = View.VISIBLE
+            }
+        }
+
+        viewModel.lastCollectedCount.observe(this) {
+            binding.tvTodayEggsDetail.text = getString(R.string.eggs_collected_count, it)
         }
         viewModel.totalMortalityCount.observe(this) { binding.tvTotalMortality.text = it.toString() }
-        viewModel.currentStockKg.observe(this) { 
-            binding.tvTotalFeed.text = getString(R.string.kg_unit, it.toInt()) 
+        viewModel.currentStockKg.observe(this) {
+            binding.tvTotalFeed.text = getString(R.string.kg_unit, it.toInt())
         }
-        viewModel.feedAutonomyDays.observe(this) { 
-            binding.tvFeedAutonomy.text = getString(R.string.feed_autonomy, it) 
+        viewModel.feedAutonomyDays.observe(this) {
+            binding.tvFeedAutonomy.text = getString(R.string.feed_autonomy, it)
         }
         
         viewModel.totalCollected.observe(this) { total ->
@@ -325,7 +365,7 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
             binding.tvAvailableEggs.text = getString(R.string.eggs_count_format, NumberFormat.getInstance().format(total))
         }
 
-        viewModel.netProfit.observe(this) { 
+        viewModel.netProfit.observe(this) {
             val curr = viewModel.farmInfo.value?.currency ?: "MRU"
             binding.tvNetProfit.text = getString(R.string.currency_format, NumberFormat.getInstance().format(it), curr)
         }
@@ -382,7 +422,7 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
             binding.productionChart.clear()
             return
         }
-        
+
         val entries = production.mapIndexed { index, pair ->
             Entry(index.toFloat(), pair.second.toFloat())
         }
@@ -409,9 +449,9 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
         binding.productionChart.apply {
             data = LineData(dataSet)
             description.isEnabled = false
-            
+
             val textColor = getColor(R.color.text_primary)
-            
+
             xAxis.apply {
                 this.textColor = textColor
                 position = com.github.mikephil.charting.components.XAxis.XAxisPosition.BOTTOM
@@ -425,7 +465,7 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
                     }
                 }
             }
-            
+
             axisLeft.apply {
                 this.textColor = textColor
                 granularity = 1f
@@ -437,7 +477,7 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
             }
             axisRight.isEnabled = false
             legend.textColor = textColor
-            
+
             setExtraOffsets(5f, 5f, 5f, 15f)
             animateX(1000)
             invalidate()
@@ -468,7 +508,7 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
         val textColor = getColor(R.color.text_primary)
 
         val dataSet = BarDataSet(entries, "")
-        dataSet.setColors(colorsList) 
+        dataSet.setColors(colorsList)
         dataSet.valueTextSize = 12f
         dataSet.valueTextColor = textColor
         dataSet.valueFormatter = object : ValueFormatter() {
@@ -479,7 +519,7 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
             data = BarData(dataSet)
             data.barWidth = 0.6f
             description.isEnabled = false
-            
+
             xAxis.apply {
                 this.textColor = textColor
                 position = com.github.mikephil.charting.components.XAxis.XAxisPosition.BOTTOM
@@ -504,7 +544,7 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
             }
             axisRight.isEnabled = false
             legend.isEnabled = false
-            
+
             setExtraOffsets(5f, 5f, 5f, 25f)
             animateY(1000)
             invalidate()
