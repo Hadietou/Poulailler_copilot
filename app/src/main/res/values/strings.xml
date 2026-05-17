@@ -42,13 +42,31 @@
 
     <!-- New Monthly KPIs -->
     <string name="monthly_kpi_title">Performance du Mois</string>
-    <string name="monthly_prod">T Production</string>
-    <string name="monthly_sales">T Ventes</string>
-    <string name="monthly_rate">Taux Moyen</string>
+    <string name="monthly_prod">T Cassés</string>
+    <string name="monthly_sales">Ventes</string>
+    <string name="monthly_rate">T Production</string>
     <string name="vs_last_month">vs mois dernier</string>
     <string name="k_format">%1$.1fk</string>
 
+    <!-- Tech KPIs -->
+    <string name="tech_kpi_title">Indicateurs Techniques (Total Lot)</string>
+    <string name="cumul_mortality_label">Mort. Cumulée</string>
+    <string name="ic_label">IC (kg/plateau)</string>
+    <string name="gap_std_label">Écart / Std</string>
+
+    <!-- Batch Health -->
+    <string name="batch_health_title">Santé du Lot</string>
+    <string name="survival_rate_label">Taux de Survie</string>
+    <string name="health_expenses_label">Dépenses Santé</string>
+
+    <!-- Sanitary Calendar -->
+    <string name="sanitary_calendar_title">Calendrier Sanitaire</string>
+    <string name="next_vaccine_label">Prochain Traitement/Vaccin :</string>
+    <string name="no_vaccine_planned">Aucun traitement planifié</string>
+    <string name="vaccine_date_format">Le %1$s</string>
+
     <!-- Lighting -->
+    <string name="lighting_label">ÉCLAIRAGE</string>
     <string name="lighting_extinguish_at">Éteindre à : %1$s</string>
     <string name="lighting_logic_title">CONSEILS ÉCLAIRAGE (15H TOTAL)</string>
     <string name="lighting_logic_desc">Pour une ponte optimale, vos poules ont besoin de 15 heures de lumière par jour.\n\n<b>Logique :</b>\n1. Allumez les lampes dès le coucher du soleil.\n2. L\'application calcule l\'heure d\'extinction pour atteindre les 15h (Lever du soleil + 15h).\n\n<i>Note : À Nouakchott, cette heure varie légèrement selon la saison.</i></string>
