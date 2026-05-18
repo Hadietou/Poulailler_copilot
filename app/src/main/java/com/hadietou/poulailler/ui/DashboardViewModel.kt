@@ -33,28 +33,33 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     val layingTrend = MutableLiveData<Double>(0.0)
 
     // New Monthly KPIs
-    val monthlyProduction = MutableLiveData<Double>(0.0) // Monthly Broken Rate
-    val monthlySales = MutableLiveData<Double>(0.0)
+    val monthlyProduction = MutableLiveData<Double>(0.0)
+    val monthlySalesTablettes = MutableLiveData<Int>(0)
     val monthlyLayingRate = MutableLiveData<Double>(0.0)
     
-    // Monthly Trends
     val prodTrend = MutableLiveData<Int>(0)
     val salesTrend = MutableLiveData<Int>(0)
     val rateTrend = MutableLiveData<Int>(0)
     
     // Tech KPIs
     val cumulativeMortalityRate = MutableLiveData<Double>(0.0)
-    val feedConversionRatio = MutableLiveData<Double>(0.0) // kg/plateau
+    val feedConversionRatio = MutableLiveData<Double>(0.0)
     val layingGapVsStandard = MutableLiveData<Double>(0.0)
 
     // Health KPIs
     val survivalRate = MutableLiveData<Double>(100.0)
     val healthExpenses = MutableLiveData<Double>(0.0)
     val nextVaccine = MutableLiveData<VaccineEntry?>()
+    val monthlyMortalityCount = MutableLiveData<Int>(0)
     
+    // Feed KPIs
     val totalFeedPurchasedKg = MutableLiveData<Double>(0.0)
     val feedAutonomyDays = MutableLiveData<Int>(0)
     val currentStockKg = MutableLiveData<Double>(0.0)
+    val dailyConsumptionTotalKg = MutableLiveData<Double>(0.0)
+    val dailyConsumptionPerHenG = MutableLiveData<Double>(0.0)
+    val totalFeedConsumedKg = MutableLiveData<Double>(0.0)
+    val totalFeedCost = MutableLiveData<Double>(0.0)
     
     val expensesByCategory = MutableLiveData<List<CategoryExpense>>(emptyList())
     val allEntries = MutableLiveData<List<EggEntry>>(emptyList())
@@ -184,11 +189,12 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
 
         val feedPurchased = expenses.filter { it.category == "Aliment" }.sumOf { it.quantityKg ?: 0.0 }
         totalFeedPurchasedKg.postValue(feedPurchased)
+        val fCost = expenses.filter { it.category == "Aliment" }.sumOf { it.amount }
+        totalFeedCost.postValue(fCost)
 
         expensesByCategory.postValue(expenses.groupBy { it.category }
             .map { (cat, items) -> CategoryExpense(cat, items.sumOf { it.amount }) })
             
-        // Health Expenses
         val hExp = expenses.filter { it.category == "Santé" }.sumOf { it.amount }
         healthExpenses.postValue(hExp)
 
@@ -197,11 +203,6 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         totalMortalityCount.postValue(totalMortality)
         val currentHens = (batch.hensCount - totalMortality).coerceAtLeast(0)
         effectiveHensCount.postValue(currentHens)
-
-        // Tech KPI: Cumulative Mortality Rate
-        val mortalityRate = if (batch.hensCount > 0) (totalMortality.toDouble() / batch.hensCount) * 100 else 0.0
-        cumulativeMortalityRate.postValue(mortalityRate)
-        survivalRate.postValue(100.0 - mortalityRate)
 
         // Time calculations
         val cal = Calendar.getInstance()
@@ -216,6 +217,15 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         val lastMonthEnd = currentMonthStart - 1
         val daysInLastMonth = cal.getActualMaximum(Calendar.DAY_OF_MONTH)
 
+        // Monthly Mortality
+        val monthlyMortality = mortalities.filter { it.date >= currentMonthStart }.sumOf { it.count }
+        monthlyMortalityCount.postValue(monthlyMortality)
+
+        // Tech KPI: Cumulative Mortality Rate
+        val mortalityRate = if (batch.hensCount > 0) (totalMortality.toDouble() / batch.hensCount) * 100 else 0.0
+        cumulativeMortalityRate.postValue(mortalityRate)
+        survivalRate.postValue(100.0 - mortalityRate)
+
         if (isChair) {
             todayEggs.postValue(0); lastCollectedCount.postValue(0); layingRate.postValue(0.0)
             layingTrend.postValue(0.0); totalCollected.postValue(0); totalSold.postValue(0)
@@ -223,10 +233,10 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
             monthlyProduction.postValue(0.0); monthlyLayingRate.postValue(0.0)
             prodTrend.postValue(0); rateTrend.postValue(0)
             
-            val curMonthSales = sales.filter { it.date >= currentMonthStart }.sumOf { it.totalPrice }
-            val lastMonthSales = sales.filter { it.date in lastMonthStart..lastMonthEnd }.sumOf { it.totalPrice }
-            monthlySales.postValue(curMonthSales)
-            salesTrend.postValue(if (curMonthSales > lastMonthSales) 1 else if (curMonthSales < lastMonthSales) -1 else 0)
+            val curMonthSalesQty = sales.filter { it.date >= currentMonthStart }.sumOf { it.quantity }
+            val lastMonthSalesQty = sales.filter { it.date in lastMonthStart..lastMonthEnd }.sumOf { it.quantity }
+            monthlySalesTablettes.postValue(curMonthSalesQty / 30)
+            salesTrend.postValue(if (curMonthSalesQty > lastMonthSalesQty) 1 else if (curMonthSalesQty < lastMonthSalesQty) -1 else 0)
             
             feedConversionRatio.postValue(0.0)
             layingGapVsStandard.postValue(0.0)
@@ -266,10 +276,10 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
             val lastMonthBrokenRate = if (lastMonthProd > 0) (lastMonthBroken.toDouble() / lastMonthProd) * 100 else 0.0
             prodTrend.postValue(if (curMonthBrokenRate < lastMonthBrokenRate) 1 else if (curMonthBrokenRate > lastMonthBrokenRate) -1 else 0)
 
-            val curMonthSales = sales.filter { it.date >= currentMonthStart }.sumOf { it.totalPrice }
-            val lastMonthSales = sales.filter { it.date in lastMonthStart..lastMonthEnd }.sumOf { it.totalPrice }
-            monthlySales.postValue(curMonthSales)
-            salesTrend.postValue(if (curMonthSales > lastMonthSales) 1 else if (curMonthSales < lastMonthSales) -1 else 0)
+            val curMonthSalesQty = sales.filter { it.date >= currentMonthStart }.sumOf { it.quantity }
+            val lastMonthSalesQty = sales.filter { it.date in lastMonthStart..lastMonthEnd }.sumOf { it.quantity }
+            monthlySalesTablettes.postValue(curMonthSalesQty / 30)
+            salesTrend.postValue(if (curMonthSalesQty > lastMonthSalesQty) 1 else if (curMonthSalesQty < lastMonthSalesQty) -1 else 0)
 
             val curMonthRate = if (currentHens > 0) (curMonthProd.toDouble() / (currentHens * daysInCurrentMonth)) * 100 else 0.0
             val lastMonthRate = if (currentHens > 0) (lastMonthProd.toDouble() / (currentHens * daysInLastMonth)) * 100 else 0.0
@@ -281,7 +291,6 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
             val stdRate = getStandardLayingRate(ageInWeeks)
             layingGapVsStandard.postValue(lastRate - stdRate)
 
-            // Production history
             val history = mutableListOf<Pair<Long, Int>>()
             for (i in 14 downTo 0) {
                 val start = todayStart - TimeUnit.DAYS.toMillis(i.toLong())
@@ -312,7 +321,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         val startDate = batch.arrivalDate
         val isChair = batch.typeLot == "CHAIR"
         if (startDate <= 0 || initialHens <= 0) {
-            currentStockKg.postValue(totalPurchased); feedAutonomyDays.postValue(0); return
+            currentStockKg.postValue(totalPurchased); feedAutonomyDays.postValue(0); dailyConsumptionTotalKg.postValue(0.0); return
         }
 
         val today = Calendar.getInstance().apply { set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0) }.timeInMillis
@@ -335,8 +344,8 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
 
         val stockRestant = (totalPurchased - totalConsumed).coerceAtLeast(0.0)
         currentStockKg.postValue(stockRestant)
+        totalFeedConsumedKg.postValue(totalConsumed)
 
-        // IC Calculation for layers (kg of feed per tray of 30 eggs)
         if (!isChair) {
             val totalEggs = allEntries.value?.filter { it.batchId == batch.firestoreId }?.sumOf { it.eggsCount } ?: 0
             if (totalEggs > 0) {
@@ -354,6 +363,9 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         } else {
             when { currentAgeInWeeks < 4 -> 0.040; currentAgeInWeeks < 8 -> 0.070; currentAgeInWeeks < 17 -> 0.090; else -> 0.120 }
         }
+
+        dailyConsumptionTotalKg.postValue(currentHens * dailyFeedPerHen)
+        dailyConsumptionPerHenG.postValue(dailyFeedPerHen * 1000.0)
 
         if (currentHens > 0 && dailyFeedPerHen > 0) {
             feedAutonomyDays.postValue((stockRestant / (currentHens * dailyFeedPerHen)).toInt())

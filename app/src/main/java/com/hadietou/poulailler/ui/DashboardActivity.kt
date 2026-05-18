@@ -141,12 +141,11 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
         binding.layoutCollected.setOnClickListener { navigateTo(AgentActivity::class.java) }
         binding.layoutSold.setOnClickListener { navigateTo(SalesActivity::class.java) }
 
-        binding.cardMortality.setOnClickListener { navigateTo(MortalityActivity::class.java) }
-        binding.cardStockFeed.setOnClickListener { navigateTo(ExpensesActivity::class.java) }
+        binding.cardFeed.setOnClickListener { navigateTo(ExpensesActivity::class.java) }
         binding.cardNetProfit.setOnClickListener { navigateTo(SalesActivity::class.java) }
         binding.cardProductionChart.setOnClickListener { navigateTo(AgentActivity::class.java) }
         
-        binding.cardBatchHealth.setOnClickListener { navigateTo(VaccineActivity::class.java) }
+        binding.cardTechHealth.setOnClickListener { navigateTo(VaccineActivity::class.java) }
         binding.cardSanitaryAlert.setOnClickListener { navigateTo(VaccineActivity::class.java) }
     }
 
@@ -200,20 +199,12 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
         
         val eggVisibility = if (isChair) View.GONE else View.VISIBLE
         binding.cardLayingRate.visibility = eggVisibility
-        binding.titleEggStock.visibility = eggVisibility
-        binding.cardEggStock.visibility = eggVisibility
+        binding.titleEggPerformance.visibility = eggVisibility
+        binding.cardEggPerformance.visibility = eggVisibility
         binding.titleProduction.visibility = eggVisibility
         binding.cardProductionChart.visibility = eggVisibility
         binding.cardLightingAlert.visibility = eggVisibility
         
-        // Monthly KPIs
-        binding.titleMonthlyKPI.visibility = eggVisibility
-        binding.cardMonthlyKPI.visibility = eggVisibility
-        
-        // Tech KPIs
-        binding.titleTechKPI.visibility = eggVisibility
-        binding.cardTechKPI.visibility = eggVisibility
-
         binding.navigationView.menu.findItem(R.id.nav_collect)?.isVisible = !isChair
     }
 
@@ -291,10 +282,8 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
         viewModel.monthlyProduction.observe(this) { rate ->
             binding.tvMonthlyProdValue.text = String.format(Locale.getDefault(), "%.1f%%", rate)
         }
-        viewModel.monthlySales.observe(this) { sales ->
-            val valueK = sales / 1000.0
-            val curr = viewModel.farmInfo.value?.currency ?: "MRU"
-            binding.tvMonthlySalesValue.text = "${getString(R.string.k_format, valueK)} $curr"
+        viewModel.monthlySalesTablettes.observe(this) { tablettes ->
+            binding.tvMonthlySalesValue.text = getString(R.string.tablettes_count, tablettes)
         }
         viewModel.monthlyLayingRate.observe(this) { rate ->
             binding.tvMonthlyRateValue.text = "${rate.toInt()}%"
@@ -304,7 +293,7 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
         viewModel.salesTrend.observe(this) { trend -> updateTrendUI(binding.tvMonthlySalesTrend, trend) }
         viewModel.rateTrend.observe(this) { trend -> updateTrendUI(binding.tvMonthlyRateTrend, trend) }
         
-        // Technical KPIs Observations
+        // Tech & Health KPIs Observations
         viewModel.cumulativeMortalityRate.observe(this) { rate ->
             binding.tvCumulMortalityRate.text = String.format(Locale.getDefault(), "%.1f%%", rate)
         }
@@ -317,13 +306,14 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
             binding.tvGapStdValue.setTextColor(if (gap >= 0) getColor(R.color.emerald_soft) else getColor(R.color.error))
         }
 
-        // Health KPIs Observations
         viewModel.survivalRate.observe(this) { rate ->
             binding.tvSurvivalRate.text = String.format(Locale.getDefault(), "%.1f%%", rate)
         }
-        viewModel.healthExpenses.observe(this) { expenses ->
-            val curr = viewModel.farmInfo.value?.currency ?: "MRU"
-            binding.tvHealthExpenses.text = String.format(Locale.getDefault(), "%,.0f %s", expenses, curr)
+        viewModel.totalMortalityCount.observe(this) { count ->
+            binding.tvTotalMortalityTech.text = count.toString()
+        }
+        viewModel.monthlyMortalityCount.observe(this) { count ->
+            binding.tvMonthlyMortalityTech.text = count.toString()
         }
 
         viewModel.nextVaccine.observe(this) { vaccine ->
@@ -338,17 +328,31 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
             }
         }
 
+        // Aliment Section Observations
+        viewModel.dailyConsumptionTotalKg.observe(this) {
+            binding.tvDailyConsumption.text = getString(R.string.kg_unit_float, it)
+        }
+        viewModel.dailyConsumptionPerHenG.observe(this) {
+            binding.tvConsumptionPerHen.text = getString(R.string.gram_unit, it)
+        }
+        viewModel.totalFeedConsumedKg.observe(this) {
+            binding.tvTotalConsumed.text = getString(R.string.ton_unit, it / 1000.0)
+        }
+        viewModel.currentStockKg.observe(this) {
+            binding.tvStockAvailable.text = getString(R.string.kg_unit, it.toInt())
+        }
+        viewModel.feedAutonomyDays.observe(this) {
+            binding.tvFeedAutonomyDashboard.text = getString(R.string.feed_autonomy, it)
+        }
+        viewModel.totalFeedCost.observe(this) { cost ->
+            val curr = viewModel.farmInfo.value?.currency ?: "MRU"
+            binding.tvTotalFeedCostSection.text = String.format(Locale.getDefault(), "%,.0f %s", cost, curr)
+        }
+
         viewModel.lastCollectedCount.observe(this) {
             binding.tvTodayEggsDetail.text = getString(R.string.eggs_collected_count, it)
         }
-        viewModel.totalMortalityCount.observe(this) { binding.tvTotalMortality.text = it.toString() }
-        viewModel.currentStockKg.observe(this) {
-            binding.tvTotalFeed.text = getString(R.string.kg_unit, it.toInt())
-        }
-        viewModel.feedAutonomyDays.observe(this) {
-            binding.tvFeedAutonomy.text = getString(R.string.feed_autonomy, it)
-        }
-        
+
         viewModel.totalCollected.observe(this) { total ->
             val tablettes = total / 30
             binding.tvTotalCollectedTablettes.text = getString(R.string.tablettes_count, tablettes)
@@ -378,10 +382,6 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
             binding.tvTotalExpenses.text = getString(R.string.currency_format, NumberFormat.getInstance().format(it), curr)
         }
         
-        viewModel.totalFeedPurchasedKg.observe(this) {
-            binding.tvTotalPurchasedLabel.text = getString(R.string.feed_cumul, it.toInt())
-        }
-
         viewModel.weeklyProduction.observe(this) { list ->
             setupLineChart(list)
         }
