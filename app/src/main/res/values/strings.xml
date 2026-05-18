@@ -22,6 +22,8 @@
     <string name="laying_trend_negative">%1$d%% vs hier</string>
     <string name="production_15d">Production (15j)</string>
     <string name="egg_management">Gestion des Œufs</string>
+    <string name="egg_performance_management">Suivi et Performance Ponte</string>
+    <string name="egg_performance_header">STOCK &amp; PERFORMANCE</string>
     <string name="collected">Collectés</string>
     <string name="sold">Vendus</string>
     <string name="available">Disponible</string>
@@ -35,6 +37,7 @@
     <string name="net_profit_global">Bénéfice Net Global</string>
     <string name="expenses_by_category">Dépenses par Catégorie</string>
     <string name="kg_unit">%1$d kg</string>
+    <string name="kg_unit_float">%1$.1f kg</string>
     <string name="currency_format">%1$s %2$s</string>
     <string name="percent_format">%1$d%%</string>
     <string name="zero_percent">0%</string>
@@ -42,22 +45,31 @@
 
     <!-- New Monthly KPIs -->
     <string name="monthly_kpi_title">Performance du Mois</string>
-    <string name="monthly_prod">T Cassés</string>
-    <string name="monthly_sales">Ventes</string>
-    <string name="monthly_rate">T Production</string>
+    <string name="monthly_prod">Cassés(Mois)</string>
+    <string name="monthly_sales">Ventes(Mois)</string>
+    <string name="monthly_rate">Prod(Mois)</string>
     <string name="vs_last_month">vs mois dernier</string>
     <string name="k_format">%1$.1fk</string>
 
-    <!-- Tech KPIs -->
-    <string name="tech_kpi_title">Indicateurs Techniques (Total Lot)</string>
+    <!-- Tech & Health KPIs -->
+    <string name="tech_health_title">Technique &amp; Santé (Lot)</string>
     <string name="cumul_mortality_label">Mort. Cumulée</string>
     <string name="ic_label">IC (kg/plateau)</string>
     <string name="gap_std_label">Écart / Std</string>
-
-    <!-- Batch Health -->
-    <string name="batch_health_title">Santé du Lot</string>
     <string name="survival_rate_label">Taux de Survie</string>
-    <string name="health_expenses_label">Dépenses Santé</string>
+    <string name="total_mortality_label">T Mortalité</string>
+    <string name="monthly_mortality_label">Mort (Mois)</string>
+
+    <!-- Alimentation Section -->
+    <string name="feed_section_title">Alimentation</string>
+    <string name="daily_consumption_label">Conso/Jour (kg)</string>
+    <string name="consumption_per_hen_label">Conso/Sujet (g)</string>
+    <string name="total_consumed_label">Total Consommé</string>
+    <string name="stock_available_label">Stock Dispo (kg)</string>
+    <string name="autonomy_label">Autonomie (j)</string>
+    <string name="feed_cost_label">Dépense Aliment</string>
+    <string name="ton_unit">%1$.2f T</string>
+    <string name="gram_unit">%1$.1f g</string>
 
     <!-- Sanitary Calendar -->
     <string name="sanitary_calendar_title">Calendrier Sanitaire</string>
