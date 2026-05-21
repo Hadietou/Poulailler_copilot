@@ -417,37 +417,58 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
             .show()
     }
 
-    private fun setupLineChart(production: List<Pair<Long, Int>>) {
+    private fun setupLineChart(production: List<Triple<Long, Int, Double>>) {
         if (production.isEmpty()) {
             binding.productionChart.clear()
             return
         }
 
-        val entries = production.mapIndexed { index, pair ->
-            Entry(index.toFloat(), pair.second.toFloat())
+        val entriesEggs = production.mapIndexed { index, triple ->
+            Entry(index.toFloat(), triple.second.toFloat())
+        }
+        
+        val entriesRate = production.mapIndexed { index, triple ->
+            Entry(index.toFloat(), triple.third.toFloat())
         }
 
-        val dataSet = LineDataSet(entries, "Œufs collectés").apply {
+        val dataSetEggs = LineDataSet(entriesEggs, getString(R.string.collected)).apply {
             color = getColor(R.color.emerald_soft)
             setCircleColor(getColor(R.color.primary))
             lineWidth = 3f
-            circleRadius = 5f
+            circleRadius = 4f
             setDrawValues(true)
             valueTextColor = getColor(R.color.text_primary)
-            valueTextSize = 10f
+            valueTextSize = 9f
             valueFormatter = object : ValueFormatter() {
-                override fun getFormattedValue(value: Float): String {
-                    return value.toInt().toString()
-                }
+                override fun getFormattedValue(value: Float): String = value.toInt().toString()
             }
             mode = LineDataSet.Mode.CUBIC_BEZIER
             setDrawFilled(true)
             fillColor = getColor(R.color.emerald_container)
-            fillAlpha = 50
+            fillAlpha = 40
+            axisDependency = com.github.mikephil.charting.components.YAxis.AxisDependency.LEFT
+        }
+
+        val redColor = getColor(R.color.red)
+
+        val dataSetRate = LineDataSet(entriesRate, getString(R.string.laying_rate)).apply {
+            color = redColor
+            setCircleColor(redColor)
+            lineWidth = 1f
+            circleRadius = 2f
+            setDrawValues(true)
+            valueTextColor = redColor
+            valueTextSize = 10f
+            valueFormatter = object : ValueFormatter() {
+                override fun getFormattedValue(value: Float): String = String.format(Locale.getDefault(), "%.0f%%", value)
+            }
+            mode = LineDataSet.Mode.CUBIC_BEZIER
+            setDrawFilled(false)
+            axisDependency = com.github.mikephil.charting.components.YAxis.AxisDependency.RIGHT
         }
 
         binding.productionChart.apply {
-            data = LineData(dataSet)
+            data = LineData(dataSetEggs, dataSetRate)
             description.isEnabled = false
 
             val textColor = getColor(R.color.text_primary)
@@ -470,14 +491,22 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
                 this.textColor = textColor
                 granularity = 1f
                 valueFormatter = object : ValueFormatter() {
-                    override fun getFormattedValue(value: Float): String {
-                        return value.toInt().toString()
-                    }
+                    override fun getFormattedValue(value: Float): String = value.toInt().toString()
                 }
             }
-            axisRight.isEnabled = false
+            
+            axisRight.apply {
+                isEnabled = true
+                this.textColor = redColor
+                axisMinimum = 0f
+                axisMaximum = 105f
+                setDrawGridLines(false)
+                valueFormatter = object : ValueFormatter() {
+                    override fun getFormattedValue(value: Float): String = String.format(Locale.getDefault(), "%.0f%%", value)
+                }
+            }
+            
             legend.textColor = textColor
-
             setExtraOffsets(5f, 5f, 5f, 15f)
             animateX(1000)
             invalidate()

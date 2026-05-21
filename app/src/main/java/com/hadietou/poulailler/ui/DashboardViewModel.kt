@@ -23,7 +23,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     val totalSales = MutableLiveData<Double>(0.0)
     val totalExpenses = MutableLiveData<Double>(0.0)
     val netProfit = MutableLiveData<Double>(0.0)
-    val weeklyProduction = MutableLiveData<List<Pair<Long, Int>>>(emptyList())
+    val weeklyProduction = MutableLiveData<List<Triple<Long, Int, Double>>>(emptyList())
     
     val totalCollected = MutableLiveData<Int>(0)
     val totalBroken = MutableLiveData<Int>(0)
@@ -291,11 +291,17 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
             val stdRate = getStandardLayingRate(ageInWeeks)
             layingGapVsStandard.postValue(lastRate - stdRate)
 
-            val history = mutableListOf<Pair<Long, Int>>()
+            val history = mutableListOf<Triple<Long, Int, Double>>()
             for (i in 14 downTo 0) {
                 val start = todayStart - TimeUnit.DAYS.toMillis(i.toLong())
                 val end = start + TimeUnit.DAYS.toMillis(1) - 1
-                history.add(start to entries.filter { it.date in start..end }.sumOf { it.eggsCount })
+                val dailyColl = entries.filter { it.date in start..end }.sumOf { it.eggsCount }
+                
+                val mortUntilThen = mortalities.filter { it.date <= start }.sumOf { it.count }
+                val hensThen = (batch.hensCount - mortUntilThen).coerceAtLeast(1)
+                val rateThen = (dailyColl.toDouble() / hensThen.toDouble()) * 100.0
+                
+                history.add(Triple(start, dailyColl, rateThen))
             }
             weeklyProduction.postValue(history)
         }
