@@ -5,13 +5,13 @@
     android:layout_height="wrap_content"
     android:orientation="vertical"
     android:padding="24dp"
-    android:background="#2C2C2C">
+    android:background="#E6FFFFFF">
 
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Nouvelle Collecte"
-        android:textColor="#FFB300"
+        android:textColor="@color/accent_amber"
         android:textSize="20sp"
         android:textStyle="bold"
         android:layout_marginBottom="24dp"/>
@@ -22,9 +22,10 @@
         android:layout_height="56dp"
         android:text="Date: Aujourd'hui"
         style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-        android:textColor="@color/white"
-        app:strokeColor="#B0B0B0"
+        android:textColor="@color/text_primary"
+        app:strokeColor="@color/text_secondary"
         app:icon="@android:drawable/ic_menu_my_calendar"
+        app:iconTint="@color/accent_amber"
         android:layout_marginBottom="12dp"/>
 
     <com.google.android.material.textfield.TextInputLayout
@@ -33,16 +34,16 @@
         android:hint="Nombre d'œufs collectés"
         style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
         android:layout_marginBottom="12dp"
-        app:hintTextColor="#B0B0B0"
-        app:boxStrokeColor="#FFB300"
+        app:hintTextColor="@color/text_secondary"
+        app:boxStrokeColor="@color/accent_amber"
         app:startIconDrawable="@android:drawable/ic_input_add"
-        app:startIconTint="#FFB300">
+        app:startIconTint="@color/accent_amber">
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/etEggsCount"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:inputType="number"
-            android:textColor="@color/white" />
+            android:textColor="@color/text_primary" />
     </com.google.android.material.textfield.TextInputLayout>
 
     <com.google.android.material.textfield.TextInputLayout
@@ -51,16 +52,16 @@
         android:hint="Nombre d'œufs cassés"
         style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
         android:layout_marginBottom="12dp"
-        app:hintTextColor="#B0B0B0"
-        app:boxStrokeColor="#FFB300"
+        app:hintTextColor="@color/text_secondary"
+        app:boxStrokeColor="@color/accent_amber"
         app:startIconDrawable="@android:drawable/ic_delete"
-        app:startIconTint="#F44336">
+        app:startIconTint="@color/error">
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/etBrokenEggsCount"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:inputType="number"
-            android:textColor="@color/white" />
+            android:textColor="@color/text_primary" />
     </com.google.android.material.textfield.TextInputLayout>
 
     <com.google.android.material.textfield.TextInputLayout
@@ -69,13 +70,13 @@
         android:hint="Remarques (poules malades, etc.)"
         style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
         android:layout_marginBottom="24dp"
-        app:hintTextColor="#B0B0B0"
-        app:boxStrokeColor="#FFB300">
+        app:hintTextColor="@color/text_secondary"
+        app:boxStrokeColor="@color/accent_amber">
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/etRemarks"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textColor="@color/white" />
+            android:textColor="@color/text_primary" />
     </com.google.android.material.textfield.TextInputLayout>
 
     <com.google.android.material.button.MaterialButton
@@ -83,10 +84,10 @@
         android:layout_width="match_parent"
         android:layout_height="60dp"
         android:text="ENREGISTRER LA COLLECTE"
-        android:backgroundTint="#FFB300"
-        android:textColor="#000000"
+        android:backgroundTint="@color/accent_amber"
+        android:textColor="@color/black"
         android:textStyle="bold"
         app:cornerRadius="8dp"
         app:icon="@android:drawable/ic_menu_save"
-        app:iconTint="#000000"/>
+        app:iconTint="@color/black"/>
 </LinearLayout>
