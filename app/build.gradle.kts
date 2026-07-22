@@ -16,14 +16,14 @@ if (localPropertiesFile.exists()) {
 
 android {
     namespace = "com.hadietou.poulailler"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.hadietou.poulailler"
         minSdk = 24
-        targetSdk = 35
-        versionCode = 15
-        versionName = "20.05.2026"
+        targetSdk = 36
+        versionCode = 17
+        versionName = "22.07.2026"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
