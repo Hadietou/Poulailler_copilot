@@ -5,13 +5,13 @@
     android:layout_height="wrap_content"
     android:orientation="vertical"
     android:padding="24dp"
-    android:background="#2C2C2C">
+    android:background="@color/surface">
 
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Signaler une Mortalité"
-        android:textColor="#F44336"
+        android:textColor="@color/error"
         android:textSize="20sp"
         android:textStyle="bold"
         android:layout_marginBottom="24dp"/>
@@ -22,17 +22,17 @@
         android:hint="Date de l'événement"
         style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
         android:layout_marginBottom="12dp"
-        app:hintTextColor="#B0B0B0"
-        app:boxStrokeColor="#F44336"
+        app:hintTextColor="@color/text_secondary"
+        app:boxStrokeColor="@color/error"
         app:startIconDrawable="@android:drawable/ic_menu_my_calendar"
-        app:startIconTint="#F44336">
+        app:startIconTint="@color/error">
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/etMortalityDate"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:focusable="false"
             android:clickable="true"
-            android:textColor="@color/white" />
+            android:textColor="@color/text_primary" />
     </com.google.android.material.textfield.TextInputLayout>
 
     <com.google.android.material.textfield.TextInputLayout
@@ -40,25 +40,62 @@
         android:layout_height="wrap_content"
         android:hint="Nombre de poules mortes"
         style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-        android:layout_marginBottom="24dp"
-        app:hintTextColor="#B0B0B0"
-        app:boxStrokeColor="#F44336"
+        android:layout_marginBottom="12dp"
+        app:hintTextColor="@color/text_secondary"
+        app:boxStrokeColor="@color/error"
         app:startIconDrawable="@android:drawable/ic_delete"
-        app:startIconTint="#F44336">
+        app:startIconTint="@color/error">
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/etMortalityInput"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:inputType="number"
-            android:textColor="@color/white" />
+            android:textColor="@color/text_primary" />
     </com.google.android.material.textfield.TextInputLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="24dp">
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/tilMortalityCause"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:hint="Cause de la mortalité"
+            app:hintTextColor="@color/text_secondary"
+            app:boxStrokeColor="@color/error"
+            app:startIconDrawable="@android:drawable/ic_dialog_info"
+            app:startIconTint="@color/error">
+            <AutoCompleteTextView
+                android:id="@+id/actvMortalityCause"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="none"
+                android:textColor="@color/text_primary" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <ImageButton
+            android:id="@+id/btnHelpSymptoms"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginStart="8dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@android:drawable/ic_menu_help"
+            app:tint="@color/accent_amber"
+            android:contentDescription="Aide au diagnostic" />
+    </LinearLayout>
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btnSaveMortality"
         android:layout_width="match_parent"
         android:layout_height="60dp"
         android:text="ENREGISTRER LA PERTE"
-        android:backgroundTint="#F44336"
+        android:backgroundTint="@color/error"
         android:textColor="@color/white"
         app:cornerRadius="8dp"
         app:icon="@android:drawable/ic_menu_save"/>

@@ -46,6 +46,11 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
     private suspend fun handleSuccessfulAuth(uid: String, email: String, onResult: (Boolean, String, String) -> Unit) {
         val profile = firebaseRepo.getUserProfile(uid)
         if (profile != null) {
+            // Mise à jour de l'email si manquant ou différent pour assurer le bon fonctionnement des alertes
+            if (profile.email != email) {
+                firebaseRepo.createUserProfile(uid, profile.username, email, profile.role, profile.isPending)
+            }
+            
             if (!profile.active) {
                 auth.signOut()
                 onResult(false, "COMPTE_DESACTIVE", "")
@@ -70,13 +75,11 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
 
     private suspend fun checkPreCreatedAgent(email: String, password: String, onResult: (Boolean, String, String) -> Unit) {
         try {
-            // On tente de récupérer le document. Si ça échoue ici, c'est un prob de règles Firestore.
             val doc = db.collection("users").document(email).get().await()
             
             if (doc.exists() && doc.getBoolean("isPreCreated") == true) {
                 val storedPass = doc.getString("password")
                 if (storedPass == password) {
-                    // Création du compte réel
                     val createRes = auth.createUserWithEmailAndPassword(email, password).await()
                     val newUid = createRes.user?.uid
                     

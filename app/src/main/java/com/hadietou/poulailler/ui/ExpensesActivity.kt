@@ -51,6 +51,9 @@ class ExpensesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
     private var isShowingAll = false
     private var isBlocked = false
 
+    // Centralized categories to avoid duplication and errors
+    private val expenseCategories = arrayOf("Aliment", "Santé", "Transport", "Eau/SNDE", "Électricité", "Équipement", "Main d'œuvre", "Autre")
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityExpensesBinding.inflate(layoutInflater)
@@ -189,12 +192,11 @@ class ExpensesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
 
         dialogBinding.tilAmount.hint = "Montant ($currency)"
         
-        val categories = arrayOf("Aliment", "Santé", "Transport", "Main d'œuvre", "Autre")
-        val adapterSpinner = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, categories)
+        val adapterSpinner = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, expenseCategories)
         dialogBinding.autoCompleteCategory.setAdapter(adapterSpinner)
 
         dialogBinding.autoCompleteCategory.setOnItemClickListener { _, _, position, _ ->
-            if (categories[position] == "Aliment") {
+            if (expenseCategories[position] == "Aliment") {
                 dialogBinding.tilQuantityKg.visibility = View.VISIBLE
             } else {
                 dialogBinding.tilQuantityKg.visibility = View.GONE
@@ -259,8 +261,7 @@ class ExpensesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
 
         dialogBinding.tilAmount.hint = "Montant ($currency)"
         
-        val categories = arrayOf("Aliment", "Santé", "Transport", "Main d'œuvre", "Autre")
-        val adapterSpinner = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, categories)
+        val adapterSpinner = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, expenseCategories)
         dialogBinding.autoCompleteCategory.setAdapter(adapterSpinner)
 
         dialogBinding.autoCompleteCategory.setText(expense.category, false)
@@ -288,7 +289,7 @@ class ExpensesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
         }
 
         dialogBinding.autoCompleteCategory.setOnItemClickListener { _, _, position, _ ->
-            if (categories[position] == "Aliment") {
+            if (expenseCategories[position] == "Aliment") {
                 dialogBinding.tilQuantityKg.visibility = View.VISIBLE
             } else {
                 dialogBinding.tilQuantityKg.visibility = View.GONE

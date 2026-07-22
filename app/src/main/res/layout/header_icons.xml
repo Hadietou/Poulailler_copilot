@@ -9,6 +9,18 @@
         android:orientation="horizontal">
 
         <ImageView
+            android:id="@+id/ivHeaderReport"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:contentDescription="@string/desc_report_pdf"
+            android:focusable="true"
+            android:padding="12dp"
+            android:src="@android:drawable/ic_menu_save"
+            app:tint="@color/white" />
+
+        <ImageView
             android:id="@+id/ivHeaderHome"
             android:layout_width="48dp"
             android:layout_height="48dp"

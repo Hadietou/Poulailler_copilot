@@ -9,6 +9,8 @@ import android.view.LayoutInflater
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ArrayAdapter
+import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.ActionBarDrawerToggle
@@ -19,7 +21,6 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.hadietou.poulailler.R
 import com.hadietou.poulailler.BuildConfig
-import com.hadietou.poulailler.data.AppDatabase
 import com.hadietou.poulailler.data.Mortality
 import com.hadietou.poulailler.databinding.ActivityMortalityBinding
 import com.hadietou.poulailler.databinding.DialogAddMortalityBinding
@@ -48,6 +49,38 @@ class MortalityActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
     private var allMortalities: List<Mortality> = emptyList()
     private var isShowingAll = false
     private var isBlocked = false
+
+    private val mortalityCauses = listOf(
+        "Stress thermique (Chaleur)",
+        "Newcastle (Pseudo-peste)",
+        "Gumboro (IBD)",
+        "Coccidiose",
+        "Salmonellose / Typhose",
+        "Coryza infectieux",
+        "Grippe aviaire",
+        "Prolapsus du cloaque",
+        "Picage / Cannibalisme",
+        "Prédation",
+        "Inconnue",
+        "Autre"
+    )
+
+    private val diseaseSymptoms = mapOf(
+        "Stress thermique (Chaleur)" to listOf("Halètement (bec ouvert)", "Ailes écartées", "Soif intense", "Crête rouge foncé", "Prostration"),
+        "Newcastle (Pseudo-peste)" to listOf("Cou tordu (torticollis)", "Diarrhée verdâtre", "Râles respiratoires", "Paralysie", "Forte mortalité"),
+        "Gumboro (IBD)" to listOf("Diarrhée blanchâtre ou aqueuse", "Plumes ébouriffées", "Picage du cloaque", "Abattement profond"),
+        "Coccidiose" to listOf("Diarrhée avec du sang ou orangée", "Crête pâle / blanche", "Ailes tombantes", "Amaigrissement rapide"),
+        "Salmonellose / Typhose" to listOf("Diarrhée jaune soufre", "Yeux fermés", "Somnolence", "Mortalité subite"),
+        "Coryza infectieux" to listOf("Yeux gonflés (sinusite)", "Écoulement au nez", "Éternuements", "Baisse de ponte"),
+        "Grippe aviaire" to listOf("Crête et barbillons bleus ou noirs", "Œdème de la face", "Hémorragies sur les pattes", "Mortalité foudroyante"),
+        "Prolapsus du cloaque" to listOf("Organe rouge qui sort du cloaque", "Picage par les autres"),
+        "Picage / Cannibalisme" to listOf("Blessures sanglantes", "Plumes arrachées"),
+        "Prédation" to listOf("Oiseau décapité", "Corps déchiqueté")
+    )
+
+    private val allSymptomsList: List<String> by lazy {
+        diseaseSymptoms.values.flatten().distinct().sorted()
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -112,7 +145,6 @@ class MortalityActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
         menu.findItem(R.id.nav_expenses)?.isVisible = userRole == "RESPONSABLE"
         menu.findItem(R.id.nav_batches)?.isVisible = userRole == "RESPONSABLE"
         
-        // Agents now have access to Sanitary Follow-up
         menu.findItem(R.id.nav_vaccines)?.isVisible = true
 
         updateNavHeader()
@@ -121,9 +153,7 @@ class MortalityActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
     private fun setupRecyclerView() {
         adapter = MortalityAdapter { mortality ->
             if (isBlocked) { showBlockingDialog(); return@MortalityAdapter }
-            if (userRole == "RESPONSABLE") {
-                showEditMortalityDialog(mortality)
-            }
+            showEditMortalityDialog(mortality)
         }
         binding.rvMortalityHistory.layoutManager = LinearLayoutManager(this)
         binding.rvMortalityHistory.adapter = adapter
@@ -187,21 +217,37 @@ class MortalityActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
             }, calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH), calendar.get(Calendar.DAY_OF_MONTH)).show()
         }
 
+        val causeAdapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, mortalityCauses)
+        dialogBinding.actvMortalityCause.setAdapter(causeAdapter)
+
+        dialogBinding.btnHelpSymptoms.setOnClickListener {
+            showSmartDiagnosisDialog { selectedCause ->
+                dialogBinding.actvMortalityCause.setText(selectedCause, false)
+            }
+        }
+
         dialogBinding.btnSaveMortality.setOnClickListener {
             val countStr = dialogBinding.etMortalityInput.text.toString()
             val count = countStr.toIntOrNull() ?: 0
+            val cause = dialogBinding.actvMortalityCause.text.toString()
 
             if (count <= 0) {
                 Toast.makeText(this, "Veuillez saisir un nombre valide", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
+            if (cause.isEmpty()) {
+                Toast.makeText(this, "Veuillez sélectionner une cause", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
             lifecycleScope.launch(Dispatchers.IO) {
                 try {
-                    firebaseRepo.addMortality(count, selectedDateMs, selectedBatchId)
+                    firebaseRepo.addMortality(count, selectedDateMs, selectedBatchId, cause)
                     withContext(Dispatchers.Main) {
                         Toast.makeText(this@MortalityActivity, "Mortalité enregistrée", Toast.LENGTH_SHORT).show()
                         dialog.dismiss()
+                        showAdviceDialog(cause)
                     }
                 } catch (e: Exception) {
                     withContext(Dispatchers.Main) {
@@ -212,6 +258,53 @@ class MortalityActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
         }
 
         dialog.show()
+    }
+
+    private fun showSmartDiagnosisDialog(onCauseSelected: (String) -> Unit) {
+        val builder = AlertDialog.Builder(this)
+        builder.setTitle("🔍 Cochez les symptômes observés :")
+
+        val selectedSymptoms = BooleanArray(allSymptomsList.size)
+        
+        builder.setMultiChoiceItems(allSymptomsList.toTypedArray(), selectedSymptoms) { _, which, isChecked ->
+            selectedSymptoms[which] = isChecked
+        }
+
+        builder.setPositiveButton("Analyser") { _, _ ->
+            val checkedSymptoms = allSymptomsList.filterIndexed { index, _ -> selectedSymptoms[index] }
+            if (checkedSymptoms.isEmpty()) {
+                Toast.makeText(this, "Aucun symptôme sélectionné", Toast.LENGTH_SHORT).show()
+                return@setPositiveButton
+            }
+
+            // Simple logic: count matches
+            val scores = diseaseSymptoms.mapValues { entry ->
+                entry.value.count { it in checkedSymptoms }
+            }
+
+            val maxScore = scores.values.maxOrNull() ?: 0
+            val likelyCauses = scores.filterValues { it == maxScore && it > 0 }.keys
+
+            if (likelyCauses.isEmpty()) {
+                Toast.makeText(this, "Impossible d'identifier une cause précise. Veuillez consulter un vétérinaire.", Toast.LENGTH_LONG).show()
+            } else if (likelyCauses.size == 1) {
+                val cause = likelyCauses.first()
+                onCauseSelected(cause)
+                Toast.makeText(this, "Cause probable : $cause", Toast.LENGTH_SHORT).show()
+            } else {
+                // Multiple possibilities
+                AlertDialog.Builder(this)
+                    .setTitle("Résultat de l'analyse")
+                    .setMessage("Plusieurs causes sont possibles :\n" + likelyCauses.joinToString("\n") + "\n\nLaquelle correspond le mieux ?")
+                    .setItems(likelyCauses.toTypedArray()) { _, which ->
+                        onCauseSelected(likelyCauses.elementAt(which))
+                    }
+                    .show()
+            }
+        }
+        
+        builder.setNegativeButton("Annuler", null)
+        builder.show()
     }
 
     private fun showEditMortalityDialog(mortality: Mortality) {
@@ -235,66 +328,193 @@ class MortalityActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
             }, dCal.get(Calendar.YEAR), dCal.get(Calendar.MONTH), dCal.get(Calendar.DAY_OF_MONTH)).show()
         }
 
-        dialogBinding.btnSaveMortality.text = "MODIFIER"
-        dialogBinding.btnSaveMortality.setOnClickListener {
-            val count = dialogBinding.etMortalityInput.text.toString().toIntOrNull() ?: 0
-            if (count <= 0) {
-                Toast.makeText(this, "Nombre invalide", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
+        val causeAdapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, mortalityCauses)
+        dialogBinding.actvMortalityCause.setAdapter(causeAdapter)
+        dialogBinding.actvMortalityCause.setText(mortality.cause, false)
 
-            lifecycleScope.launch(Dispatchers.IO) {
-                try {
-                    val updated = mortality.copy(
-                        count = count,
-                        date = editDateMs
-                    )
-                    firebaseRepo.updateMortality(updated)
-                    withContext(Dispatchers.Main) {
-                        Toast.makeText(this@MortalityActivity, "Mortalité modifiée", Toast.LENGTH_SHORT).show()
-                        dialog.dismiss()
-                    }
-                } catch (e: Exception) {
-                    withContext(Dispatchers.Main) {
-                        Toast.makeText(this@MortalityActivity, e.message ?: "Erreur", Toast.LENGTH_SHORT).show()
+        dialogBinding.btnHelpSymptoms.setOnClickListener {
+            showSmartDiagnosisDialog { selectedCause ->
+                dialogBinding.actvMortalityCause.setText(selectedCause, false)
+            }
+        }
+
+        val btnAdvice = Button(this).apply {
+            text = "CONSEILS ET TRAITEMENTS"
+            backgroundTintList = getColorStateList(R.color.primary)
+            setTextColor(getColor(R.color.white))
+            setOnClickListener { showAdviceDialog(dialogBinding.actvMortalityCause.text.toString()) }
+        }
+        (dialogBinding.root as ViewGroup).addView(btnAdvice, 3)
+
+        if (userRole == "RESPONSABLE") {
+            dialogBinding.btnSaveMortality.text = "MODIFIER"
+            dialogBinding.btnSaveMortality.setOnClickListener {
+                val count = dialogBinding.etMortalityInput.text.toString().toIntOrNull() ?: 0
+                val cause = dialogBinding.actvMortalityCause.text.toString()
+
+                if (count <= 0) {
+                    Toast.makeText(this, "Nombre invalide", Toast.LENGTH_SHORT).show()
+                    return@setOnClickListener
+                }
+
+                lifecycleScope.launch(Dispatchers.IO) {
+                    try {
+                        val updated = mortality.copy(
+                            count = count,
+                            date = editDateMs,
+                            cause = cause
+                        )
+                        firebaseRepo.updateMortality(updated)
+                        withContext(Dispatchers.Main) {
+                            Toast.makeText(this@MortalityActivity, "Mortalité modifiée", Toast.LENGTH_SHORT).show()
+                            dialog.dismiss()
+                        }
+                    } catch (e: Exception) {
+                        withContext(Dispatchers.Main) {
+                            Toast.makeText(this@MortalityActivity, e.message ?: "Erreur", Toast.LENGTH_SHORT).show()
+                        }
                     }
                 }
             }
-        }
 
-        val deleteButton = TextView(this).apply {
-            text = "SUPPRIMER CET ENREGISTREMENT"
-            setPadding(0, 48, 0, 0)
-            setTextColor(getColor(R.color.error))
-            gravity = android.view.Gravity.CENTER
-            setOnClickListener {
-                AlertDialog.Builder(this@MortalityActivity)
-                    .setTitle("Suppression")
-                    .setMessage("Voulez-vous supprimer cette mortalité ?")
-                    .setPositiveButton("Supprimer") { _, _ ->
-                        lifecycleScope.launch(Dispatchers.IO) {
-                            try {
-                                if (mortality.firestoreId != null) {
-                                    firebaseRepo.deleteMortality(mortality.firestoreId)
-                                }
-                                withContext(Dispatchers.Main) {
-                                    Toast.makeText(this@MortalityActivity, "Supprimé", Toast.LENGTH_SHORT).show()
-                                    dialog.dismiss()
-                                }
-                            } catch (e: Exception) {
-                                withContext(Dispatchers.Main) {
-                                    Toast.makeText(this@MortalityActivity, e.message ?: "Erreur", Toast.LENGTH_SHORT).show()
+            val deleteButton = TextView(this).apply {
+                text = "SUPPRIMER CET ENREGISTREMENT"
+                setPadding(0, 48, 0, 0)
+                setTextColor(getColor(R.color.error))
+                gravity = android.view.Gravity.CENTER
+                setOnClickListener {
+                    AlertDialog.Builder(this@MortalityActivity)
+                        .setTitle("Suppression")
+                        .setMessage("Voulez-vous supprimer cette mortalité ?")
+                        .setPositiveButton("Supprimer") { _, _ ->
+                            lifecycleScope.launch(Dispatchers.IO) {
+                                try {
+                                    if (mortality.firestoreId != null) {
+                                        firebaseRepo.deleteMortality(mortality.firestoreId)
+                                    }
+                                    withContext(Dispatchers.Main) {
+                                        Toast.makeText(this@MortalityActivity, "Supprimé", Toast.LENGTH_SHORT).show()
+                                        dialog.dismiss()
+                                    }
+                                } catch (e: Exception) {
+                                    withContext(Dispatchers.Main) {
+                                        Toast.makeText(this@MortalityActivity, e.message ?: "Erreur", Toast.LENGTH_SHORT).show()
+                                    }
                                 }
                             }
                         }
-                    }
-                    .setNegativeButton("Annuler", null)
-                    .show()
+                        .setNegativeButton("Annuler", null)
+                        .show()
+                }
             }
+            (dialogBinding.root as ViewGroup).addView(deleteButton)
+        } else {
+            dialogBinding.etMortalityInput.isEnabled = false
+            dialogBinding.etMortalityDate.isEnabled = false
+            dialogBinding.actvMortalityCause.isEnabled = false
+            dialogBinding.btnSaveMortality.visibility = View.GONE
         }
-        (dialogBinding.root as ViewGroup).addView(deleteButton)
 
         dialog.show()
+    }
+
+    private fun showAdviceDialog(cause: String) {
+        if (cause.isEmpty() || cause == "Inconnue" || cause == "Autre") return
+
+        val advice = when (cause) {
+            "Stress thermique (Chaleur)" -> """
+                🌿 PRÉVENTIF : 
+                - Isoler le toit (paille ou peinture blanche).
+                - Installer des brasseurs d'air.
+                - Eau fraîche à volonté (ajouter des glaçons si possible).
+                - Vitamine C ou Électrolytes dans l'eau.
+                
+                💊 CURATIF : 
+                - Diminuer la densité d'oiseaux.
+                - Distribuer l'aliment aux heures fraîches.
+            """.trimIndent()
+            
+            "Newcastle (Pseudo-peste)" -> """
+                🌿 PRÉVENTIF : 
+                - VACCINATION OBLIGATOIRE (J7, J21, rappel tous les 3 mois).
+                - Biosécurité stricte (pédiluves, pas de visiteurs).
+                
+                💊 CURATIF : 
+                - Aucun traitement (virale).
+                - Isoler les malades et désinfecter.
+            """.trimIndent()
+
+            "Gumboro (IBD)" -> """
+                🌿 PRÉVENTIF : 
+                - Vaccination (J10, J18).
+                - Désinfection totale entre les bandes.
+                
+                💊 CURATIF : 
+                - Vitamines (complexe B).
+                - Protecteurs rénaux et hépatiques.
+                - Antibiotiques si infections secondaires.
+            """.trimIndent()
+
+            "Coccidiose" -> """
+                🌿 PRÉVENTIF : 
+                - Garder la litière sèche et aérée.
+                - Éviter les fuites d'abreuvoirs.
+                
+                💊 CURATIF : 
+                - Amprolium ou Sulfamides dans l'eau (3-5 jours).
+                - Vitamine K pour stopper les hémorragies.
+            """.trimIndent()
+
+            "Salmonellose / Typhose" -> """
+                🌿 PRÉVENTIF : 
+                - Hygiène de l'eau (javellisation).
+                - Dératisation stricte du bâtiment.
+                
+                💊 CURATIF : 
+                - Antibiotiques (Tétracyclines, Colistine) après avis vétérinaire.
+            """.trimIndent()
+
+            "Coryza infectieux" -> """
+                🌿 PRÉVENTIF : 
+                - Éviter l'humidité et les courants d'air.
+                - Vaccination disponible pour zones à risque.
+                
+                💊 CURATIF : 
+                - Tylosine ou Érythromycine dans l'eau.
+            """.trimIndent()
+
+            "Prolapsus du cloaque" -> """
+                🌿 PRÉVENTIF : 
+                - Éviter le surpoids des poules (ration équilibrée).
+                - Ne pas stimuler la ponte trop tôt par la lumière.
+                - Apport suffisant en calcium et phosphore.
+                
+                💊 CURATIF : 
+                - Isoler immédiatement la poule (pour éviter le picage).
+                - Nettoyer l'organe avec un antiseptique doux.
+                - Si possible, remettre délicatement en place avec du lubrifiant.
+                - Si grave ou récidivant, la réforme (abattage) est recommandée.
+            """.trimIndent()
+
+            "Picage / Cannibalisme" -> """
+                🌿 PRÉVENTIF : 
+                - Épointage du bec (débecquage).
+                - Réduire l'intensité lumineuse.
+                - Apport en minéraux (sel) et fibres.
+                
+                💊 CURATIF : 
+                - Isoler les oiseaux blessés.
+                - Appliquer du goudron de Norvège ou spray bleu.
+            """.trimIndent()
+
+            else -> "Veuillez consulter un technicien avicole ou un vétérinaire pour un diagnostic précis."
+        }
+
+        AlertDialog.Builder(this)
+            .setTitle("💡 Conseils pour : $cause")
+            .setMessage(advice)
+            .setPositiveButton("OK", null)
+            .show()
     }
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
@@ -408,6 +628,12 @@ class MortalityActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
                 val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
                 binding.tvDate.text = sdf.format(Date(item.date))
                 binding.tvCount.text = "${item.count} Poules"
+                if (!item.cause.isNullOrEmpty()) {
+                    binding.tvCause.text = item.cause
+                    binding.tvCause.visibility = View.VISIBLE
+                } else {
+                    binding.tvCause.visibility = View.GONE
+                }
             }
         }
     }

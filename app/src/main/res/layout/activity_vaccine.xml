@@ -37,27 +37,118 @@
                 android:orientation="vertical"
                 android:padding="16dp">
 
-                <!-- Guide de Prophylaxie Amélioré -->
-                <LinearLayout
+                <!-- Section Calendrier de Santé -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardHealthCalendar"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:layout_marginBottom="12dp">
-                    <View
-                        android:layout_width="4dp"
-                        android:layout_height="24dp"
-                        android:background="#1E90FF" />
-                    <TextView
-                        android:layout_width="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    app:cardBackgroundColor="#111111"
+                    app:cardCornerRadius="16dp"
+                    app:strokeColor="@color/emerald_soft"
+                    app:strokeWidth="1dp"
+                    app:cardElevation="0dp">
+                    <LinearLayout
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="CONSEILS ET VACCINATION (AFRIQUE DE L'OUEST)"
-                        android:textColor="#1E90FF"
-                        android:textSize="14sp"
-                        android:textStyle="bold"
-                        android:layout_marginStart="12dp"
-                        android:letterSpacing="0.1" />
-                </LinearLayout>
+                        android:orientation="vertical"
+                        android:padding="8dp">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="CALENDRIER DE SANTÉ"
+                            android:textColor="@color/emerald_soft"
+                            android:textSize="16sp"
+                            android:textStyle="bold"
+                            android:layout_margin="8dp"/>
+                        <CalendarView
+                            android:id="@+id/calendarView"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:theme="@style/Theme.AppCompat.DayNight" />
+                        <TextView
+                            android:id="@+id/tvSelectedDayReminders"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:padding="12dp"
+                            android:textColor="@color/white"
+                            android:textSize="14sp"
+                            android:visibility="gone"
+                            android:background="#22FFFFFF"
+                            android:layout_margin="8dp"
+                            tools:text="Alertes pour ce jour :\n• Newcastle (ND)"
+                            tools:visibility="visible" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Section Ration Alimentaire -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardFeedRation"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    app:cardBackgroundColor="#111111"
+                    app:cardCornerRadius="16dp"
+                    app:strokeColor="#FFD700"
+                    app:strokeWidth="1dp"
+                    app:cardElevation="0dp">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="16dp">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="RATION ALIMENTAIRE"
+                            android:textColor="#FFD700"
+                            android:textSize="16sp"
+                            android:textStyle="bold"
+                            android:layout_marginBottom="8dp"/>
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Définissez la ration journalière par sujet (en grammes) pour ajuster le calcul du stock."
+                            android:textColor="#B0B0B0"
+                            android:textSize="12sp"
+                            android:layout_marginBottom="12dp"/>
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical">
+
+                            <com.google.android.material.textfield.TextInputLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:hint="Ration (g/sujet)"
+                                app:hintTextColor="#B0B0B0"
+                                app:boxStrokeColor="#FFD700"
+                                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+                                <com.google.android.material.textfield.TextInputEditText
+                                    android:id="@+id/etFeedRation"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:inputType="numberDecimal"
+                                    android:textColor="@color/white"
+                                    android:textSize="16sp"/>
+                            </com.google.android.material.textfield.TextInputLayout>
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnSaveRation"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="12dp"
+                                android:text="VALIDER"
+                                app:cornerRadius="8dp"
+                                android:backgroundTint="#FFD700"
+                                android:textColor="@color/black" />
+                        </LinearLayout>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
 
                 <!-- Plan de Vaccination -->
                 <com.google.android.material.card.MaterialCardView
@@ -77,7 +168,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Plan type (Mauritanie, Sénégal, Mali, CI)"
+                            android:text="Guide de Prophylaxie (Plan type)"
                             android:textColor="@color/white"
                             android:textSize="16sp"
                             android:textStyle="bold"
@@ -89,6 +180,48 @@
                             android:textColor="#B0B0B0"
                             android:textSize="13sp"
                             android:lineSpacingExtra="4dp" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Météo Nouakchott -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardWeather"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    app:cardBackgroundColor="#111111"
+                    app:cardCornerRadius="16dp"
+                    app:strokeColor="#FF8C00"
+                    app:strokeWidth="1dp"
+                    app:cardElevation="0dp">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="16dp">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="MÉTÉO NOUAKCHOTT (5 JOURS)"
+                            android:textColor="#FF8C00"
+                            android:textSize="16sp"
+                            android:textStyle="bold"
+                            android:layout_marginBottom="8dp"/>
+                        <ProgressBar
+                            android:id="@+id/weatherProgressBar"
+                            style="?android:attr/progressBarStyleSmall"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="center"
+                            android:visibility="gone"/>
+                        <TextView
+                            android:id="@+id/tvWeatherInfo"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:textColor="#B0B0B0"
+                            android:textSize="13sp"
+                            android:lineSpacingExtra="4dp"
+                            android:text="Chargement de la météo..." />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 

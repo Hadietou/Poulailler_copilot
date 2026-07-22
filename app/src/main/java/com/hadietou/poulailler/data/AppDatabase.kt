@@ -15,9 +15,10 @@ import androidx.room.RoomDatabase
         VaccineEntry::class, 
         LoginEntry::class,
         Mortality::class,
-        Batch::class
+        Batch::class,
+        HealthReminder::class
     ],
-    version = 13,
+    version = 14,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -30,6 +31,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun loginDao(): LoginDao
     abstract fun mortalityDao(): MortalityDao
     abstract fun batchDao(): BatchDao
+    abstract fun healthReminderDao(): HealthReminderDao
 
     companion object {
         @Volatile
