@@ -22,4 +22,13 @@ object RetrofitClient {
             .build()
             .create(BrevoApiService::class.java)
     }
+
+    val weatherApi: WeatherApiService by lazy {
+        Retrofit.Builder()
+            .baseUrl(WeatherApiService.BASE_URL)
+            .addConverterFactory(GsonConverterFactory.create())
+            .client(httpClient)
+            .build()
+            .create(WeatherApiService::class.java)
+    }
 }

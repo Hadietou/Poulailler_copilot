@@ -1,15 +1,21 @@
 package com.hadietou.poulailler.ui
 
 import android.app.Application
+import android.content.Context
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
 import com.hadietou.poulailler.data.*
+import com.hadietou.poulailler.network.RetrofitClient
 import com.hadietou.poulailler.repository.FirebaseRepository
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
 import java.util.Calendar
+import java.util.Date
+import java.util.Locale
 import java.util.concurrent.TimeUnit
 
 class DashboardViewModel(application: Application) : AndroidViewModel(application) {
@@ -37,6 +43,12 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     val monthlySalesTablettes = MutableLiveData<Int>(0)
     val monthlyLayingRate = MutableLiveData<Double>(0.0)
     
+    val monthlyCollectedCount = MutableLiveData<Int>(0)
+    val monthlySoldCount = MutableLiveData<Int>(0)
+    val monthlySalesAmount = MutableLiveData<Double>(0.0)
+    val monthlyExpensesAmount = MutableLiveData<Double>(0.0)
+    val monthlyBrokenCount = MutableLiveData<Int>(0)
+    
     val prodTrend = MutableLiveData<Int>(0)
     val salesTrend = MutableLiveData<Int>(0)
     val rateTrend = MutableLiveData<Int>(0)
@@ -51,6 +63,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     val healthExpenses = MutableLiveData<Double>(0.0)
     val nextVaccine = MutableLiveData<VaccineEntry?>()
     val monthlyMortalityCount = MutableLiveData<Int>(0)
+    val activeHealthReminders = MutableLiveData<List<HealthReminder>>(emptyList())
     
     // Feed KPIs
     val totalFeedPurchasedKg = MutableLiveData<Double>(0.0)
@@ -67,6 +80,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     val allExpenses = MutableLiveData<List<Expense>>(emptyList())
     val allSales = MutableLiveData<List<EggSale>>(emptyList())
     val allVaccines = MutableLiveData<List<VaccineEntry>>(emptyList())
+    val allReminders = MutableLiveData<List<HealthReminder>>(emptyList())
 
     val allBatches = MutableLiveData<List<Batch>>(emptyList())
     val selectedBatch = MutableLiveData<Batch?>()
@@ -75,6 +89,11 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     val totalMortalityCount = MutableLiveData<Int>(0)
 
     val isAccessBlocked = MutableLiveData<Boolean>(false)
+
+    // Anti-doublons en mémoire pour la session actuelle
+    private var isCheckingHeatAlert = false
+    private var isCheckingStockAlert = false
+    private var isGeneratingReminders = false
 
     fun checkAccessStatus() {
         viewModelScope.launch {
@@ -89,6 +108,10 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
 
     fun loadData() {
         checkAccessStatus()
+        if (!isCheckingHeatAlert) {
+            checkHeatAlert()
+        }
+        
         viewModelScope.launch {
             try {
                 val user = firebaseRepo.getCurrentUserProfile()
@@ -114,6 +137,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
                         selectedBatch.value = batches.firstOrNull { it.status == "ACTIVE" } ?: batches.first()
                     }
                     refreshAllStats()
+                    checkAndGenerateReminders()
                 }
             } catch (e: Exception) { Log.e("DashboardVM", "Error in batchesFlow", e) }
         }
@@ -157,11 +181,196 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
                 }
             } catch (e: Exception) { Log.e("DashboardVM", "Error in vaccinesFlow", e) }
         }
+        viewModelScope.launch {
+            try {
+                firebaseRepo.getHealthRemindersFlow().collectLatest { list ->
+                    allReminders.value = list
+                    updateActiveReminders()
+                }
+            } catch (e: Exception) { Log.e("DashboardVM", "Error in remindersFlow", e) }
+        }
+    }
+
+    private fun updateActiveReminders() {
+        val batchId = selectedBatch.value?.firestoreId ?: return
+        val active = allReminders.value?.filter { it.batchId == batchId && !it.isDone } ?: emptyList()
+        activeHealthReminders.postValue(active)
+    }
+
+    private fun checkHeatAlert() {
+        val prefs = getApplication<Application>().getSharedPreferences("HeatAlertPrefs", Context.MODE_PRIVATE)
+        val lastCheckDate = prefs.getString("lastCheckDate", "")
+        val todayDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+
+        if (lastCheckDate == todayDate) return
+        if (isCheckingHeatAlert) return
+
+        isCheckingHeatAlert = true
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val email = firebaseRepo.getResponsibleEmail()
+                val info = firebaseRepo.getFarmInfo()
+                
+                if (email == null || info == null) {
+                    isCheckingHeatAlert = false
+                    return@launch
+                }
+
+                val response = RetrofitClient.weatherApi.getForecast()
+                val daily = response.daily
+                
+                var alertNeeded = false
+                var highTempDay = ""
+                var highTempValue = 0.0
+
+                for (i in 0 until daily.time.size) {
+                    val temp = daily.maxTemperatures[i]
+                    if (temp >= 35) {
+                        alertNeeded = true
+                        highTempDay = daily.time[i]
+                        highTempValue = temp
+                        break
+                    }
+                }
+
+                if (alertNeeded) {
+                    firebaseRepo.sendHeatAlertEmail(email, info.farmName, highTempDay, highTempValue)
+                    
+                    val batch = selectedBatch.value
+                    if (batch != null && batch.firestoreId != null) {
+                        addVitaminReminder(
+                            batch.firestoreId,
+                            "Vitamine C / Électrolytes",
+                            "Période de chaleur prévue ($highTempValue°C le $highTempDay). Hydratation et anti-stress recommandés."
+                        )
+                    }
+                }
+                
+                prefs.edit().putString("lastCheckDate", todayDate).apply()
+
+            } catch (e: Exception) {
+                Log.e("DashboardVM", "Error checking heat alert", e)
+            } finally {
+                isCheckingHeatAlert = false
+            }
+        }
+    }
+
+    private fun addVitaminReminder(batchId: String, title: String, desc: String) {
+        viewModelScope.launch {
+            val existing = allReminders.value?.find { it.title == title && it.batchId == batchId && !it.isDone }
+            if (existing == null) {
+                firebaseRepo.addHealthReminder(HealthReminder(
+                    type = "VITAMINE",
+                    title = title,
+                    description = desc,
+                    dueDate = System.currentTimeMillis(),
+                    batchId = batchId
+                ))
+            }
+        }
+    }
+
+    fun markReminderDone(reminder: HealthReminder) {
+        viewModelScope.launch {
+            try {
+                firebaseRepo.updateHealthReminder(reminder.copy(isDone = true))
+            } catch (e: Exception) {
+                Log.e("DashboardVM", "Error marking reminder done", e)
+            }
+        }
+    }
+
+    private fun checkAndGenerateReminders() {
+        if (isGeneratingReminders) return
+        val batch = selectedBatch.value ?: return
+        val batchId = batch.firestoreId ?: return
+        val arrivalDate = batch.arrivalDate
+        if (arrivalDate == 0L) return
+
+        isGeneratingReminders = true
+        viewModelScope.launch {
+            try {
+                val now = System.currentTimeMillis()
+                val tasks = listOf(
+                    Triple("Newcastle (ND)", "Vaccination de rappel recommandée (tous les 2 mois).", 2),
+                    Triple("Bronchite infectieuse (IB)", "Vaccination de rappel recommandée (tous les 2 mois).", 2),
+                    Triple("Déparasitage interne", "Traitement contre les vers (tous les 3 mois). Produits : lévamisole, albendazole, fenbendazole. Donner 2 jours de vitamines après.", 3),
+                    Triple("Déparasitage externe", "Traitement contre les poux et acariens (tous les 2 mois). Nettoyage + insecticide adapté.", 2)
+                )
+
+                for (task in tasks) {
+                    val title = task.first
+                    val desc = task.second
+                    val interval = task.third
+                    
+                    val cal = Calendar.getInstance()
+                    cal.timeInMillis = arrivalDate
+                    while (cal.timeInMillis < now - TimeUnit.DAYS.toMillis(7)) {
+                        cal.add(Calendar.MONTH, interval)
+                    }
+                    
+                    val dueDate = cal.timeInMillis
+                    val existing = allReminders.value?.find { it.title == title && it.batchId == batchId }
+                    
+                    if (existing == null) {
+                        firebaseRepo.addHealthReminder(HealthReminder(
+                            type = if (title.contains("Newcastle") || title.contains("Bronchite")) "VACCIN" else "DEPARASITAGE",
+                            title = title,
+                            description = desc,
+                            dueDate = dueDate,
+                            batchId = batchId,
+                            recurring = true,
+                            frequencyMonths = interval
+                        ))
+                    } else if (existing.isDone && existing.dueDate < now - TimeUnit.DAYS.toMillis(1)) {
+                        firebaseRepo.updateHealthReminder(existing.copy(dueDate = dueDate, isDone = false))
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("DashboardVM", "Error generating reminders", e)
+            } finally {
+                isGeneratingReminders = false
+            }
+        }
+    }
+
+    private fun checkFeedStockAlert(stock: Double, days: Int) {
+        if (days >= 10) return
+
+        val prefs = getApplication<Application>().getSharedPreferences("StockAlertPrefs", Context.MODE_PRIVATE)
+        val lastCheckDate = prefs.getString("lastCheckDate", "")
+        val todayDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+
+        if (lastCheckDate == todayDate) return
+        if (isCheckingStockAlert) return
+
+        isCheckingStockAlert = true
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val email = firebaseRepo.getResponsibleEmail()
+                val info = firebaseRepo.getFarmInfo()
+                
+                if (email == null || info == null) {
+                    isCheckingStockAlert = false
+                    return@launch
+                }
+
+                firebaseRepo.sendFeedStockAlertEmail(email, info.farmName, stock, days)
+                prefs.edit().putString("lastCheckDate", todayDate).apply()
+            } catch (e: Exception) {
+                Log.e("DashboardVM", "Error sending stock alert", e)
+            } finally {
+                isCheckingStockAlert = false
+            }
+        }
     }
 
     fun selectBatch(batch: Batch) {
         selectedBatch.value = batch
         refreshAllStats()
+        updateActiveReminders()
+        checkAndGenerateReminders()
     }
 
     fun refreshAllStats() {
@@ -226,36 +435,55 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         cumulativeMortalityRate.postValue(mortalityRate)
         survivalRate.postValue(100.0 - mortalityRate)
 
+        // Monthly Expenses
+        val curMonthExpenses = expenses.filter { it.date >= currentMonthStart }
+        monthlyExpensesAmount.postValue(curMonthExpenses.sumOf { it.amount })
+
         if (isChair) {
             todayEggs.postValue(0); lastCollectedCount.postValue(0); layingRate.postValue(0.0)
             layingTrend.postValue(0.0); totalCollected.postValue(0); totalSold.postValue(0)
             totalBroken.postValue(0); totalRemaining.postValue(0); weeklyProduction.postValue(emptyList())
             monthlyProduction.postValue(0.0); monthlyLayingRate.postValue(0.0)
+            monthlyCollectedCount.postValue(0); monthlySoldCount.postValue(0); monthlySalesAmount.postValue(0.0)
+            monthlyBrokenCount.postValue(0)
             prodTrend.postValue(0); rateTrend.postValue(0)
             
-            val curMonthSalesQty = sales.filter { it.date >= currentMonthStart }.sumOf { it.quantity }
+            val curMonthSales = sales.filter { it.date >= currentMonthStart }
+            val curMonthSalesQty = curMonthSales.sumOf { it.quantity }
             val lastMonthSalesQty = sales.filter { it.date in lastMonthStart..lastMonthEnd }.sumOf { it.quantity }
             monthlySalesTablettes.postValue(curMonthSalesQty / 30)
+            monthlySalesAmount.postValue(curMonthSales.sumOf { it.totalPrice })
             salesTrend.postValue(if (curMonthSalesQty > lastMonthSalesQty) 1 else if (curMonthSalesQty < lastMonthSalesQty) -1 else 0)
             
             feedConversionRatio.postValue(0.0)
             layingGapVsStandard.postValue(0.0)
         } else {
             val yesterdayStart = todayStart - TimeUnit.DAYS.toMillis(1)
-            val eggsToday = entries.filter { it.date >= todayStart }.sumOf { it.eggsCount }
-            todayEggs.postValue(eggsToday)
-            val eggsYesterday = entries.filter { it.date in yesterdayStart until todayStart }.sumOf { it.eggsCount }
+            val entriesToday = entries.filter { it.date >= todayStart }
+            val eggsTodayCount = entriesToday.sumOf { it.eggsCount }
+            val brokenTodayCount = entriesToday.sumOf { it.brokenEggsCount }
+            todayEggs.postValue(eggsTodayCount)
+            
+            val entriesYesterday = entries.filter { it.date in yesterdayStart until todayStart }
+            val eggsYesterdayTotal = entriesYesterday.sumOf { it.eggsCount + it.brokenEggsCount }
             
             val divisor = if (currentHens > 0) currentHens else 1
             val lastEntry = entries.maxByOrNull { it.date }
-            val lastEggsCount = lastEntry?.eggsCount ?: 0
-            lastCollectedCount.postValue(lastEggsCount)
+            val lastTotalProduced = (lastEntry?.eggsCount ?: 0) + (lastEntry?.brokenEggsCount ?: 0)
+            lastCollectedCount.postValue(lastEntry?.eggsCount ?: 0)
 
-            val lastRate = (lastEggsCount.toDouble() / divisor.toDouble()) * 100
-            val currentRate = (eggsToday.toDouble() / divisor.toDouble()) * 100
-            val yesterdayRate = (eggsYesterday.toDouble() / divisor.toDouble()) * 100
+            val lastRate = (lastTotalProduced.toDouble() / divisor.toDouble()) * 100
+            val currentTotalProduced = eggsTodayCount + brokenTodayCount
+            val currentRate = (currentTotalProduced.toDouble() / divisor.toDouble()) * 100
+            val yesterdayRate = (eggsYesterdayTotal.toDouble() / divisor.toDouble()) * 100
+            
             layingRate.postValue(lastRate)
             layingTrend.postValue(currentRate - yesterdayRate)
+            
+            // Trigger Vitamin reminder if drop in production > 5%
+            if (currentRate < yesterdayRate - 5.0 && currentRate > 0) {
+                addVitaminReminder(batchId, "Calcium + Vitamine D3 (Alerte Ponte)", "Une baisse importante de ponte a été détectée. Apport en Calcium + D3 recommandé.")
+            }
 
             val totalColl = entries.sumOf { it.eggsCount }
             val totalSoldQty = sales.sumOf { it.quantity }
@@ -265,60 +493,66 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
 
             // Monthly Stats
             val curMonthEntries = entries.filter { it.date >= currentMonthStart }
-            val curMonthProd = curMonthEntries.sumOf { it.eggsCount }
+            val curMonthProdSains = curMonthEntries.sumOf { it.eggsCount }
             val curMonthBroken = curMonthEntries.sumOf { it.brokenEggsCount }
-            val curMonthBrokenRate = if (curMonthProd > 0) (curMonthBroken.toDouble() / curMonthProd) * 100 else 0.0
+            monthlyBrokenCount.postValue(curMonthBroken)
+
+            val curMonthTotalProd = curMonthProdSains + curMonthBroken
+            val curMonthBrokenRate = if (curMonthTotalProd > 0) (curMonthBroken.toDouble() / curMonthTotalProd) * 100 else 0.0
             monthlyProduction.postValue(curMonthBrokenRate)
             
+            monthlyCollectedCount.postValue(curMonthProdSains)
+            
             val lastMonthEntries = entries.filter { it.date in lastMonthStart..lastMonthEnd }
-            val lastMonthProd = lastMonthEntries.sumOf { it.eggsCount }
+            val lastMonthTotalProd = lastMonthEntries.sumOf { it.eggsCount + it.brokenEggsCount }
             val lastMonthBroken = lastMonthEntries.sumOf { it.brokenEggsCount }
-            val lastMonthBrokenRate = if (lastMonthProd > 0) (lastMonthBroken.toDouble() / lastMonthProd) * 100 else 0.0
+            val lastMonthBrokenRate = if (lastMonthTotalProd > 0) (lastMonthBroken.toDouble() / lastMonthTotalProd) * 100 else 0.0
             prodTrend.postValue(if (curMonthBrokenRate < lastMonthBrokenRate) 1 else if (curMonthBrokenRate > lastMonthBrokenRate) -1 else 0)
 
-            val curMonthSalesQty = sales.filter { it.date >= currentMonthStart }.sumOf { it.quantity }
+            val curMonthSales = sales.filter { it.date >= currentMonthStart }
+            val curMonthSalesQty = curMonthSales.sumOf { it.quantity }
             val lastMonthSalesQty = sales.filter { it.date in lastMonthStart..lastMonthEnd }.sumOf { it.quantity }
             monthlySalesTablettes.postValue(curMonthSalesQty / 30)
+            monthlySoldCount.postValue(curMonthSalesQty)
+            monthlySalesAmount.postValue(curMonthSales.sumOf { it.totalPrice })
             salesTrend.postValue(if (curMonthSalesQty > lastMonthSalesQty) 1 else if (curMonthSalesQty < lastMonthSalesQty) -1 else 0)
 
-            val curMonthRate = if (currentHens > 0) (curMonthProd.toDouble() / (currentHens * daysInCurrentMonth)) * 100 else 0.0
-            val lastMonthRate = if (currentHens > 0) (lastMonthProd.toDouble() / (currentHens * daysInLastMonth)) * 100 else 0.0
+            val curMonthRate = if (currentHens > 0) (curMonthTotalProd.toDouble() / (currentHens * daysInCurrentMonth)) * 100 else 0.0
+            val lastMonthRate = if (currentHens > 0) (lastMonthTotalProd.toDouble() / (currentHens * daysInLastMonth)) * 100 else 0.0
             monthlyLayingRate.postValue(curMonthRate)
             rateTrend.postValue(if (curMonthRate > lastMonthRate) 1 else if (curMonthRate < lastMonthRate) -1 else 0)
 
             // Tech KPI: IC and Gap vs Standard
             val ageInWeeks = if (batch.chickBirthDate > 0) ((System.currentTimeMillis() - batch.chickBirthDate) / (TimeUnit.DAYS.toMillis(1) * 7)).toInt() else 0
-            val stdRate = getStandardLayingRate(ageInWeeks)
+            val stdRate = getStandardLayingRate(ageWeeks = ageInWeeks)
             layingGapVsStandard.postValue(lastRate - stdRate)
 
             val history = mutableListOf<Triple<Long, Int, Double>>()
             for (i in 14 downTo 0) {
                 val start = todayStart - TimeUnit.DAYS.toMillis(i.toLong())
                 val end = start + TimeUnit.DAYS.toMillis(1) - 1
-                val dailyColl = entries.filter { it.date in start..end }.sumOf { it.eggsCount }
-                
+                val dayEntries = entries.filter { it.date in start..end }
+                if (i == 0 && dayEntries.isEmpty()) continue
+                val dailyColl = dayEntries.sumOf { it.eggsCount }
+                val dailyBroken = dayEntries.sumOf { it.brokenEggsCount }
+                val dailyTotal = dailyColl + dailyBroken
                 val mortUntilThen = mortalities.filter { it.date <= start }.sumOf { it.count }
                 val hensThen = (batch.hensCount - mortUntilThen).coerceAtLeast(1)
-                val rateThen = (dailyColl.toDouble() / hensThen.toDouble()) * 100.0
-                
+                val rateThen = (dailyTotal.toDouble() / hensThen.toDouble()) * 100.0
                 history.add(Triple(start, dailyColl, rateThen))
             }
             weeklyProduction.postValue(history)
         }
 
         calculateFeedStats(batch, mortalities, feedPurchased)
+        updateActiveReminders()
     }
 
     private fun getStandardLayingRate(ageWeeks: Int): Double {
         return when {
-            ageWeeks < 18 -> 0.0
-            ageWeeks < 20 -> 10.0
-            ageWeeks < 22 -> 50.0
-            ageWeeks < 25 -> 85.0
-            ageWeeks < 40 -> 92.0
-            ageWeeks < 60 -> 85.0
-            ageWeeks < 80 -> 75.0
-            else -> 60.0
+            ageWeeks < 18 -> 0.0; ageWeeks < 20 -> 10.0; ageWeeks < 22 -> 50.0
+            ageWeeks < 25 -> 85.0; ageWeeks < 40 -> 92.0; ageWeeks < 60 -> 85.0
+            ageWeeks < 80 -> 75.0; else -> 60.0
         }
     }
 
@@ -338,11 +572,15 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         while (currentDay < today) {
             val mortalityUntilThen = mortalities.filter { it.date <= currentDay }.sumOf { it.count }
             val hensThatDay = (initialHens - mortalityUntilThen).coerceAtLeast(0)
-            val ageInWeeks = ((currentDay - batch.chickBirthDate) / (dayMillis * 7)).toInt()
-            val dailyFeed = if (isChair) {
-                when { ageInWeeks < 2 -> 0.040; ageInWeeks < 4 -> 0.100; ageInWeeks < 6 -> 0.160; else -> 0.200 }
+            val dailyFeed = if (batch.feedRation > 0 && batch.feedRation != 0.120) {
+                batch.feedRation
             } else {
-                when { ageInWeeks < 4 -> 0.040; ageInWeeks < 8 -> 0.070; ageInWeeks < 17 -> 0.090; else -> 0.120 }
+                val ageInWeeks = ((currentDay - batch.chickBirthDate) / (dayMillis * 7)).toInt()
+                if (isChair) {
+                    when { ageInWeeks < 2 -> 0.040; ageInWeeks < 4 -> 0.100; ageInWeeks < 6 -> 0.160; else -> 0.200 }
+                } else {
+                    when { ageInWeeks < 4 -> 0.040; ageInWeeks < 8 -> 0.070; ageInWeeks < 17 -> 0.090; else -> 0.120 }
+                }
             }
             totalConsumed += hensThatDay * dailyFeed
             currentDay += dayMillis
@@ -364,17 +602,23 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
 
         val currentHens = (initialHens - mortalities.sumOf { it.count }).coerceAtLeast(0)
         val currentAgeInWeeks = if (batch.chickBirthDate > 0) ((today - batch.chickBirthDate) / (dayMillis * 7)).toInt() else 20
-        val dailyFeedPerHen = if (isChair) {
-            when { currentAgeInWeeks < 2 -> 0.040; currentAgeInWeeks < 4 -> 0.100; currentAgeInWeeks < 6 -> 0.160; else -> 0.200 }
+        val dailyFeedPerHen = if (batch.feedRation > 0 && batch.feedRation != 0.120) {
+            batch.feedRation
         } else {
-            when { currentAgeInWeeks < 4 -> 0.040; currentAgeInWeeks < 8 -> 0.070; currentAgeInWeeks < 17 -> 0.090; else -> 0.120 }
+            if (isChair) {
+                when { currentAgeInWeeks < 2 -> 0.040; currentAgeInWeeks < 4 -> 0.100; currentAgeInWeeks < 6 -> 0.160; else -> 0.200 }
+            } else {
+                when { currentAgeInWeeks < 4 -> 0.040; currentAgeInWeeks < 8 -> 0.070; currentAgeInWeeks < 17 -> 0.090; else -> 0.120 }
+            }
         }
 
         dailyConsumptionTotalKg.postValue(currentHens * dailyFeedPerHen)
         dailyConsumptionPerHenG.postValue(dailyFeedPerHen * 1000.0)
 
         if (currentHens > 0 && dailyFeedPerHen > 0) {
-            feedAutonomyDays.postValue((stockRestant / (currentHens * dailyFeedPerHen)).toInt())
+            val days = (stockRestant / (currentHens * dailyFeedPerHen)).toInt()
+            feedAutonomyDays.postValue(days)
+            if (totalPurchased > 0) checkFeedStockAlert(stockRestant, days)
         } else {
             feedAutonomyDays.postValue(0)
         }

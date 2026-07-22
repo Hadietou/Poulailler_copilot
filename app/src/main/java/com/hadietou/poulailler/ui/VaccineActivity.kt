@@ -21,11 +21,14 @@ import androidx.recyclerview.widget.RecyclerView
 import com.hadietou.poulailler.R
 import com.hadietou.poulailler.BuildConfig
 import com.hadietou.poulailler.data.AppDatabase
+import com.hadietou.poulailler.data.Batch
 import com.hadietou.poulailler.data.VaccineEntry
+import com.hadietou.poulailler.data.HealthReminder
 import com.hadietou.poulailler.databinding.ActivityVaccineBinding
 import com.hadietou.poulailler.databinding.DialogAddVaccineBinding
 import com.hadietou.poulailler.databinding.ItemVaccineBinding
 import com.hadietou.poulailler.repository.FirebaseRepository
+import com.hadietou.poulailler.network.RetrofitClient
 import com.google.android.material.navigation.NavigationView
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.Dispatchers
@@ -43,10 +46,12 @@ class VaccineActivity : AppCompatActivity(), NavigationView.OnNavigationItemSele
     private var userRole: String = "AGENT"
     private var userId: String? = null
     private var selectedBatchId: String? = null
+    private var currentBatch: Batch? = null
     private val firebaseRepo = FirebaseRepository()
     private lateinit var adapter: VaccineAdapter
     
     private var allVaccines: List<VaccineEntry> = emptyList()
+    private var allHealthReminders: List<HealthReminder> = emptyList()
     private var isShowingAll = false
     private var isBlocked = false
 
@@ -61,9 +66,13 @@ class VaccineActivity : AppCompatActivity(), NavigationView.OnNavigationItemSele
 
         setupNavigation()
         setupRecyclerView()
+        setupCalendar()
         observeVaccines()
+        observeHealthReminders()
+        observeCurrentBatch()
         loadEnhancedSanitaryGuide()
         checkAccessStatus()
+        fetchWeatherForecast()
 
         binding.fabAddVaccine.setOnClickListener {
             if (isBlocked) { showBlockingDialog(); return@setOnClickListener }
@@ -75,9 +84,124 @@ class VaccineActivity : AppCompatActivity(), NavigationView.OnNavigationItemSele
             refreshDisplay()
         }
 
+        binding.btnSaveRation.setOnClickListener {
+            saveManualRation()
+        }
+
         if (intent.getBooleanExtra("scrollToLighting", false)) {
             binding.root.post {
                 binding.nestedScrollView.smoothScrollTo(0, binding.cardLightingLogic.top)
+            }
+        }
+        
+        binding.cardFeedRation.visibility = if (userRole == "RESPONSABLE") View.VISIBLE else View.GONE
+    }
+
+    private fun setupCalendar() {
+        binding.calendarView.setOnDateChangeListener { _, year, month, dayOfMonth ->
+            val cal = Calendar.getInstance()
+            cal.set(year, month, dayOfMonth)
+            showRemindersForDay(cal)
+        }
+    }
+
+    private fun showRemindersForDay(cal: Calendar) {
+        val startOfDay = cal.apply { set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0) }.timeInMillis
+        val endOfDay = startOfDay + 24 * 60 * 60 * 1000 - 1
+
+        val dayReminders = allHealthReminders.filter { it.dueDate in startOfDay..endOfDay }
+        val dayVaccines = allVaccines.filter { it.date in startOfDay..endOfDay }
+
+        if (dayReminders.isEmpty() && dayVaccines.isEmpty()) {
+            binding.tvSelectedDayReminders.visibility = View.GONE
+        } else {
+            val sb = StringBuilder("<b>Alertes et soins pour ce jour :</b><br/>")
+            dayReminders.forEach { sb.append("• [Rappel] ${it.title}<br/>") }
+            dayVaccines.forEach { sb.append("• [Soin] ${it.name}<br/>") }
+            
+            binding.tvSelectedDayReminders.text = Html.fromHtml(sb.toString(), Html.FROM_HTML_MODE_LEGACY)
+            binding.tvSelectedDayReminders.visibility = View.VISIBLE
+        }
+    }
+
+    private fun observeCurrentBatch() {
+        lifecycleScope.launch {
+            firebaseRepo.getBatchesFlow().collectLatest { batches ->
+                val batch = if (selectedBatchId != null) {
+                    batches.find { it.firestoreId == selectedBatchId }
+                } else {
+                    batches.find { it.status == "ACTIVE" }
+                }
+                
+                if (batch != null) {
+                    currentBatch = batch
+                    withContext(Dispatchers.Main) {
+                        val rationG = (batch.feedRation * 1000).toInt()
+                        if (binding.etFeedRation.text.isNullOrEmpty()) {
+                            binding.etFeedRation.setText(rationG.toString())
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private fun saveManualRation() {
+        if (isBlocked) { showBlockingDialog(); return }
+        val batch = currentBatch ?: run {
+            Toast.makeText(this, "Aucun lot sélectionné", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val rationStr = binding.etFeedRation.text?.toString() ?: ""
+        if (rationStr.isEmpty()) {
+            Toast.makeText(this, "Veuillez saisir une valeur", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val rationG = rationStr.toDoubleOrNull() ?: 0.0
+        val rationKg = rationG / 1000.0
+
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                val updatedBatch = batch.copy(feedRation = rationKg)
+                firebaseRepo.updateBatch(updatedBatch)
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(this@VaccineActivity, "Ration mise à jour : ${rationG.toInt()}g/sujet", Toast.LENGTH_SHORT).show()
+                    binding.etFeedRation.clearFocus()
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(this@VaccineActivity, "Erreur : ${e.message}", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
+    private fun fetchWeatherForecast() {
+        binding.weatherProgressBar.visibility = View.VISIBLE
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                val response = RetrofitClient.weatherApi.getForecast()
+                val daily = response.daily
+                
+                val weatherText = StringBuilder()
+                for (i in 0 until daily.time.size) {
+                    val date = daily.time[i]
+                    val temp = daily.maxTemperatures[i]
+                    val emoji = if (temp >= 35) "🔥" else "☀️"
+                    weatherText.append("• $date : $temp°C $emoji\n")
+                }
+
+                withContext(Dispatchers.Main) {
+                    binding.weatherProgressBar.visibility = View.GONE
+                    binding.tvWeatherInfo.text = weatherText.toString().trim()
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    binding.weatherProgressBar.visibility = View.GONE
+                    binding.tvWeatherInfo.text = "Impossible de charger la météo."
+                }
             }
         }
     }
@@ -89,6 +213,7 @@ class VaccineActivity : AppCompatActivity(), NavigationView.OnNavigationItemSele
             if (blocked) {
                 withContext(Dispatchers.Main) {
                     binding.fabAddVaccine.visibility = View.GONE
+                    binding.btnSaveRation.isEnabled = false
                     showBlockingDialog()
                 }
             }
@@ -143,7 +268,21 @@ class VaccineActivity : AppCompatActivity(), NavigationView.OnNavigationItemSele
                 } else {
                     list
                 }
-                refreshDisplay()
+                withContext(Dispatchers.Main) {
+                    refreshDisplay()
+                }
+            }
+        }
+    }
+
+    private fun observeHealthReminders() {
+        lifecycleScope.launch {
+            firebaseRepo.getHealthRemindersFlow().collectLatest { list ->
+                allHealthReminders = if (selectedBatchId != null) {
+                    list.filter { it.batchId == selectedBatchId }
+                } else {
+                    list
+                }
             }
         }
     }
@@ -194,8 +333,8 @@ class VaccineActivity : AppCompatActivity(), NavigationView.OnNavigationItemSele
         }
 
         dialogBinding.btnSaveVaccine.setOnClickListener {
-            val name = dialogBinding.etVaccineName.text.toString()
-            val remarks = dialogBinding.etRemarks.text.toString()
+            val name = dialogBinding.etVaccineName.text?.toString() ?: ""
+            val remarks = dialogBinding.etRemarks.text?.toString() ?: ""
 
             if (name.isEmpty()) {
                 Toast.makeText(this, "Veuillez saisir le nom du soin", Toast.LENGTH_SHORT).show()
@@ -211,8 +350,18 @@ class VaccineActivity : AppCompatActivity(), NavigationView.OnNavigationItemSele
                         batchId = selectedBatchId
                     )
                     firebaseRepo.addVaccine(entry)
+                    
+                    // Ajouter un rappel Vitamine systématique après un soin/vaccin
+                    firebaseRepo.addHealthReminder(HealthReminder(
+                        type = "VITAMINE",
+                        title = "Vitamines Post-Soin ($name)",
+                        description = "Recommandé : Vitamine A-D-E ou B-complex pour booster l'immunité.",
+                        dueDate = System.currentTimeMillis(),
+                        batchId = selectedBatchId
+                    ))
+
                     withContext(Dispatchers.Main) {
-                        Toast.makeText(this@VaccineActivity, "Soin enregistré", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this@VaccineActivity, "Soin enregistré + Rappel Vitamines ajouté", Toast.LENGTH_SHORT).show()
                         dialog.dismiss()
                     }
                 } catch (e: Exception) {
@@ -251,8 +400,8 @@ class VaccineActivity : AppCompatActivity(), NavigationView.OnNavigationItemSele
 
         dialogBinding.btnSaveVaccine.text = "MODIFIER"
         dialogBinding.btnSaveVaccine.setOnClickListener {
-            val name = dialogBinding.etVaccineName.text.toString()
-            val remarks = dialogBinding.etRemarks.text.toString()
+            val name = dialogBinding.etVaccineName.text?.toString() ?: ""
+            val remarks = dialogBinding.etRemarks.text?.toString() ?: ""
 
             if (name.isEmpty()) {
                 Toast.makeText(this, "Nom obligatoire", Toast.LENGTH_SHORT).show()

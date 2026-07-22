@@ -20,7 +20,7 @@
     <string name="eggs_collected_count">%1$d œufs collectés</string>
     <string name="laying_trend_positive">+%1$d%% vs hier</string>
     <string name="laying_trend_negative">%1$d%% vs hier</string>
-    <string name="production_15d">Production (15j)</string>
+    <string name="production_15d">Production Oeufs sur 15 jours </string>
     <string name="egg_management">Gestion des Œufs</string>
     <string name="egg_performance_management">Suivi et Performance Ponte</string>
     <string name="egg_performance_header">STOCK &amp; PERFORMANCE</string>
@@ -28,6 +28,7 @@
     <string name="sold">Vendus</string>
     <string name="available">Disponible</string>
     <string name="tablettes_count">%1$d Tab</string>
+    <string name="available_stock_alert">Stock disponible : %1$d Tablettes</string>
     <string name="eggs_count_format">%1$s œufs</string>
     <string name="mortality">Mortalité</string>
     <string name="feed_stock">Stock Aliment</string>
@@ -44,10 +45,16 @@
     <string name="subjects_age_format">%1$s sujets • Age : %2$s</string>
 
     <!-- New Monthly KPIs -->
+    <string name="monthly_performance_title">Suivi Performance Mois</string>
+    <string name="label_collected_m">Collectés (M)</string>
+    <string name="label_sold_m">Tab Vendu</string>
+    <string name="label_amount_m">Recette (M)</string>
+    <string name="label_expenses_m">Dépenses (M)</string>
+
     <string name="monthly_kpi_title">Performance du Mois</string>
-    <string name="monthly_prod">Cassés(Mois)</string>
-    <string name="monthly_sales">Ventes(Mois)</string>
-    <string name="monthly_rate">Prod(Mois)</string>
+    <string name="monthly_prod">Cassés (M)</string>
+    <string name="monthly_sales">Ventes (M)</string>
+    <string name="monthly_rate">Ponte (M)</string>
     <string name="vs_last_month">vs mois dernier</string>
     <string name="k_format">%1$.1fk</string>
 
@@ -58,7 +65,7 @@
     <string name="gap_std_label">Écart / Std</string>
     <string name="survival_rate_label">Taux de Survie</string>
     <string name="total_mortality_label">T Mortalité</string>
-    <string name="monthly_mortality_label">Mort (Mois)</string>
+    <string name="monthly_mortality_label">Mortalité (M)</string>
 
     <!-- Alimentation Section -->
     <string name="feed_section_title">Alimentation</string>
@@ -90,6 +97,7 @@
     <string name="desc_mortality_icon">Icône mortalité</string>
     <string name="desc_feed_icon">Icône aliment</string>
     <string name="desc_lighting_icon">Icône éclairage</string>
+    <string name="desc_report_pdf">Générer Rapport PDF</string>
 
     <!-- Nav Header -->
     <string name="profile_picture_desc">Photo de profil</string>

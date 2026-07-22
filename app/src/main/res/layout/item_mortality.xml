@@ -38,6 +38,16 @@
                 android:textSize="18sp"
                 android:textStyle="bold"
                 android:text="0 Poules"/>
+
+            <TextView
+                android:id="@+id/tvCause"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="#F44336"
+                android:textSize="14sp"
+                android:textStyle="italic"
+                android:text="Cause"
+                android:visibility="gone"/>
         </LinearLayout>
 
         <ImageView

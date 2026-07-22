@@ -13,6 +13,8 @@ import com.google.firebase.firestore.Query
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.tasks.await
+import java.text.SimpleDateFormat
+import java.util.*
 
 class FirebaseRepository {
     private val auth = FirebaseAuth.getInstance()
@@ -121,6 +123,135 @@ class FirebaseRepository {
         }
     }
 
+    suspend fun sendHeatAlertEmail(responsibleEmail: String, farmName: String, day: String, temp: Double) {
+        val fId = getFarmId() ?: return
+        
+        // Anti-spam : vérifier si une alerte a déjà été envoyée aujourd'hui
+        val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+        val configRef = db.collection("fermes").document(fId).collection("config").document("heat_alerts")
+        
+        try {
+            val lastAlert = configRef.get().await()
+            if (lastAlert.exists() && lastAlert.getString("lastAlertDate") == today) {
+                Log.d("HeatAlert", "Alerte déjà envoyée aujourd'hui pour cette ferme.")
+                return
+            }
+
+            Log.d("HeatAlert", "Envoi d'une alerte à $responsibleEmail pour $temp°C le $day")
+            val emailRequest = BrevoEmailRequest(
+                sender = BrevoSender("KOURKOUROU App", "kourkourou@gmail.com"), 
+                to = listOf(BrevoReceiver(responsibleEmail)),
+                subject = "⚠️ ALERTE CHALEUR - $farmName",
+                htmlContent = """
+                    <html>
+                    <body style='font-family: sans-serif; padding: 20px;'>
+                        <div style='background-color: #fdf2f2; border-left: 5px solid #e74c3c; padding: 15px;'>
+                            <h1 style='color: #e74c3c; margin-top: 0;'>🔥 Alerte Température Élevée</h1>
+                            <p>Bonjour,</p>
+                            <p>Une température critique de <span style='font-size: 18px; color: #e74c3c; font-weight: bold;'>$temp°C</span> est prévue le <b>$day</b> pour Nouakchott.</p>
+                            <p><b>Mesures recommandées :</b></p>
+                            <ul>
+                                <li>Renforcer la ventilation du poulailler.</li>
+                                <li>Assurer la disponibilité d'eau très fraîche.</li>
+                                <li>Distribuer des anti-stress (vitamine C ou électrolytes).</li>
+                                <li>Éviter de manipuler les oiseaux aux heures les plus chaudes.</li>
+                            </ul>
+                            <br/>
+                            <p style='font-size: 12px; color: #7f8c8d;'>Ceci est une alerte automatique générée par votre application de gestion de poulailler KOURKOUROU.</p>
+                        </div>
+                    </body>
+                    </html>
+                """.trimIndent()
+            )
+
+            val response = RetrofitClient.brevoApi.sendEmail(BREVO_API_KEY, emailRequest)
+            if (response.isSuccessful) {
+                Log.d("HeatAlert", "Alerte envoyée avec succès : ${response.body()?.messageId}")
+                // Marquer comme envoyé SEULEMENT si l'API Brevo a répondu OK
+                configRef.set(hashMapOf("lastAlertDate" to today), SetOptions.merge())
+            } else {
+                Log.e("HeatAlert", "Échec Brevo : ${response.errorBody()?.string()}")
+            }
+        } catch (e: Exception) {
+            Log.e("HeatAlert", "Exception lors de l'alerte", e)
+        }
+    }
+
+    suspend fun sendFeedStockAlertEmail(responsibleEmail: String, farmName: String, stockKg: Double, autonomyDays: Int) {
+        val fId = getFarmId() ?: return
+        val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+        val configRef = db.collection("fermes").document(fId).collection("config").document("stock_alerts")
+        
+        try {
+            val lastAlert = configRef.get().await()
+            if (lastAlert.exists() && lastAlert.getString("lastAlertDate") == today) {
+                Log.d("StockAlert", "Alerte stock déjà envoyée aujourd'hui.")
+                return
+            }
+
+            Log.d("StockAlert", "Envoi d'une alerte stock à $responsibleEmail ($autonomyDays jours restants)")
+            val emailRequest = BrevoEmailRequest(
+                sender = BrevoSender("KOURKOUROU App", "kourkourou@gmail.com"),
+                to = listOf(BrevoReceiver(responsibleEmail)),
+                subject = "⚠️ ALERTE STOCK ALIMENT - $farmName",
+                htmlContent = """
+                    <html>
+                    <body style='font-family: sans-serif; padding: 20px;'>
+                        <div style='background-color: #fff3cd; border-left: 5px solid #ffc107; padding: 10px;'>
+                            <h1 style='color: #856404; margin-top: 0;'>📦 Stock Critique d'Aliment</h1>
+                            <p>Bonjour,</p>
+                            <p>Votre stock d'aliment est presque épuisé.</p>
+                            <ul>
+                                <li><b>Stock restant estimé :</b> ${String.format("%.1f", stockKg)} kg</li>
+                                <li><b>Autonomie estimée :</b> <span style='font-weight: bold; color: #d9534f;'>$autonomyDays jours</span></li>
+                            </ul>
+                            <p>Veuillez prévoir un approvisionnement rapidement pour éviter toute rupture.</p>
+                            <br/>
+                            <p style='font-size: 12px; color: #7f8c8d;'>Ceci est une alerte automatique générée par votre application KOURKOUROU.</p>
+                        </div>
+                    </body>
+                    </html>
+                """.trimIndent()
+            )
+
+            val response = RetrofitClient.brevoApi.sendEmail(BREVO_API_KEY, emailRequest)
+            if (response.isSuccessful) {
+                Log.d("StockAlert", "Alerte stock envoyée avec succès.")
+                // Marquer comme envoyé SEULEMENT après confirmation de Brevo
+                configRef.set(hashMapOf("lastAlertDate" to today), SetOptions.merge())
+            } else {
+                Log.e("StockAlert", "Échec Brevo : ${response.errorBody()?.string()}")
+            }
+        } catch (e: Exception) {
+            Log.e("StockAlert", "Exception lors de l'alerte stock", e)
+        }
+    }
+
+    suspend fun getResponsibleEmail(): String? {
+        val fId = getFarmId() ?: run {
+            Log.e("HeatAlert", "Impossible de récupérer l'ID de la ferme")
+            return null
+        }
+        return try {
+            val farmDoc = db.collection("fermes").document(fId).get().await()
+            val ownerId = farmDoc.getString("ownerId") ?: run {
+                Log.e("HeatAlert", "ownerId introuvable pour la ferme $fId")
+                return null
+            }
+            val ownerDoc = db.collection("users").document(ownerId).get().await()
+            val email = ownerDoc.getString("email")
+            if (email == null) {
+                Log.e("HeatAlert", "Email introuvable pour le responsable (UID: $ownerId)")
+            } else {
+                Log.d("HeatAlert", "Email responsable trouvé : $email")
+            }
+            email
+        } catch (e: Exception) {
+            Log.e("HeatAlert", "Erreur Firestore lors de la récupération de l'email", e)
+            null
+        }
+    }
+
     suspend fun joinFarm(farmCode: String): Boolean {
         val uid = auth.currentUser?.uid ?: return false
         val farmQuery = db.collection("fermes").whereEqualTo("code", farmCode.uppercase().trim()).get().await()
@@ -142,6 +273,7 @@ class FirebaseRepository {
                 id = 0L, 
                 uid = uid, 
                 username = doc.getString("username") ?: "Utilisateur", 
+                email = doc.getString("email") ?: "",
                 password = "", 
                 role = doc.getString("role") ?: "AGENT", 
                 active = doc.getBoolean("active") ?: true, 
@@ -222,7 +354,8 @@ class FirebaseRepository {
                             status = doc.getString("status") ?: "ACTIVE",
                             typeLot = doc.getString("typeLot") ?: "PONDEUSE",
                             firestoreId = doc.id,
-                            farmId = id
+                            farmId = id,
+                            feedRation = doc.getDouble("feedRation") ?: 0.120
                         )
                     } ?: emptyList()
                     trySend(list)
@@ -255,7 +388,15 @@ class FirebaseRepository {
             val sub = db.collection("mortality").whereEqualTo("farmId", id)
                 .addSnapshotListener { s, e ->
                     val list = s?.documents?.mapNotNull { doc ->
-                        Mortality(0L, doc.getLong("count")?.toInt() ?: 0, doc.getLong("date") ?: 0L, doc.id, id, doc.getString("batchId"))
+                        Mortality(
+                            id = 0L, 
+                            count = doc.getLong("count")?.toInt() ?: 0, 
+                            date = doc.getLong("date") ?: 0L, 
+                            firestoreId = doc.id, 
+                            farmId = id, 
+                            batchId = doc.getString("batchId"),
+                            cause = doc.getString("cause")
+                        )
                     }?.sortedByDescending { it.date } ?: emptyList()
                     trySend(list)
                 }
@@ -312,6 +453,33 @@ class FirebaseRepository {
     }
 
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    fun getHealthRemindersFlow(): Flow<List<HealthReminder>> = farmIdFlow.flatMapLatest { fId ->
+        val id = fId ?: getFarmId()
+        if (id == null) flowOf(emptyList())
+        else callbackFlow {
+            val sub = db.collection("health_reminders").whereEqualTo("farmId", id)
+                .addSnapshotListener { s, e ->
+                    val list = s?.documents?.mapNotNull { doc ->
+                        HealthReminder(
+                            id = 0L,
+                            type = doc.getString("type") ?: "VACCIN",
+                            title = doc.getString("title") ?: "",
+                            description = doc.getString("description"),
+                            dueDate = doc.getLong("dueDate") ?: 0L,
+                            isDone = doc.getBoolean("isDone") ?: false,
+                            batchId = doc.getString("batchId"),
+                            recurring = doc.getBoolean("recurring") ?: false,
+                            frequencyMonths = doc.getLong("frequencyMonths")?.toInt(),
+                            firestoreId = doc.id
+                        )
+                    }?.sortedBy { it.dueDate } ?: emptyList()
+                    trySend(list)
+                }
+            awaitClose { sub.remove() }
+        }
+    }
+
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     fun getFarmInfoFlow(): Flow<FarmInfo?> = farmIdFlow.flatMapLatest { fId ->
         val id = fId ?: getFarmId()
         if (id == null) flowOf(null)
@@ -343,7 +511,8 @@ class FirebaseRepository {
             "arrivalDate" to batch.arrivalDate,
             "chickBirthDate" to batch.chickBirthDate,
             "status" to batch.status,
-            "typeLot" to batch.typeLot
+            "typeLot" to batch.typeLot,
+            "feedRation" to batch.feedRation
         )).await()
     }
 
@@ -358,7 +527,8 @@ class FirebaseRepository {
                 "arrivalDate" to batch.arrivalDate,
                 "chickBirthDate" to batch.chickBirthDate,
                 "status" to batch.status,
-                "typeLot" to batch.typeLot
+                "typeLot" to batch.typeLot,
+                "feedRation" to batch.feedRation
             ) as Map<String, Any>).await()
         }
     }
@@ -392,10 +562,16 @@ class FirebaseRepository {
         db.collection("egg_entries").document(id).delete().await()
     }
 
-    suspend fun addMortality(c: Int, d: Long, batchId: String?) {
+    suspend fun addMortality(c: Int, d: Long, batchId: String?, cause: String? = null) {
         checkAndThrowIfBlocked()
         val fId = requireFarmId()
-        db.collection("mortality").add(hashMapOf("count" to c, "date" to d, "farmId" to fId, "batchId" to batchId)).await()
+        db.collection("mortality").add(hashMapOf(
+            "count" to c, 
+            "date" to d, 
+            "farmId" to fId, 
+            "batchId" to batchId,
+            "cause" to cause
+        )).await()
     }
 
     suspend fun updateMortality(m: Mortality) {
@@ -403,7 +579,8 @@ class FirebaseRepository {
         m.firestoreId?.let {
             db.collection("mortality").document(it).update(hashMapOf(
                 "count" to m.count,
-                "date" to m.date
+                "date" to m.date,
+                "cause" to m.cause
             ) as Map<String, Any>).await()
         }
     }
@@ -498,6 +675,32 @@ class FirebaseRepository {
         db.collection("vaccines").document(id).delete().await()
     }
 
+    suspend fun addHealthReminder(r: HealthReminder) {
+        checkAndThrowIfBlocked()
+        val fId = requireFarmId()
+        db.collection("health_reminders").add(hashMapOf(
+            "type" to r.type,
+            "title" to r.title,
+            "description" to r.description,
+            "dueDate" to r.dueDate,
+            "isDone" to r.isDone,
+            "batchId" to r.batchId,
+            "recurring" to r.recurring,
+            "frequencyMonths" to r.frequencyMonths,
+            "farmId" to fId
+        )).await()
+    }
+
+    suspend fun updateHealthReminder(r: HealthReminder) {
+        checkAndThrowIfBlocked()
+        r.firestoreId?.let {
+            db.collection("health_reminders").document(it).update(hashMapOf(
+                "dueDate" to r.dueDate,
+                "isDone" to r.isDone
+            ) as Map<String, Any>).await()
+        }
+    }
+
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     fun getAllUsersFlow(): Flow<List<User>> = farmIdFlow.flatMapLatest { fId ->
         val id = fId ?: getFarmId()
@@ -510,6 +713,7 @@ class FirebaseRepository {
                             id = 0L,
                             uid = doc.id,
                             username = doc.getString("username") ?: "",
+                            email = doc.getString("email") ?: "",
                             password = "",
                             role = doc.getString("role") ?: "AGENT",
                             active = doc.getBoolean("active") ?: true,
