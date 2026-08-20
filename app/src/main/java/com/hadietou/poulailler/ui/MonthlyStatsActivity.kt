@@ -1,5 +1,6 @@
 package com.hadietou.poulailler.ui
 
+import android.graphics.Color
 import android.os.Bundle
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
@@ -93,16 +94,24 @@ class MonthlyStatsActivity : AppCompatActivity() {
                     val availableTablettes = totalAvailable / 30
                     val remainingEggs = totalAvailable % 30
                     binding.tvTotalAvailable.text = "Total d'œufs disponible : $totalAvailable ($availableTablettes Tab et $remainingEggs)"
+
+                    val historicalData = aggregateByMonth(filteredEntries.map { it.date to (it.eggsCount.toDouble() / 30.0) })
+                    setupHistoricalBarChart(historicalData, "Tablettes collectées / mois")
                 }
             } else {
                 repository.getEggEntriesFlow().collectLatest { entries ->
-                    val filtered = entries.filter { (batchId == null || it.batchId == batchId) && isCurrentMonth(it.date) }
-                    val dailyData = aggregateDaily(filtered.map { it.date to it.brokenEggsCount.toDouble() })
+                    val filteredAll = entries.filter { batchId == null || it.batchId == batchId }
+                    val filteredCurrent = filteredAll.filter { isCurrentMonth(it.date) }
+                    
+                    val dailyData = aggregateDaily(filteredCurrent.map { it.date to it.brokenEggsCount.toDouble() })
                     setupLineChart(dailyData, "Cassés")
-                    val totalMensuel = filtered.sumOf { it.brokenEggsCount }
+                    val totalMensuel = filteredCurrent.sumOf { it.brokenEggsCount }
                     binding.tvStatsSummary.text = "Total mensuel : $totalMensuel"
                     binding.tvTotalGeneral.visibility = View.GONE
                     binding.tvTotalAvailable.visibility = View.GONE
+
+                    val historicalData = aggregateByMonth(filteredAll.map { it.date to it.brokenEggsCount.toDouble() })
+                    setupHistoricalBarChart(historicalData, "Œufs cassés / mois")
                 }
             }
         }
@@ -111,12 +120,16 @@ class MonthlyStatsActivity : AppCompatActivity() {
     private fun observeSales() {
         lifecycleScope.launch {
             repository.getSalesFlow().collectLatest { sales ->
-                val filtered = sales.filter { (batchId == null || it.batchId == batchId) && isCurrentMonth(it.date) }
-                // Convert to tablettes (quantity / 30)
-                val dailyData = aggregateDaily(filtered.map { it.date to (it.quantity.toDouble() / 30.0) })
+                val filteredAll = sales.filter { batchId == null || it.batchId == batchId }
+                val filteredCurrent = filteredAll.filter { isCurrentMonth(it.date) }
+                
+                val dailyData = aggregateDaily(filteredCurrent.map { it.date to (it.quantity.toDouble() / 30.0) })
                 setupLineChart(dailyData, "Tablettes vendues")
                 binding.tvTotalGeneral.visibility = View.GONE
                 binding.tvTotalAvailable.visibility = View.GONE
+
+                val historicalData = aggregateByMonth(filteredAll.map { it.date to (it.quantity.toDouble() / 30.0) })
+                setupHistoricalBarChart(historicalData, "Tablettes vendues / mois")
             }
         }
     }
@@ -124,11 +137,16 @@ class MonthlyStatsActivity : AppCompatActivity() {
     private fun observeRevenue() {
         lifecycleScope.launch {
             repository.getSalesFlow().collectLatest { sales ->
-                val filtered = sales.filter { (batchId == null || it.batchId == batchId) && isCurrentMonth(it.date) }
-                val dailyData = aggregateDaily(filtered.map { it.date to it.totalPrice })
+                val filteredAll = sales.filter { batchId == null || it.batchId == batchId }
+                val filteredCurrent = filteredAll.filter { isCurrentMonth(it.date) }
+                
+                val dailyData = aggregateDaily(filteredCurrent.map { it.date to it.totalPrice })
                 setupLineChart(dailyData, "Recette")
                 binding.tvTotalGeneral.visibility = View.GONE
                 binding.tvTotalAvailable.visibility = View.GONE
+
+                val historicalData = aggregateByMonth(filteredAll.map { it.date to it.totalPrice })
+                setupHistoricalBarChart(historicalData, "Recette / mois")
             }
         }
     }
@@ -136,29 +154,45 @@ class MonthlyStatsActivity : AppCompatActivity() {
     private fun observeMortality() {
         lifecycleScope.launch {
             repository.getMortalityFlow().collectLatest { list ->
-                val filtered = list.filter { (batchId == null || it.batchId == batchId) && isCurrentMonth(it.date) }
-                val dailyData = aggregateDaily(filtered.map { it.date to it.count.toDouble() })
+                val filteredAll = list.filter { batchId == null || it.batchId == batchId }
+                val filteredCurrent = filteredAll.filter { isCurrentMonth(it.date) }
+                
+                val dailyData = aggregateDaily(filteredCurrent.map { it.date to it.count.toDouble() })
                 setupLineChart(dailyData, "Morts")
                 binding.tvTotalGeneral.visibility = View.GONE
                 binding.tvTotalAvailable.visibility = View.GONE
+
+                val historicalData = aggregateByMonth(filteredAll.map { it.date to it.count.toDouble() })
+                setupHistoricalBarChart(historicalData, "Mortalité / mois")
             }
         }
     }
 
     private fun observeExpenses() {
         lifecycleScope.launch {
-            repository.getExpensesFlow().collectLatest { list ->
-                val filtered = list.filter { (batchId == null || it.batchId == batchId) && isCurrentMonth(it.date) }
-                val dailyData = aggregateDaily(filtered.map { it.date to it.amount })
+            combine(repository.getExpensesFlow(), repository.getSalesFlow()) { expenses, sales ->
+                expenses to sales
+            }.collectLatest { (expenses, sales) ->
+                val filteredAllExp = expenses.filter { batchId == null || it.batchId == batchId }
+                val filteredAllSales = sales.filter { batchId == null || it.batchId == batchId }
+                
+                val filteredCurrent = filteredAllExp.filter { isCurrentMonth(it.date) }
+                
+                val dailyData = aggregateDaily(filteredCurrent.map { it.date to it.amount })
                 setupLineChart(dailyData, "Dépenses")
                 
-                val categoryData = filtered.groupBy { it.category }.map { it.key to it.value.sumOf { e -> e.amount } }
+                val categoryData = filteredCurrent.groupBy { it.category }.map { it.key to it.value.sumOf { e -> e.amount } }
                 if (categoryData.isNotEmpty()) {
                     binding.monthlyBarChart.visibility = View.VISIBLE
                     setupBarChart(categoryData)
                 }
                 binding.tvTotalGeneral.visibility = View.GONE
                 binding.tvTotalAvailable.visibility = View.GONE
+
+                val historicalExpData = aggregateByMonth(filteredAllExp.map { it.date to it.amount })
+                val historicalSalesData = aggregateByMonth(filteredAllSales.map { it.date to it.totalPrice })
+                
+                setupHistoricalComparisonChart(historicalExpData, historicalSalesData)
             }
         }
     }
@@ -197,6 +231,17 @@ class MonthlyStatsActivity : AppCompatActivity() {
         return result
     }
 
+    private fun aggregateByMonth(data: List<Pair<Long, Double>>): List<Pair<String, Double>> {
+        val sdf = SimpleDateFormat("MM/yy", Locale.getDefault())
+        val map = mutableMapOf<String, Double>()
+        val sortedData = data.sortedBy { it.first }
+        sortedData.forEach { (date, value) ->
+            val key = sdf.format(Date(date))
+            map[key] = (map[key] ?: 0.0) + value
+        }
+        return map.toList().sortedBy { sdf.parse(it.first)?.time ?: 0L }
+    }
+
     private fun setupLineChart(data: List<Pair<Long, Double>>, label: String) {
         val entries = data.mapIndexed { index, pair ->
             Entry((index + 1).toFloat(), pair.second.toFloat())
@@ -207,6 +252,7 @@ class MonthlyStatsActivity : AppCompatActivity() {
             "SALES", "EXPENSES" -> getColor(R.color.earthy_orange)
             else -> getColor(R.color.primary)
         }
+        val textColor = getColor(R.color.text_primary)
 
         val dataSet = LineDataSet(entries, label).apply {
             this.color = color
@@ -215,18 +261,44 @@ class MonthlyStatsActivity : AppCompatActivity() {
             setDrawFilled(true)
             fillAlpha = 50
             fillColor = color
-            setDrawValues(false)
+            setDrawValues(true)
+            valueTextColor = textColor
+            valueTextSize = 8f
+            valueFormatter = object : ValueFormatter() {
+                override fun getFormattedValue(value: Float): String {
+                    if (value <= 0) return ""
+                    return if (statsType == "SALES") String.format(Locale.getDefault(), "%.1f", value)
+                    else value.toInt().toString()
+                }
+            }
         }
 
         binding.monthlyLineChart.apply {
             this.data = LineData(dataSet)
             description.isEnabled = false
-            xAxis.position = com.github.mikephil.charting.components.XAxis.XAxisPosition.BOTTOM
-            xAxis.setLabelCount(10, false)
-            xAxis.valueFormatter = object : ValueFormatter() {
-                override fun getFormattedValue(value: Float): String = value.toInt().toString()
+            setTouchEnabled(true)
+            isDragEnabled = true
+            setScaleEnabled(true)
+            setPinchZoom(false)
+            
+            xAxis.apply {
+                position = com.github.mikephil.charting.components.XAxis.XAxisPosition.BOTTOM
+                labelCount = 10
+                labelRotationAngle = -45f
+                this.textColor = textColor
+                granularity = 1f
+                valueFormatter = object : ValueFormatter() {
+                    override fun getFormattedValue(value: Float): String = value.toInt().toString()
+                }
             }
+            axisLeft.textColor = textColor
             axisRight.isEnabled = false
+            legend.textColor = textColor
+            
+            // Permet de zoomer un peu par défaut pour éviter le chevauchement
+            setVisibleXRangeMaximum(12f)
+            moveViewToX(data.size.toFloat())
+
             animateX(1000)
             invalidate()
         }
@@ -245,20 +317,193 @@ class MonthlyStatsActivity : AppCompatActivity() {
         val entries = data.mapIndexed { index, pair ->
             BarEntry(index.toFloat(), pair.second.toFloat())
         }
+        val textColor = getColor(R.color.text_primary)
 
         val dataSet = BarDataSet(entries, "Par catégorie").apply {
             colors = listOf(getColor(R.color.primary), getColor(R.color.earthy_orange), getColor(R.color.accent_blue))
             valueTextSize = 10f
+            valueTextColor = textColor
         }
 
         binding.monthlyBarChart.apply {
             this.data = BarData(dataSet)
             description.isEnabled = false
-            xAxis.position = com.github.mikephil.charting.components.XAxis.XAxisPosition.BOTTOM
-            xAxis.valueFormatter = object : ValueFormatter() {
-                override fun getFormattedValue(value: Float): String = if (value.toInt() in data.indices) data[value.toInt()].first else ""
+            xAxis.apply {
+                position = com.github.mikephil.charting.components.XAxis.XAxisPosition.BOTTOM
+                this.textColor = textColor
+                labelRotationAngle = -45f
+                valueFormatter = object : ValueFormatter() {
+                    override fun getFormattedValue(value: Float): String = if (value.toInt() in data.indices) data[value.toInt()].first else ""
+                }
+            }
+            axisLeft.textColor = textColor
+            axisRight.isEnabled = false
+            legend.textColor = textColor
+            animateY(1000)
+            invalidate()
+        }
+    }
+
+    private fun setupHistoricalBarChart(data: List<Pair<String, Double>>, label: String) {
+        if (data.isEmpty()) {
+            binding.historicalMonthlyChart.clear()
+            return
+        }
+
+        val entries = data.mapIndexed { index, pair ->
+            BarEntry(index.toFloat(), pair.second.toFloat())
+        }
+
+        val color = when(statsType) {
+            "MORTALITY", "BROKEN" -> getColor(R.color.error)
+            "SALES", "EXPENSES" -> getColor(R.color.earthy_orange)
+            else -> getColor(R.color.primary)
+        }
+        val textColor = getColor(R.color.text_primary)
+
+        val dataSet = BarDataSet(entries, label).apply {
+            this.color = color
+            valueTextSize = 10f
+            valueTextColor = textColor
+            valueFormatter = object : ValueFormatter() {
+                override fun getFormattedValue(value: Float): String {
+                    return if (statsType == "REVENUE" || statsType == "EXPENSES") {
+                        if (value >= 1000) String.format(Locale.getDefault(), "%.1fk", value / 1000) else value.toInt().toString()
+                    } else if (statsType == "COLLECTION" || statsType == "SALES") {
+                        String.format(Locale.getDefault(), "%.1f", value)
+                    } else {
+                        value.toInt().toString()
+                    }
+                }
+            }
+        }
+
+        binding.historicalMonthlyChart.apply {
+            this.data = BarData(dataSet)
+            description.isEnabled = false
+            
+            setTouchEnabled(true)
+            isDragEnabled = true
+            setScaleEnabled(false)
+            setPinchZoom(false)
+
+            xAxis.apply {
+                position = com.github.mikephil.charting.components.XAxis.XAxisPosition.BOTTOM
+                granularity = 1f
+                this.textColor = textColor
+                valueFormatter = object : ValueFormatter() {
+                    override fun getFormattedValue(value: Float): String {
+                        val index = value.toInt()
+                        return if (index in data.indices) data[index].first else ""
+                    }
+                }
+            }
+            axisLeft.apply {
+                axisMinimum = 0f
+                this.textColor = textColor
             }
             axisRight.isEnabled = false
+            legend.textColor = textColor
+            
+            setVisibleXRangeMaximum(4f)
+            moveViewToX(data.size.toFloat())
+            
+            animateY(1000)
+            invalidate()
+        }
+    }
+
+    private fun setupHistoricalComparisonChart(expData: List<Pair<String, Double>>, salesData: List<Pair<String, Double>>) {
+        val sdf = SimpleDateFormat("MM/yy", Locale.getDefault())
+        val allMonths = (expData.map { it.first } + salesData.map { it.first })
+            .distinct()
+            .sortedBy { sdf.parse(it)?.time ?: 0L }
+
+        if (allMonths.isEmpty()) {
+            binding.historicalMonthlyChart.clear()
+            return
+        }
+
+        val entriesExp = allMonths.mapIndexed { index, month ->
+            val value = expData.find { it.first == month }?.second ?: 0.0
+            BarEntry(index.toFloat(), value.toFloat())
+        }
+
+        val entriesSales = allMonths.mapIndexed { index, month ->
+            val value = salesData.find { it.first == month }?.second ?: 0.0
+            BarEntry(index.toFloat(), value.toFloat())
+        }
+
+        val textColor = getColor(R.color.text_primary)
+        
+        val setExp = BarDataSet(entriesExp, "Dépenses").apply {
+            setColor(Color.parseColor("#FF4444")) // Rouge pur et forcé
+            valueTextColor = textColor
+            valueTextSize = 9f
+            valueFormatter = object : ValueFormatter() {
+                override fun getFormattedValue(value: Float): String = if (value >= 1000) String.format(Locale.getDefault(), "%.1fk", value / 1000) else value.toInt().toString()
+            }
+        }
+
+        val setSales = BarDataSet(entriesSales, "Recettes").apply {
+            setColor(Color.parseColor("#00C851")) // Vert pur et forcé
+            valueTextColor = textColor
+            valueTextSize = 9f
+            valueFormatter = object : ValueFormatter() {
+                override fun getFormattedValue(value: Float): String = if (value >= 1000) String.format(Locale.getDefault(), "%.1fk", value / 1000) else value.toInt().toString()
+            }
+        }
+
+        val data = BarData(setExp, setSales)
+        val groupSpace = 0.3f
+        val barSpace = 0.05f
+        val barWidth = 0.3f
+        data.barWidth = barWidth
+
+        binding.historicalMonthlyChart.apply {
+            this.data = data
+            description.isEnabled = false
+            
+            setTouchEnabled(true)
+            isDragEnabled = true
+            setScaleEnabled(false)
+            setPinchZoom(false)
+
+            xAxis.apply {
+                position = com.github.mikephil.charting.components.XAxis.XAxisPosition.BOTTOM
+                this.textColor = textColor
+                setCenterAxisLabels(true)
+                granularity = 1f
+                axisMinimum = 0f
+                axisMaximum = allMonths.size.toFloat()
+                valueFormatter = object : ValueFormatter() {
+                    override fun getFormattedValue(value: Float): String {
+                        val index = value.toInt()
+                        return if (index in allMonths.indices) allMonths[index] else ""
+                    }
+                }
+            }
+            axisLeft.apply {
+                axisMinimum = 0f
+                this.textColor = textColor
+            }
+            axisRight.isEnabled = false
+            legend.apply {
+                this.textColor = textColor
+                verticalAlignment = com.github.mikephil.charting.components.Legend.LegendVerticalAlignment.BOTTOM
+                horizontalAlignment = com.github.mikephil.charting.components.Legend.LegendHorizontalAlignment.CENTER
+                orientation = com.github.mikephil.charting.components.Legend.LegendOrientation.HORIZONTAL
+                setDrawInside(false)
+                isEnabled = true
+                form = com.github.mikephil.charting.components.Legend.LegendForm.SQUARE
+                formSize = 10f
+                xEntrySpace = 15f
+            }
+            groupBars(0f, groupSpace, barSpace)
+            
+            setVisibleXRangeMaximum(4f)
+            moveViewToX(allMonths.size.toFloat())
+
             animateY(1000)
             invalidate()
         }

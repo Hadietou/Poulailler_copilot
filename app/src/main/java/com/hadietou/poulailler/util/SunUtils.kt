@@ -8,22 +8,26 @@ object SunUtils {
     private const val LONGITUDE = -15.95
     private const val ZENITH = 90.83 
 
-    fun getExtinctionTime(): String {
+    /**
+     * @param lightingHours nombre d'heures d'éclairage artificiel après le lever du soleil
+     * (photopériode), réglable depuis Paramètres. 15h par défaut.
+     */
+    fun getExtinctionTime(lightingHours: Int = 15): String {
         try {
             val calendar = Calendar.getInstance()
             val dayOfYear = calendar.get(Calendar.DAY_OF_YEAR).toDouble()
-            
+
             // 1. Calculate sunrise
             val lngHour = LONGITUDE / 15.0
             val tRise = dayOfYear + ((6.0 - lngHour) / 24.0)
-            
+
             val sunriseUT = calculateTime(tRise, lngHour, true) ?: return "--:--"
-            
+
             // Mauritania is GMT/UTC+0
             val sunriseLocal = sunriseUT
-            
-            // Extinction = Sunrise + 15 hours
-            var extinction = sunriseLocal + 15.0
+
+            // Extinction = Sunrise + photopériode réglable
+            var extinction = sunriseLocal + lightingHours.toDouble()
             if (extinction >= 24.0) extinction -= 24.0
             
             val hours = extinction.toInt()

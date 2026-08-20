@@ -4,69 +4,82 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:padding="24dp"
-    android:background="#E6FFFFFF">
+    android:background="@drawable/bg_dialog_dark">
 
-    <TextView
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Nouveau Soin / Vaccin"
-        android:textColor="@color/primary"
-        android:textSize="20sp"
-        android:textStyle="bold"
-        android:layout_marginBottom="24dp"/>
+        android:background="@drawable/bg_dialog_header"
+        android:padding="16dp"
+        android:gravity="center">
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Nouveau Soin / Vaccin"
+            android:textColor="@color/primary_variant"
+            android:textSize="22sp"
+            android:textStyle="bold"/>
+    </LinearLayout>
 
-    <com.google.android.material.textfield.TextInputLayout
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Nom du vaccin / médicament"
-        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-        android:layout_marginBottom="12dp"
-        app:hintTextColor="@color/text_secondary"
-        app:boxStrokeColor="@color/emerald_soft"
-        app:startIconDrawable="@android:drawable/ic_menu_add"
-        app:startIconTint="@color/emerald_soft">
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/etVaccineName"
+        android:orientation="vertical"
+        android:padding="24dp">
+
+        <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textColor="@color/text_primary" />
-    </com.google.android.material.textfield.TextInputLayout>
+            android:hint="Nom du vaccin / médicament"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            android:layout_marginBottom="12dp"
+            app:hintTextColor="#CCFFFFFF"
+            app:boxStrokeColor="@color/white"
+            app:startIconDrawable="@android:drawable/ic_menu_add"
+            app:startIconTint="@color/white">
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etVaccineName"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@color/white" />
+        </com.google.android.material.textfield.TextInputLayout>
 
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btnSelectDate"
-        android:layout_width="match_parent"
-        android:layout_height="56dp"
-        android:text="Date: Aujourd'hui"
-        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-        android:textColor="@color/text_primary"
-        app:strokeColor="@color/text_secondary"
-        app:icon="@android:drawable/ic_menu_my_calendar"
-        app:iconTint="@color/emerald_soft"
-        android:layout_marginBottom="12dp"/>
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnSelectDate"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:text="Date: Aujourd'hui"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:textColor="@color/white"
+            app:strokeColor="@color/white"
+            app:icon="@android:drawable/ic_menu_my_calendar"
+            app:iconTint="@color/white"
+            android:layout_marginBottom="12dp"/>
 
-    <com.google.android.material.textfield.TextInputLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="Remarques (Lot, dose, etc.)"
-        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-        android:layout_marginBottom="24dp"
-        app:hintTextColor="@color/text_secondary"
-        app:boxStrokeColor="@color/emerald_soft">
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/etRemarks"
+        <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textColor="@color/text_primary" />
-    </com.google.android.material.textfield.TextInputLayout>
+            android:hint="Remarques (Lot, dose, etc.)"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            android:layout_marginBottom="24dp"
+            app:hintTextColor="#CCFFFFFF"
+            app:boxStrokeColor="@color/white">
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etRemarks"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@color/white" />
+        </com.google.android.material.textfield.TextInputLayout>
 
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btnSaveVaccine"
-        android:layout_width="match_parent"
-        android:layout_height="60dp"
-        android:text="ENREGISTRER LE SOIN"
-        android:backgroundTint="@color/emerald_soft"
-        android:textColor="@color/white"
-        app:cornerRadius="8dp"
-        app:icon="@android:drawable/ic_menu_save"/>
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnSaveVaccine"
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:text="ENREGISTRER LE SOIN"
+            android:backgroundTint="@color/white"
+            android:textColor="@color/primary_variant"
+            app:cornerRadius="8dp"
+            app:icon="@android:drawable/ic_menu_save"
+            app:iconTint="@color/primary_variant"/>
+    </LinearLayout>
 </LinearLayout>

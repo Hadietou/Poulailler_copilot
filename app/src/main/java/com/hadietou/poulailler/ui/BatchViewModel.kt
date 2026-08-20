@@ -35,7 +35,16 @@ class BatchViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun addBatch(name: String, count: Int, breed: String, arrival: Long, birth: Long, typeLot: String) {
+    fun addBatch(
+        name: String,
+        count: Int,
+        breed: String,
+        arrival: Long,
+        birth: Long,
+        typeLot: String,
+        providerName: String? = null,
+        providerPhone: String? = null
+    ) {
         viewModelScope.launch {
             try {
                 if (firebaseRepo.isFarmAccessBlocked()) {
@@ -50,7 +59,9 @@ class BatchViewModel(application: Application) : AndroidViewModel(application) {
                     arrivalDate = arrival,
                     chickBirthDate = birth,
                     status = "ACTIVE",
-                    typeLot = typeLot
+                    typeLot = typeLot,
+                    providerName = providerName,
+                    providerPhone = providerPhone
                 )
                 firebaseRepo.addBatch(batch)
                 operationSuccess.postValue(true)

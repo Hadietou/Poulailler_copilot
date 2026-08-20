@@ -13,38 +13,68 @@
             android:title="Gestion des Lots" />
 
         <item
-            android:id="@+id/nav_users"
-            android:icon="@android:drawable/ic_menu_myplaces"
-            android:title="Gestion des Agents" />
-
-        <item
             android:id="@+id/nav_expenses"
             android:icon="@android:drawable/ic_menu_save"
             android:title="Dépenses / Stock" />
 
+        <!-- Menu Parent Oeufs (déplie un sous-menu, non "sélectionnable") -->
+        <item
+            android:id="@+id/nav_egg_management"
+            android:icon="@android:drawable/ic_menu_add"
+            android:checkable="false"
+            android:title="Collecte et vente Oeufs" />
+    </group>
+
+    <!-- Groupe de sous-menus Oeufs -->
+    <group
+        android:id="@+id/group_egg_submenu"
+        android:visible="false">
+        <item
+            android:id="@+id/nav_collect"
+            android:icon="@android:drawable/ic_input_add"
+            android:title="Collecte d'oeufs" />
+        <item
+            android:id="@+id/nav_sales"
+            android:icon="@android:drawable/ic_menu_send"
+            android:title="Vente d'oeuf" />
+    </group>
+
+    <group android:checkableBehavior="single">
+        <!-- Menu Parent Santé (déplie un sous-menu, non "sélectionnable") -->
+        <item
+            android:id="@+id/nav_health_management"
+            android:icon="@android:drawable/ic_menu_add"
+            android:checkable="false"
+            android:title="Santé et Mortalité" />
+    </group>
+
+    <!-- Groupe de sous-menus Santé -->
+    <group
+        android:id="@+id/group_health_submenu"
+        android:visible="false">
         <item
             android:id="@+id/nav_vaccines"
             android:icon="@android:drawable/ic_menu_info_details"
             android:title="Suivi Sanitaire" />
-
-        <item
-            android:id="@+id/nav_collect"
-            android:icon="@android:drawable/ic_input_add"
-            android:title="Collecte des Oeufs" />
-
-        <item
-            android:id="@+id/nav_sales"
-            android:icon="@android:drawable/ic_menu_send"
-            android:title="Ventes" />
-
         <item
             android:id="@+id/nav_mortality"
             android:icon="@android:drawable/ic_delete"
             android:title="Suivi Mortalité" />
     </group>
 
+    <group android:checkableBehavior="single">
+        <item
+            android:id="@+id/nav_settings"
+            android:icon="@android:drawable/ic_menu_preferences"
+            android:title="Paramètres" />
+    </group>
+
     <item android:title="Compte">
         <menu>
+            <item
+                android:id="@+id/nav_users"
+                android:icon="@android:drawable/ic_menu_myplaces"
+                android:title="Gestion des comptes" />
             <item
                 android:id="@+id/nav_delete_account"
                 android:icon="@android:drawable/ic_menu_delete"

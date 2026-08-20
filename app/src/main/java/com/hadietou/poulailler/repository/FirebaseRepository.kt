@@ -55,20 +55,30 @@ class FirebaseRepository {
 
     suspend fun createFarmExtended(
         farmName: String, currency: String,
-        username: String, email: String
+        username: String, email: String,
+        country: String? = null, city: String? = null
     ): String {
         val uid = auth.currentUser?.uid ?: throw Exception("Non connecté")
         val farmCode = (1..6).map { "ABCDEFGHJKLMNPQRSTUVWXYZ23456789".random() }.joinToString("")
         val farmRef = db.collection("fermes").document()
         val farmId = farmRef.id
         
-        val farmData = hashMapOf("id" to farmId, "name" to farmName, "code" to farmCode, "ownerId" to uid)
+        val farmData = hashMapOf(
+            "id" to farmId, 
+            "name" to farmName, 
+            "code" to farmCode, 
+            "ownerId" to uid,
+            "country" to country,
+            "city" to city
+        )
         farmRef.set(farmData).await()
         
         val initialFarmInfo = hashMapOf(
             "farmName" to farmName,
             "currency" to currency, 
-            "setupDate" to System.currentTimeMillis()
+            "setupDate" to System.currentTimeMillis(),
+            "country" to country,
+            "city" to city
         )
         db.collection("fermes").document(farmId).collection("config").document("farm_info").set(initialFarmInfo).await()
 
@@ -83,13 +93,13 @@ class FirebaseRepository {
         )
         db.collection("users").document(uid).set(userData, SetOptions.merge()).await()
 
-        sendValidationEmailViaBrevo(farmName, uid, email)
+        sendValidationEmailViaBrevo(farmName, uid, email, country, city)
         
         _farmIdFlow.value = farmId
         return farmCode
     }
 
-    private suspend fun sendValidationEmailViaBrevo(farmName: String, uid: String, email: String) {
+    private suspend fun sendValidationEmailViaBrevo(farmName: String, uid: String, email: String, country: String? = null, city: String? = null) {
         try {
             val emailRequest = BrevoEmailRequest(
                 sender = BrevoSender("KOURKOUROU App", "kourkourou@gmail.com"),
@@ -102,6 +112,7 @@ class FirebaseRepository {
                         <p>Une nouvelle ferme a été créée et attend votre validation.</p>
                         <ul>
                             <li><b>Nom de la ferme :</b> $farmName</li>
+                            <li><b>Lieu :</b> ${city ?: "N/A"}, ${country ?: "N/A"}</li>
                             <li><b>ID Responsable :</b> $uid</li>
                             <li><b>Email Responsable :</b> $email</li>
                         </ul>
@@ -149,6 +160,7 @@ class FirebaseRepository {
                             <h1 style='color: #e74c3c; margin-top: 0;'>🔥 Alerte Température Élevée</h1>
                             <p>Bonjour,</p>
                             <p>Une température critique de <span style='font-size: 18px; color: #e74c3c; font-weight: bold;'>$temp°C</span> est prévue le <b>$day</b> pour Nouakchott.</p>
+                            <p>Vous recevez cette alerte à l'avance afin de prendre les précautions nécessaires avant l'arrivée de la chaleur.</p>
                             <p><b>Mesures recommandées :</b></p>
                             <ul>
                                 <li>Renforcer la ventilation du poulailler.</li>
@@ -326,13 +338,26 @@ class FirebaseRepository {
         db.collection("users").document(uid).set(data, SetOptions.merge()).await()
     }
 
+    private fun mapFarmInfo(s: com.google.firebase.firestore.DocumentSnapshot): FarmInfo = FarmInfo(
+        id = 1,
+        farmName = s.getString("farmName") ?: "",
+        currency = s.getString("currency") ?: "MRU",
+        setupDate = s.getLong("setupDate") ?: System.currentTimeMillis(),
+        eggTraysCriticalThreshold = s.getLong("eggTraysCriticalThreshold")?.toInt() ?: FarmInfo.DEFAULT_EGG_TRAYS_CRITICAL,
+        feedStockCriticalDays = s.getLong("feedStockCriticalDays")?.toInt() ?: FarmInfo.DEFAULT_FEED_STOCK_CRITICAL_DAYS,
+        feedStockWarningDays = s.getLong("feedStockWarningDays")?.toInt() ?: FarmInfo.DEFAULT_FEED_STOCK_WARNING_DAYS,
+        heatAlertTempCelsius = s.getLong("heatAlertTempCelsius")?.toInt() ?: FarmInfo.DEFAULT_HEAT_ALERT_TEMP,
+        lightingHoursAfterSunrise = s.getLong("lightingHoursAfterSunrise")?.toInt() ?: FarmInfo.DEFAULT_LIGHTING_HOURS,
+        vaccineIntervalMonths = s.getLong("vaccineIntervalMonths")?.toInt() ?: FarmInfo.DEFAULT_VACCINE_INTERVAL_MONTHS,
+        dewormingInternalIntervalMonths = s.getLong("dewormingInternalIntervalMonths")?.toInt() ?: FarmInfo.DEFAULT_DEWORMING_INTERNAL_MONTHS,
+        dewormingExternalIntervalMonths = s.getLong("dewormingExternalIntervalMonths")?.toInt() ?: FarmInfo.DEFAULT_DEWORMING_EXTERNAL_MONTHS
+    )
+
     suspend fun getFarmInfo(): FarmInfo? {
         val id = getFarmId() ?: return null
         return try {
             val s = db.collection("fermes").document(id).collection("config").document("farm_info").get().await()
-            if (s.exists()) {
-                FarmInfo(1, s.getString("farmName") ?: "", s.getString("currency") ?: "MRU", s.getLong("setupDate") ?: System.currentTimeMillis())
-            } else null
+            if (s.exists()) mapFarmInfo(s) else null
         } catch (e: Exception) { null }
     }
 
@@ -412,7 +437,7 @@ class FirebaseRepository {
             val sub = db.collection("sales").whereEqualTo("farmId", id)
                 .addSnapshotListener { s, e ->
                     val list = s?.documents?.mapNotNull { doc ->
-                        EggSale(0L, doc.getString("userId") ?: "", doc.getLong("date") ?: 0L, doc.getLong("quantity")?.toInt() ?: 0, doc.getDouble("pricePerUnit") ?: 0.0, doc.getDouble("totalPrice") ?: 0.0, doc.getString("buyer"), doc.getString("phoneNumber"), doc.id, id, doc.getString("batchId"))
+                        EggSale(0L, doc.getString("userId") ?: "", doc.getLong("date") ?: 0L, doc.getLong("quantity")?.toInt() ?: 0, doc.getDouble("pricePerUnit") ?: 0.0, doc.getDouble("totalPrice") ?: 0.0, doc.getString("buyer"), doc.getString("phoneNumber"), doc.getBoolean("isPaid") ?: false, doc.id, id, doc.getString("batchId"))
                     }?.sortedByDescending { it.date } ?: emptyList()
                     trySend(list)
                 }
@@ -428,7 +453,7 @@ class FirebaseRepository {
             val sub = db.collection("expenses").whereEqualTo("farmId", id)
                 .addSnapshotListener { s, e ->
                     val list = s?.documents?.mapNotNull { doc ->
-                        Expense(0L, doc.getLong("date") ?: 0L, doc.getString("category") ?: "", doc.getDouble("amount") ?: 0.0, doc.getDouble("quantityKg"), doc.getString("description"), doc.id, id, doc.getString("batchId"))
+                        Expense(0L, doc.getLong("date") ?: 0L, doc.getString("category") ?: "", doc.getDouble("amount") ?: 0.0, doc.getDouble("quantityKg"), doc.getString("description"), doc.id, id, doc.getString("batchId"), doc.getString("subCategory"))
                     }?.sortedByDescending { it.date } ?: emptyList()
                     trySend(list)
                 }
@@ -486,9 +511,7 @@ class FirebaseRepository {
         else callbackFlow {
             val sub = db.collection("fermes").document(id).collection("config").document("farm_info")
                 .addSnapshotListener { s, e ->
-                    val info = if (s != null && s.exists()) {
-                        FarmInfo(1, s.getString("farmName") ?: "", s.getString("currency") ?: "MRU", s.getLong("setupDate") ?: System.currentTimeMillis())
-                    } else null
+                    val info = if (s != null && s.exists()) mapFarmInfo(s) else null
                     trySend(info)
                 }
             awaitClose { sub.remove() }
@@ -498,7 +521,21 @@ class FirebaseRepository {
     suspend fun saveFarmInfo(info: FarmInfo) {
         checkAndThrowIfBlocked()
         val fId = requireFarmId()
-        db.collection("fermes").document(fId).collection("config").document("farm_info").set(hashMapOf("farmName" to info.farmName, "currency" to info.currency), SetOptions.merge()).await()
+        db.collection("fermes").document(fId).collection("config").document("farm_info").set(
+            hashMapOf(
+                "farmName" to info.farmName,
+                "currency" to info.currency,
+                "eggTraysCriticalThreshold" to info.eggTraysCriticalThreshold,
+                "feedStockCriticalDays" to info.feedStockCriticalDays,
+                "feedStockWarningDays" to info.feedStockWarningDays,
+                "heatAlertTempCelsius" to info.heatAlertTempCelsius,
+                "lightingHoursAfterSunrise" to info.lightingHoursAfterSunrise,
+                "vaccineIntervalMonths" to info.vaccineIntervalMonths,
+                "dewormingInternalIntervalMonths" to info.dewormingInternalIntervalMonths,
+                "dewormingExternalIntervalMonths" to info.dewormingExternalIntervalMonths
+            ),
+            SetOptions.merge()
+        ).await()
     }
 
     suspend fun addBatch(batch: Batch) {
@@ -593,7 +630,7 @@ class FirebaseRepository {
     suspend fun addSale(s: EggSale) {
         checkAndThrowIfBlocked()
         val fId = requireFarmId()
-        db.collection("sales").add(hashMapOf("userId" to auth.currentUser?.uid, "date" to s.date, "quantity" to s.quantity, "pricePerUnit" to s.pricePerUnit, "totalPrice" to s.totalPrice, "buyer" to s.buyer, "phoneNumber" to s.phoneNumber, "farmId" to fId, "batchId" to s.batchId)).await()
+        db.collection("sales").add(hashMapOf("userId" to auth.currentUser?.uid, "date" to s.date, "quantity" to s.quantity, "pricePerUnit" to s.pricePerUnit, "totalPrice" to s.totalPrice, "buyer" to s.buyer, "phoneNumber" to s.phoneNumber, "isPaid" to s.isPaid, "farmId" to fId, "batchId" to s.batchId)).await()
     }
     
     suspend fun updateSale(s: EggSale) {
@@ -605,7 +642,8 @@ class FirebaseRepository {
                 "pricePerUnit" to s.pricePerUnit,
                 "totalPrice" to s.totalPrice,
                 "buyer" to s.buyer,
-                "phoneNumber" to s.phoneNumber
+                "phoneNumber" to s.phoneNumber,
+                "isPaid" to s.isPaid
             ) as Map<String, Any>).await()
         }
     }
@@ -621,6 +659,7 @@ class FirebaseRepository {
         db.collection("expenses").add(hashMapOf(
             "date" to e.date,
             "category" to e.category,
+            "subCategory" to e.subCategory,
             "amount" to e.amount,
             "quantityKg" to e.quantityKg,
             "description" to e.description,
@@ -635,6 +674,7 @@ class FirebaseRepository {
             db.collection("expenses").document(it).update(hashMapOf(
                 "date" to e.date,
                 "category" to e.category,
+                "subCategory" to e.subCategory,
                 "amount" to e.amount,
                 "quantityKg" to e.quantityKg,
                 "description" to e.description

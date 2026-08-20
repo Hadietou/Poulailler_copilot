@@ -15,5 +15,7 @@ data class Batch(
     val typeLot: String = "PONDEUSE", // PONDEUSE, CHAIR
     val firestoreId: String? = null,
     val farmId: String? = null,
-    val feedRation: Double = 0.120 // Ration en kg/sujet/jour
+    val feedRation: Double = 0.120, // Ration en kg/sujet/jour
+    val providerName: String? = null,
+    val providerPhone: String? = null
 )

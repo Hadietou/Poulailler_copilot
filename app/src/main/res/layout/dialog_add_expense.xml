@@ -4,116 +4,149 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:padding="24dp"
-    android:background="#E6FFFFFF">
+    android:background="@drawable/bg_dialog_dark">
 
-    <TextView
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Nouvelle Dépense"
-        android:textColor="@color/primary"
-        android:textSize="20sp"
-        android:textStyle="bold"
-        android:layout_marginBottom="24dp"/>
+        android:background="@drawable/bg_dialog_header"
+        android:padding="16dp"
+        android:gravity="center">
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Nouvelle Dépense"
+            android:textColor="@color/primary_variant"
+            android:textSize="22sp"
+            android:textStyle="bold"/>
+    </LinearLayout>
 
-    <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/tilDate"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Date"
-        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-        android:layout_marginBottom="12dp"
-        app:hintTextColor="@color/text_secondary"
-        app:boxStrokeColor="@color/accent_blue"
-        app:startIconDrawable="@android:drawable/ic_menu_my_calendar"
-        app:startIconTint="@color/accent_blue">
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/etExpenseDate"
+        android:orientation="vertical"
+        android:padding="24dp">
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/tilDate"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:focusable="false"
-            android:clickable="true"
-            android:textColor="@color/text_primary" />
-    </com.google.android.material.textfield.TextInputLayout>
+            android:hint="Date"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            android:layout_marginBottom="12dp"
+            app:hintTextColor="#CCFFFFFF"
+            app:boxStrokeColor="@color/white"
+            app:startIconDrawable="@android:drawable/ic_menu_my_calendar"
+            app:startIconTint="@color/white">
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etExpenseDate"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:focusable="false"
+                android:clickable="true"
+                android:textColor="@color/white" />
+        </com.google.android.material.textfield.TextInputLayout>
 
-    <com.google.android.material.textfield.TextInputLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="Catégorie"
-        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
-        android:layout_marginBottom="12dp"
-        app:hintTextColor="@color/text_secondary"
-        app:boxStrokeColor="@color/accent_blue"
-        app:startIconDrawable="@android:drawable/ic_menu_sort_by_size"
-        app:startIconTint="@color/accent_blue">
-        <AutoCompleteTextView
-            android:id="@+id/autoCompleteCategory"
+        <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:inputType="none"
-            android:textColor="@color/text_primary" />
-    </com.google.android.material.textfield.TextInputLayout>
+            android:hint="Catégorie"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+            android:layout_marginBottom="12dp"
+            app:hintTextColor="#CCFFFFFF"
+            app:boxStrokeColor="@color/white"
+            app:startIconDrawable="@android:drawable/ic_menu_sort_by_size"
+            app:startIconTint="@color/white">
+            <AutoCompleteTextView
+                android:id="@+id/autoCompleteCategory"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="none"
+                android:textColor="@color/white" />
+        </com.google.android.material.textfield.TextInputLayout>
 
-    <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/tilQuantityKg"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="Quantité (kg)"
-        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-        android:layout_marginBottom="12dp"
-        android:visibility="gone"
-        app:hintTextColor="@color/text_secondary"
-        app:boxStrokeColor="@color/accent_blue">
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/etQuantityKg"
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/tilSubCategory"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:inputType="numberDecimal"
-            android:textColor="@color/text_primary" />
-    </com.google.android.material.textfield.TextInputLayout>
+            android:hint="Sous-catégorie"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+            android:layout_marginBottom="12dp"
+            android:visibility="gone"
+            app:hintTextColor="#CCFFFFFF"
+            app:boxStrokeColor="@color/white"
+            app:startIconDrawable="@android:drawable/ic_menu_sort_by_size"
+            app:startIconTint="@color/white">
+            <AutoCompleteTextView
+                android:id="@+id/autoCompleteSubCategory"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="none"
+                android:textColor="@color/white" />
+        </com.google.android.material.textfield.TextInputLayout>
 
-    <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/tilAmount"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="Montant"
-        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-        android:layout_marginBottom="12dp"
-        app:hintTextColor="@color/text_secondary"
-        app:boxStrokeColor="@color/accent_blue"
-        app:startIconDrawable="@android:drawable/ic_menu_agenda"
-        app:startIconTint="@color/emerald_soft">
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/etAmount"
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/tilQuantityKg"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:inputType="numberDecimal"
-            android:textColor="@color/text_primary" />
-    </com.google.android.material.textfield.TextInputLayout>
+            android:hint="Quantité (kg)"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            android:layout_marginBottom="12dp"
+            android:visibility="gone"
+            app:hintTextColor="#CCFFFFFF"
+            app:boxStrokeColor="@color/white">
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etQuantityKg"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="numberDecimal"
+                android:textColor="@color/white" />
+        </com.google.android.material.textfield.TextInputLayout>
 
-    <com.google.android.material.textfield.TextInputLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="Description / Notes"
-        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-        android:layout_marginBottom="24dp"
-        app:hintTextColor="@color/text_secondary"
-        app:boxStrokeColor="@color/accent_blue">
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/etDescription"
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/tilAmount"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:inputType="textLongMessage"
-            android:textColor="@color/text_primary" />
-    </com.google.android.material.textfield.TextInputLayout>
+            android:hint="Montant"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            android:layout_marginBottom="12dp"
+            app:hintTextColor="#CCFFFFFF"
+            app:boxStrokeColor="@color/white"
+            app:startIconDrawable="@android:drawable/ic_menu_agenda"
+            app:startIconTint="@color/white">
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etAmount"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="numberDecimal"
+                android:textColor="@color/white" />
+        </com.google.android.material.textfield.TextInputLayout>
 
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btnSaveExpense"
-        android:layout_width="match_parent"
-        android:layout_height="60dp"
-        android:text="ENREGISTRER LA DÉPENSE"
-        android:backgroundTint="@color/primary"
-        android:textColor="@color/white"
-        app:cornerRadius="8dp"
-        app:icon="@android:drawable/ic_menu_save" />
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Description / Notes"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            android:layout_marginBottom="24dp"
+            app:hintTextColor="#CCFFFFFF"
+            app:boxStrokeColor="@color/white">
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etDescription"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="textLongMessage"
+                android:textColor="@color/white" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnSaveExpense"
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:text="ENREGISTRER LA DÉPENSE"
+            android:backgroundTint="@color/white"
+            android:textColor="@color/primary_variant"
+            app:cornerRadius="8dp"
+            app:icon="@android:drawable/ic_menu_save"
+            app:iconTint="@color/primary_variant" />
+    </LinearLayout>
 </LinearLayout>

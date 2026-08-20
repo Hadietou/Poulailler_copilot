@@ -21,7 +21,6 @@ import androidx.recyclerview.widget.RecyclerView
 import com.hadietou.poulailler.R
 import com.hadietou.poulailler.BuildConfig
 import com.hadietou.poulailler.data.AppDatabase
-import com.hadietou.poulailler.data.Batch
 import com.hadietou.poulailler.data.VaccineEntry
 import com.hadietou.poulailler.data.HealthReminder
 import com.hadietou.poulailler.databinding.ActivityVaccineBinding
@@ -37,6 +36,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.*
+import com.hadietou.poulailler.util.NavMenuStyler
+import com.hadietou.poulailler.util.NetworkStatusMonitor
 
 class VaccineActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelectedListener {
 
@@ -46,19 +47,22 @@ class VaccineActivity : AppCompatActivity(), NavigationView.OnNavigationItemSele
     private var userRole: String = "AGENT"
     private var userId: String? = null
     private var selectedBatchId: String? = null
-    private var currentBatch: Batch? = null
     private val firebaseRepo = FirebaseRepository()
     private lateinit var adapter: VaccineAdapter
-    
+
     private var allVaccines: List<VaccineEntry> = emptyList()
     private var allHealthReminders: List<HealthReminder> = emptyList()
     private var isShowingAll = false
     private var isBlocked = false
 
+    private var isEggMenuExpanded = false
+    private var isHealthMenuExpanded = true 
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityVaccineBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        NetworkStatusMonitor.observe(this, binding.root)
 
         userRole = intent.getStringExtra("role") ?: "AGENT"
         userId = intent.getStringExtra("userIdString") ?: FirebaseAuth.getInstance().currentUser?.uid
@@ -69,7 +73,6 @@ class VaccineActivity : AppCompatActivity(), NavigationView.OnNavigationItemSele
         setupCalendar()
         observeVaccines()
         observeHealthReminders()
-        observeCurrentBatch()
         loadEnhancedSanitaryGuide()
         checkAccessStatus()
         fetchWeatherForecast()
@@ -84,17 +87,11 @@ class VaccineActivity : AppCompatActivity(), NavigationView.OnNavigationItemSele
             refreshDisplay()
         }
 
-        binding.btnSaveRation.setOnClickListener {
-            saveManualRation()
-        }
-
         if (intent.getBooleanExtra("scrollToLighting", false)) {
             binding.root.post {
                 binding.nestedScrollView.smoothScrollTo(0, binding.cardLightingLogic.top)
             }
         }
-        
-        binding.cardFeedRation.visibility = if (userRole == "RESPONSABLE") View.VISIBLE else View.GONE
     }
 
     private fun setupCalendar() {
@@ -121,60 +118,6 @@ class VaccineActivity : AppCompatActivity(), NavigationView.OnNavigationItemSele
             
             binding.tvSelectedDayReminders.text = Html.fromHtml(sb.toString(), Html.FROM_HTML_MODE_LEGACY)
             binding.tvSelectedDayReminders.visibility = View.VISIBLE
-        }
-    }
-
-    private fun observeCurrentBatch() {
-        lifecycleScope.launch {
-            firebaseRepo.getBatchesFlow().collectLatest { batches ->
-                val batch = if (selectedBatchId != null) {
-                    batches.find { it.firestoreId == selectedBatchId }
-                } else {
-                    batches.find { it.status == "ACTIVE" }
-                }
-                
-                if (batch != null) {
-                    currentBatch = batch
-                    withContext(Dispatchers.Main) {
-                        val rationG = (batch.feedRation * 1000).toInt()
-                        if (binding.etFeedRation.text.isNullOrEmpty()) {
-                            binding.etFeedRation.setText(rationG.toString())
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    private fun saveManualRation() {
-        if (isBlocked) { showBlockingDialog(); return }
-        val batch = currentBatch ?: run {
-            Toast.makeText(this, "Aucun lot sélectionné", Toast.LENGTH_SHORT).show()
-            return
-        }
-
-        val rationStr = binding.etFeedRation.text?.toString() ?: ""
-        if (rationStr.isEmpty()) {
-            Toast.makeText(this, "Veuillez saisir une valeur", Toast.LENGTH_SHORT).show()
-            return
-        }
-
-        val rationG = rationStr.toDoubleOrNull() ?: 0.0
-        val rationKg = rationG / 1000.0
-
-        lifecycleScope.launch(Dispatchers.IO) {
-            try {
-                val updatedBatch = batch.copy(feedRation = rationKg)
-                firebaseRepo.updateBatch(updatedBatch)
-                withContext(Dispatchers.Main) {
-                    Toast.makeText(this@VaccineActivity, "Ration mise à jour : ${rationG.toInt()}g/sujet", Toast.LENGTH_SHORT).show()
-                    binding.etFeedRation.clearFocus()
-                }
-            } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    Toast.makeText(this@VaccineActivity, "Erreur : ${e.message}", Toast.LENGTH_SHORT).show()
-                }
-            }
         }
     }
 
@@ -213,7 +156,6 @@ class VaccineActivity : AppCompatActivity(), NavigationView.OnNavigationItemSele
             if (blocked) {
                 withContext(Dispatchers.Main) {
                     binding.fabAddVaccine.visibility = View.GONE
-                    binding.btnSaveRation.isEnabled = false
                     showBlockingDialog()
                 }
             }
@@ -239,14 +181,40 @@ class VaccineActivity : AppCompatActivity(), NavigationView.OnNavigationItemSele
         toggle.syncState()
 
         binding.navigationView.setNavigationItemSelectedListener(this)
-        
-        val menu = binding.navigationView.menu
+
+        rebuildDrawerMenu()
+        updateNavHeader()
+    }
+
+    /**
+     * NavigationView n'affiche pas toujours de manière fiable un item dont on vient
+     * de changer la visibilité de groupe (menu.setGroupVisible) une fois déjà rendu à l'écran :
+     * on force donc une reconstruction complète du menu avant de réappliquer les états courants.
+     */
+    private fun rebuildDrawerMenu() {
+        val nav = binding.navigationView
+        nav.menu.clear()
+        nav.inflateMenu(R.menu.drawer_menu)
+        val menu = nav.menu
         menu.findItem(R.id.nav_users)?.isVisible = userRole == "RESPONSABLE"
         menu.findItem(R.id.nav_expenses)?.isVisible = userRole == "RESPONSABLE"
         menu.findItem(R.id.nav_batches)?.isVisible = userRole == "RESPONSABLE"
-        menu.findItem(R.id.nav_vaccines).isVisible = true
+        menu.setGroupVisible(R.id.group_egg_submenu, isEggMenuExpanded)
+        menu.setGroupVisible(R.id.group_health_submenu, isHealthMenuExpanded)
+        refreshDrawerMenuStyle()
+    }
 
-        updateNavHeader()
+    private fun refreshDrawerMenuStyle() {
+        NavMenuStyler.style(
+            binding.navigationView,
+            this,
+            defaultIconTintRes = R.color.text_secondary,
+            parents = listOf(
+                R.id.nav_egg_management to isEggMenuExpanded,
+                R.id.nav_health_management to isHealthMenuExpanded
+            ),
+            children = listOf(R.id.nav_collect, R.id.nav_sales, R.id.nav_vaccines, R.id.nav_mortality)
+        )
     }
 
     private fun setupRecyclerView() {
@@ -510,15 +478,38 @@ class VaccineActivity : AppCompatActivity(), NavigationView.OnNavigationItemSele
                 intent.putExtra("userIdString", userId)
                 startActivity(intent)
             }
+            
+            R.id.nav_egg_management -> {
+                isEggMenuExpanded = !isEggMenuExpanded
+                if (isEggMenuExpanded) isHealthMenuExpanded = false
+                rebuildDrawerMenu()
+                return true
+            }
+
+            R.id.nav_health_management -> {
+                isHealthMenuExpanded = !isHealthMenuExpanded
+                if (isHealthMenuExpanded) isEggMenuExpanded = false
+                rebuildDrawerMenu()
+                return true
+            }
+
             R.id.nav_collect -> {
                 val intent = Intent(this, AgentActivity::class.java)
                 intent.putExtra("userIdString", userId)
                 intent.putExtra("role", userRole)
+                intent.putExtra("selectedBatchId", selectedBatchId)
                 startActivity(intent)
             }
             R.id.nav_vaccines -> {}
             R.id.nav_expenses -> {
                 val intent = Intent(this, ExpensesActivity::class.java)
+                intent.putExtra("role", userRole)
+                intent.putExtra("userIdString", userId)
+                intent.putExtra("selectedBatchId", selectedBatchId)
+                startActivity(intent)
+            }
+            R.id.nav_settings -> {
+                val intent = Intent(this, FarmInfoActivity::class.java)
                 intent.putExtra("role", userRole)
                 intent.putExtra("userIdString", userId)
                 startActivity(intent)
@@ -527,12 +518,14 @@ class VaccineActivity : AppCompatActivity(), NavigationView.OnNavigationItemSele
                 val intent = Intent(this, SalesActivity::class.java)
                 intent.putExtra("role", userRole)
                 intent.putExtra("userIdString", userId)
+                intent.putExtra("selectedBatchId", selectedBatchId)
                 startActivity(intent)
             }
             R.id.nav_mortality -> {
                 val intent = Intent(this, MortalityActivity::class.java)
-                intent.putExtra("userIdString", userId)
                 intent.putExtra("role", userRole)
+                intent.putExtra("userIdString", userId)
+                intent.putExtra("selectedBatchId", selectedBatchId)
                 startActivity(intent)
             }
             R.id.nav_delete_account -> {
@@ -540,11 +533,13 @@ class VaccineActivity : AppCompatActivity(), NavigationView.OnNavigationItemSele
                 startActivity(intent)
             }
             R.id.nav_logout -> {
-                FirebaseAuth.getInstance().signOut()
-                val intent = Intent(this, LoginActivity::class.java)
-                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                startActivity(intent)
-                finish()
+                NavMenuStyler.confirmLogout(this) {
+                    FirebaseAuth.getInstance().signOut()
+                    val intent = Intent(this, LoginActivity::class.java)
+                    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                    startActivity(intent)
+                    finish()
+                }
             }
         }
         binding.drawerLayout.closeDrawer(GravityCompat.START)

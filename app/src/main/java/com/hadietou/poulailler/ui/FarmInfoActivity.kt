@@ -15,32 +15,41 @@ import androidx.core.view.GravityCompat
 import androidx.lifecycle.lifecycleScope
 import com.hadietou.poulailler.R
 import com.hadietou.poulailler.BuildConfig
+import com.hadietou.poulailler.data.Batch
 import com.hadietou.poulailler.data.FarmInfo
 import com.hadietou.poulailler.databinding.ActivityFarmInfoBinding
 import com.hadietou.poulailler.repository.FirebaseRepository
 import com.google.android.material.navigation.NavigationView
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.*
+import com.hadietou.poulailler.util.NavMenuStyler
+import com.hadietou.poulailler.util.NetworkStatusMonitor
 
 class FarmInfoActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelectedListener {
 
     private lateinit var binding: ActivityFarmInfoBinding
     private var currentFarmInfo: FarmInfo? = null
+    private var currentBatch: Batch? = null
     private val firebaseRepo = FirebaseRepository()
-    
+
     private val currencies = arrayOf("MRU", "CFA")
     private var userRole: String = "AGENT"
     private var userId: String? = null
     private var isBlocked = false
+    
+    private var isEggMenuExpanded = false
+    private var isHealthMenuExpanded = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityFarmInfoBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        NetworkStatusMonitor.observe(this, binding.root)
 
         userRole = intent.getStringExtra("role") ?: "AGENT"
         userId = intent.getStringExtra("userIdString") ?: FirebaseAuth.getInstance().currentUser?.uid
@@ -48,6 +57,7 @@ class FarmInfoActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
         setupNavigation()
         setupCurrencyDropdown()
         loadExistingData()
+        observeCurrentBatch()
         checkAccessStatus()
 
         binding.btnSaveFarmInfo.setOnClickListener {
@@ -63,6 +73,61 @@ class FarmInfoActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
         binding.btnCancelEdit.setOnClickListener {
             showEditMode(false)
         }
+
+        binding.btnSaveRation.setOnClickListener {
+            if (isBlocked) { showBlockingDialog(); return@setOnClickListener }
+            saveManualRation()
+        }
+
+        binding.cardFeedRation.visibility = if (userRole == "RESPONSABLE") View.VISIBLE else View.GONE
+    }
+
+    private fun observeCurrentBatch() {
+        lifecycleScope.launch {
+            firebaseRepo.getBatchesFlow().collectLatest { batches ->
+                val batch = batches.find { it.status == "ACTIVE" }
+                if (batch != null) {
+                    currentBatch = batch
+                    withContext(Dispatchers.Main) {
+                        val rationG = (batch.feedRation * 1000).toInt()
+                        if (binding.etFeedRation.text.isNullOrEmpty()) {
+                            binding.etFeedRation.setText(rationG.toString())
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private fun saveManualRation() {
+        val batch = currentBatch ?: run {
+            Toast.makeText(this, "Aucun lot sélectionné", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val rationStr = binding.etFeedRation.text?.toString() ?: ""
+        if (rationStr.isEmpty()) {
+            Toast.makeText(this, "Veuillez saisir une valeur", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val rationG = rationStr.toDoubleOrNull() ?: 0.0
+        val rationKg = rationG / 1000.0
+
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                val updatedBatch = batch.copy(feedRation = rationKg)
+                firebaseRepo.updateBatch(updatedBatch)
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(this@FarmInfoActivity, "Ration mise à jour : ${rationG.toInt()}g/sujet", Toast.LENGTH_SHORT).show()
+                    binding.etFeedRation.clearFocus()
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(this@FarmInfoActivity, "Erreur : ${e.message}", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
     }
 
     private fun checkAccessStatus() {
@@ -72,6 +137,7 @@ class FarmInfoActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
             if (blocked) {
                 withContext(Dispatchers.Main) {
                     binding.btnEditInfo.visibility = View.GONE
+                    binding.btnSaveRation.isEnabled = false
                     showBlockingDialog()
                 }
             }
@@ -97,14 +163,40 @@ class FarmInfoActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
         toggle.syncState()
 
         binding.navigationView.setNavigationItemSelectedListener(this)
-        
-        val menu = binding.navigationView.menu
+
+        rebuildDrawerMenu()
+        updateNavHeader()
+    }
+
+    /**
+     * NavigationView n'affiche pas toujours de manière fiable un item dont on vient
+     * de changer la visibilité de groupe (menu.setGroupVisible) une fois déjà rendu à l'écran :
+     * on force donc une reconstruction complète du menu avant de réappliquer les états courants.
+     */
+    private fun rebuildDrawerMenu() {
+        val nav = binding.navigationView
+        nav.menu.clear()
+        nav.inflateMenu(R.menu.drawer_menu)
+        val menu = nav.menu
         menu.findItem(R.id.nav_users)?.isVisible = userRole == "RESPONSABLE"
         menu.findItem(R.id.nav_expenses)?.isVisible = userRole == "RESPONSABLE"
-        menu.findItem(R.id.nav_vaccines)?.isVisible = true
         menu.findItem(R.id.nav_batches)?.isVisible = userRole == "RESPONSABLE"
+        menu.setGroupVisible(R.id.group_egg_submenu, isEggMenuExpanded)
+        menu.setGroupVisible(R.id.group_health_submenu, isHealthMenuExpanded)
+        refreshDrawerMenuStyle()
+    }
 
-        updateNavHeader()
+    private fun refreshDrawerMenuStyle() {
+        NavMenuStyler.style(
+            binding.navigationView,
+            this,
+            defaultIconTintRes = R.color.text_secondary,
+            parents = listOf(
+                R.id.nav_egg_management to isEggMenuExpanded,
+                R.id.nav_health_management to isHealthMenuExpanded
+            ),
+            children = listOf(R.id.nav_collect, R.id.nav_sales, R.id.nav_vaccines, R.id.nav_mortality)
+        )
     }
 
     private fun updateNavHeader() {
@@ -151,9 +243,30 @@ class FarmInfoActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
     private fun displayInfo(info: FarmInfo) {
         binding.tvDisplayFarmName.text = info.farmName
         binding.tvDisplayCurrency.text = info.currency
-        
+
         binding.etFarmName.setText(info.farmName)
         binding.actvCurrency.setText(info.currency, false)
+
+        binding.etEggTraysCritical.setText(info.eggTraysCriticalThreshold.toString())
+        binding.etFeedStockCriticalDays.setText(info.feedStockCriticalDays.toString())
+        binding.etFeedStockWarningDays.setText(info.feedStockWarningDays.toString())
+        binding.etHeatAlertTemp.setText(info.heatAlertTempCelsius.toString())
+        binding.etLightingHours.setText(info.lightingHoursAfterSunrise.toString())
+        binding.etVaccineInterval.setText(info.vaccineIntervalMonths.toString())
+        binding.etDewormingInternalInterval.setText(info.dewormingInternalIntervalMonths.toString())
+        binding.etDewormingExternalInterval.setText(info.dewormingExternalIntervalMonths.toString())
+
+        binding.tvDisplayThresholds.text = getString(
+            R.string.thresholds_summary,
+            info.eggTraysCriticalThreshold,
+            info.feedStockCriticalDays,
+            info.feedStockWarningDays,
+            info.heatAlertTempCelsius,
+            info.lightingHoursAfterSunrise,
+            info.vaccineIntervalMonths,
+            info.dewormingInternalIntervalMonths,
+            info.dewormingExternalIntervalMonths
+        )
 
         binding.tvDisplayHensCount.visibility = View.GONE
         binding.tvDisplayBreed.visibility = View.GONE
@@ -191,7 +304,23 @@ class FarmInfoActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
                 val info = FarmInfo(
                     id = 1,
                     farmName = name,
-                    currency = currency
+                    currency = currency,
+                    eggTraysCriticalThreshold = binding.etEggTraysCritical.text.toString().toIntOrNull()
+                        ?: FarmInfo.DEFAULT_EGG_TRAYS_CRITICAL,
+                    feedStockCriticalDays = binding.etFeedStockCriticalDays.text.toString().toIntOrNull()
+                        ?: FarmInfo.DEFAULT_FEED_STOCK_CRITICAL_DAYS,
+                    feedStockWarningDays = binding.etFeedStockWarningDays.text.toString().toIntOrNull()
+                        ?: FarmInfo.DEFAULT_FEED_STOCK_WARNING_DAYS,
+                    heatAlertTempCelsius = binding.etHeatAlertTemp.text.toString().toIntOrNull()
+                        ?: FarmInfo.DEFAULT_HEAT_ALERT_TEMP,
+                    lightingHoursAfterSunrise = binding.etLightingHours.text.toString().toIntOrNull()
+                        ?: FarmInfo.DEFAULT_LIGHTING_HOURS,
+                    vaccineIntervalMonths = binding.etVaccineInterval.text.toString().toIntOrNull()
+                        ?: FarmInfo.DEFAULT_VACCINE_INTERVAL_MONTHS,
+                    dewormingInternalIntervalMonths = binding.etDewormingInternalInterval.text.toString().toIntOrNull()
+                        ?: FarmInfo.DEFAULT_DEWORMING_INTERNAL_MONTHS,
+                    dewormingExternalIntervalMonths = binding.etDewormingExternalInterval.text.toString().toIntOrNull()
+                        ?: FarmInfo.DEFAULT_DEWORMING_EXTERNAL_MONTHS
                 )
                 firebaseRepo.saveFarmInfo(info)
                 withContext(Dispatchers.Main) {
@@ -232,6 +361,21 @@ class FarmInfoActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
                 intent.putExtra("userIdString", userId)
                 startActivity(intent)
             }
+            
+            R.id.nav_egg_management -> {
+                isEggMenuExpanded = !isEggMenuExpanded
+                if (isEggMenuExpanded) isHealthMenuExpanded = false
+                rebuildDrawerMenu()
+                return true
+            }
+
+            R.id.nav_health_management -> {
+                isHealthMenuExpanded = !isHealthMenuExpanded
+                if (isHealthMenuExpanded) isEggMenuExpanded = false
+                rebuildDrawerMenu()
+                return true
+            }
+
             R.id.nav_collect -> {
                 val intent = Intent(this, AgentActivity::class.java)
                 intent.putExtra("userIdString", userId)
@@ -250,6 +394,7 @@ class FarmInfoActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
                 intent.putExtra("userIdString", userId)
                 startActivity(intent)
             }
+            R.id.nav_settings -> {}
             R.id.nav_sales -> {
                 val intent = Intent(this, SalesActivity::class.java)
                 intent.putExtra("role", userRole)
@@ -267,11 +412,13 @@ class FarmInfoActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
                 startActivity(intent)
             }
             R.id.nav_logout -> {
-                FirebaseAuth.getInstance().signOut()
-                val intent = Intent(this, LoginActivity::class.java)
-                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                startActivity(intent)
-                finish()
+                NavMenuStyler.confirmLogout(this) {
+                    FirebaseAuth.getInstance().signOut()
+                    val intent = Intent(this, LoginActivity::class.java)
+                    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                    startActivity(intent)
+                    finish()
+                }
             }
         }
         binding.drawerLayout.closeDrawer(GravityCompat.START)

@@ -88,7 +88,7 @@
             android:layout_gravity="bottom|end"
             android:layout_margin="24dp"
             android:src="@android:drawable/ic_input_add"
-            app:backgroundTint="#F44336"
+            app:backgroundTint="@color/error"
             app:tint="@color/white"
             android:contentDescription="Signaler une mortalité" />
 
@@ -99,9 +99,10 @@
         android:layout_width="wrap_content"
         android:layout_height="match_parent"
         android:layout_gravity="start"
+        android:background="@color/surface"
         app:headerLayout="@layout/nav_header"
-        app:itemIconTint="@color/accent_blue"
-        app:itemTextColor="@color/white"
+        app:itemIconTint="@color/text_secondary"
+        app:itemTextColor="@color/text_primary"
         app:menu="@menu/drawer_menu" />
 
 </androidx.drawerlayout.widget.DrawerLayout>

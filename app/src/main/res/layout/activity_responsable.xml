@@ -151,6 +151,17 @@
                     tools:listitem="@layout/item_agent_admin"
                     tools:itemCount="2" />
 
+                <TextView
+                    android:id="@+id/tvEmptyAgents"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Aucun agent pour le moment. Ajoutez-en un ci-dessus."
+                    android:textColor="@color/text_secondary"
+                    android:textSize="14sp"
+                    android:gravity="center"
+                    android:padding="24dp"
+                    android:visibility="gone" />
+
                 <!-- Header Historique -->
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -209,7 +220,7 @@
         android:layout_height="match_parent"
         android:layout_gravity="start"
         app:headerLayout="@layout/nav_header"
-        app:itemIconTint="@color/emerald_soft"
+        app:itemIconTint="@color/text_secondary"
         app:itemTextColor="@color/text_primary"
         app:menu="@menu/drawer_menu"
         app:itemShapeAppearanceOverlay="@style/ShapeAppearance.App.LargeComponent"/>

@@ -15,17 +15,18 @@ import android.widget.Toast
 import androidx.appcompat.app.ActionBarDrawerToggle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.GravityCompat
+import androidx.core.widget.addTextChangedListener
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.hadietou.poulailler.R
 import com.hadietou.poulailler.BuildConfig
-import com.hadietou.poulailler.data.AppDatabase
 import com.hadietou.poulailler.data.Expense
 import com.hadietou.poulailler.databinding.ActivityExpensesBinding
 import com.hadietou.poulailler.databinding.DialogAddExpenseBinding
 import com.hadietou.poulailler.databinding.ItemExpenseBinding
 import com.hadietou.poulailler.repository.FirebaseRepository
+import com.google.android.material.chip.Chip
 import com.google.android.material.navigation.NavigationView
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.Dispatchers
@@ -34,6 +35,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.*
+import com.hadietou.poulailler.util.NavMenuStyler
+import com.hadietou.poulailler.util.NetworkStatusMonitor
 
 class ExpensesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelectedListener {
 
@@ -50,14 +53,68 @@ class ExpensesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
     private var allExpenses: List<Expense> = emptyList()
     private var isShowingAll = false
     private var isBlocked = false
+    private var selectedCategoryFilter: String? = null
+    private var searchQuery: String = ""
+    
+    private var isEggMenuExpanded = false
+    private var isHealthMenuExpanded = false
 
-    // Centralized categories to avoid duplication and errors
-    private val expenseCategories = arrayOf("Aliment", "Santé", "Transport", "Eau/SNDE", "Électricité", "Équipement", "Main d'œuvre", "Autre")
+    private val expenseCategories = arrayOf("Aliment", "Cheptel & Santé", "Transport", "Eau/Électricité", "Équipement", "Main d'œuvre", "Consommables", "Autre")
+
+    private val subCategoriesMap = mapOf(
+        "Aliment" to arrayOf("Démarrage", "Croissance", "Finition", "Ponte"),
+        "Cheptel & Santé" to arrayOf("Vaccins", "Médicaments", "Vitamines", "Désinfectants", "Laye"),
+        "Eau/Électricité" to arrayOf("Eau", "Électricité"),
+        "Transport" to arrayOf("Livraison Aliment", "Livraison Œuf"),
+        "Consommables" to arrayOf("Alvéoles", "Autre")
+    )
+
+    /**
+     * Affiche/masque le champ Sous-catégorie selon la catégorie choisie et le pré-remplit
+     * avec les options correspondantes (et éventuellement une valeur déjà saisie).
+     */
+    private fun configureSubCategoryField(dialogBinding: DialogAddExpenseBinding, category: String, presetValue: String? = null) {
+        val options = subCategoriesMap[category]
+        if (options != null) {
+            dialogBinding.tilSubCategory.visibility = View.VISIBLE
+            val subAdapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, options)
+            dialogBinding.autoCompleteSubCategory.setAdapter(subAdapter)
+            dialogBinding.autoCompleteSubCategory.setText(presetValue?.takeIf { options.contains(it) } ?: "", false)
+        } else {
+            dialogBinding.tilSubCategory.visibility = View.GONE
+            dialogBinding.autoCompleteSubCategory.setText("", false)
+        }
+    }
+
+    /**
+     * Le champ Quantité sert au suivi de stock : kg d'aliment, ou nombre d'alvéoles
+     * achetées (Consommables > Alvéoles). Il doit rester masqué pour les autres cas,
+     * sinon la quantité saisie n'est jamais enregistrée (cf. quantityKg dans btnSaveExpense).
+     */
+    private fun updateQuantityFieldVisibility(dialogBinding: DialogAddExpenseBinding, category: String, subCategory: String?) {
+        when {
+            category == "Aliment" -> {
+                dialogBinding.tilQuantityKg.hint = "Quantité (kg)"
+                dialogBinding.tilQuantityKg.visibility = View.VISIBLE
+            }
+            category == "Consommables" && subCategory == "Alvéoles" -> {
+                dialogBinding.tilQuantityKg.hint = "Quantité (alvéoles)"
+                dialogBinding.tilQuantityKg.visibility = View.VISIBLE
+            }
+            else -> {
+                dialogBinding.tilQuantityKg.visibility = View.GONE
+            }
+        }
+    }
+
+    private fun isQuantityTracked(category: String, subCategory: String?) =
+        category == "Aliment" || (category == "Consommables" && subCategory == "Alvéoles")
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityExpensesBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        NetworkStatusMonitor.observe(this, binding.root)
 
         userRole = intent.getStringExtra("role") ?: "AGENT"
         userId = intent.getStringExtra("userIdString") ?: FirebaseAuth.getInstance().currentUser?.uid
@@ -66,6 +123,7 @@ class ExpensesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
         setupNavigation()
         loadCurrency()
         setupRecyclerView()
+        setupCategoryChips()
         observeExpenses()
         checkAccessStatus()
 
@@ -76,6 +134,11 @@ class ExpensesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
 
         binding.btnShowMore.setOnClickListener {
             isShowingAll = true
+            refreshDisplay()
+        }
+
+        binding.etSearchExpenses.addTextChangedListener { text ->
+            searchQuery = text?.toString().orEmpty()
             refreshDisplay()
         }
     }
@@ -112,14 +175,40 @@ class ExpensesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
         toggle.syncState()
 
         binding.navigationView.setNavigationItemSelectedListener(this)
-        
-        val menu = binding.navigationView.menu
+
+        rebuildDrawerMenu()
+        updateNavHeader()
+    }
+
+    /**
+     * NavigationView n'affiche pas toujours de manière fiable un item dont on vient
+     * de changer la visibilité de groupe (menu.setGroupVisible) une fois déjà rendu à l'écran :
+     * on force donc une reconstruction complète du menu avant de réappliquer les états courants.
+     */
+    private fun rebuildDrawerMenu() {
+        val nav = binding.navigationView
+        nav.menu.clear()
+        nav.inflateMenu(R.menu.drawer_menu)
+        val menu = nav.menu
         menu.findItem(R.id.nav_users)?.isVisible = userRole == "RESPONSABLE"
         menu.findItem(R.id.nav_expenses)?.isVisible = userRole == "RESPONSABLE"
-        menu.findItem(R.id.nav_vaccines)?.isVisible = true
         menu.findItem(R.id.nav_batches)?.isVisible = userRole == "RESPONSABLE"
+        menu.setGroupVisible(R.id.group_egg_submenu, isEggMenuExpanded)
+        menu.setGroupVisible(R.id.group_health_submenu, isHealthMenuExpanded)
+        refreshDrawerMenuStyle()
+    }
 
-        updateNavHeader()
+    private fun refreshDrawerMenuStyle() {
+        NavMenuStyler.style(
+            binding.navigationView,
+            this,
+            defaultIconTintRes = R.color.text_secondary,
+            parents = listOf(
+                R.id.nav_egg_management to isEggMenuExpanded,
+                R.id.nav_health_management to isHealthMenuExpanded
+            ),
+            children = listOf(R.id.nav_collect, R.id.nav_sales, R.id.nav_vaccines, R.id.nav_mortality)
+        )
     }
 
     private fun setupRecyclerView() {
@@ -131,6 +220,34 @@ class ExpensesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
         }
         binding.rvExpenseHistory.layoutManager = LinearLayoutManager(this)
         binding.rvExpenseHistory.adapter = adapter
+    }
+
+    private fun setupCategoryChips() {
+        val group = binding.chipGroupCategories
+        group.removeAllViews()
+
+        val allChip = Chip(this).apply {
+            text = "Toutes"
+            isCheckable = true
+            isChecked = true
+        }
+        group.addView(allChip)
+
+        expenseCategories.forEach { category ->
+            val chip = Chip(this).apply {
+                text = category
+                isCheckable = true
+            }
+            group.addView(chip)
+        }
+
+        group.setOnCheckedStateChangeListener { _, checkedIds ->
+            val checkedId = checkedIds.firstOrNull()
+            val checkedChip = checkedId?.let { group.findViewById<Chip>(it) }
+            selectedCategoryFilter = checkedChip?.text?.toString()?.takeIf { it != "Toutes" }
+            isShowingAll = false
+            refreshDisplay()
+        }
     }
 
     private fun observeExpenses() {
@@ -147,11 +264,24 @@ class ExpensesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
     }
 
     private fun refreshDisplay() {
-        val toDisplay = if (isShowingAll) allExpenses else allExpenses.take(10)
+        var filtered = selectedCategoryFilter?.let { category ->
+            allExpenses.filter { it.category == category }
+        } ?: allExpenses
+        if (searchQuery.isNotBlank()) {
+            filtered = filtered.filter { it.description?.contains(searchQuery, ignoreCase = true) == true }
+        }
+        val toDisplay = if (isShowingAll) filtered else filtered.take(10)
         adapter.updateCurrency(currency)
         adapter.submitList(toDisplay)
-        
-        binding.btnShowMore.visibility = if (!isShowingAll && allExpenses.size > 10) View.VISIBLE else View.GONE
+
+        binding.btnShowMore.visibility = if (!isShowingAll && filtered.size > 10) View.VISIBLE else View.GONE
+        binding.tvEmptyState.text = if (allExpenses.isEmpty()) {
+            "Aucune dépense enregistrée pour le moment."
+        } else {
+            "Aucune dépense ne correspond à ce filtre."
+        }
+        binding.tvEmptyState.visibility = if (filtered.isEmpty()) View.VISIBLE else View.GONE
+        binding.rvExpenseHistory.visibility = if (filtered.isEmpty()) View.GONE else View.VISIBLE
     }
 
     private fun updateNavHeader() {
@@ -196,11 +326,15 @@ class ExpensesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
         dialogBinding.autoCompleteCategory.setAdapter(adapterSpinner)
 
         dialogBinding.autoCompleteCategory.setOnItemClickListener { _, _, position, _ ->
-            if (expenseCategories[position] == "Aliment") {
-                dialogBinding.tilQuantityKg.visibility = View.VISIBLE
-            } else {
-                dialogBinding.tilQuantityKg.visibility = View.GONE
-            }
+            val category = expenseCategories[position]
+            configureSubCategoryField(dialogBinding, category)
+            updateQuantityFieldVisibility(dialogBinding, category, null)
+        }
+
+        dialogBinding.autoCompleteSubCategory.setOnItemClickListener { _, _, _, _ ->
+            val category = dialogBinding.autoCompleteCategory.text.toString()
+            val subCategory = dialogBinding.autoCompleteSubCategory.text.toString()
+            updateQuantityFieldVisibility(dialogBinding, category, subCategory)
         }
 
         val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
@@ -218,6 +352,7 @@ class ExpensesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
 
         dialogBinding.btnSaveExpense.setOnClickListener {
             val category = dialogBinding.autoCompleteCategory.text.toString()
+            val subCategory = dialogBinding.autoCompleteSubCategory.text.toString().takeIf { it.isNotBlank() }
             val amount = dialogBinding.etAmount.text.toString().toDoubleOrNull() ?: 0.0
             val qty = dialogBinding.etQuantityKg.text.toString().toDoubleOrNull() ?: 0.0
             val description = dialogBinding.etDescription.text.toString()
@@ -233,9 +368,10 @@ class ExpensesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
                         date = selectedDateMs,
                         category = category,
                         amount = amount,
-                        quantityKg = if (category == "Aliment") qty else 0.0,
+                        quantityKg = if (isQuantityTracked(category, subCategory)) qty else 0.0,
                         description = description,
-                        batchId = selectedBatchId
+                        batchId = selectedBatchId,
+                        subCategory = subCategory
                     )
                     firebaseRepo.addExpense(expense)
                     withContext(Dispatchers.Main) {
@@ -267,11 +403,10 @@ class ExpensesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
         dialogBinding.autoCompleteCategory.setText(expense.category, false)
         dialogBinding.etAmount.setText(expense.amount.toString())
         dialogBinding.etDescription.setText(expense.description ?: "")
-        if (expense.category == "Aliment") {
-            dialogBinding.tilQuantityKg.visibility = View.VISIBLE
+        configureSubCategoryField(dialogBinding, expense.category, expense.subCategory)
+        updateQuantityFieldVisibility(dialogBinding, expense.category, expense.subCategory)
+        if (isQuantityTracked(expense.category, expense.subCategory)) {
             dialogBinding.etQuantityKg.setText(expense.quantityKg?.toString() ?: "")
-        } else {
-            dialogBinding.tilQuantityKg.visibility = View.GONE
         }
 
         val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
@@ -289,16 +424,21 @@ class ExpensesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
         }
 
         dialogBinding.autoCompleteCategory.setOnItemClickListener { _, _, position, _ ->
-            if (expenseCategories[position] == "Aliment") {
-                dialogBinding.tilQuantityKg.visibility = View.VISIBLE
-            } else {
-                dialogBinding.tilQuantityKg.visibility = View.GONE
-            }
+            val category = expenseCategories[position]
+            configureSubCategoryField(dialogBinding, category)
+            updateQuantityFieldVisibility(dialogBinding, category, null)
+        }
+
+        dialogBinding.autoCompleteSubCategory.setOnItemClickListener { _, _, _, _ ->
+            val category = dialogBinding.autoCompleteCategory.text.toString()
+            val subCategory = dialogBinding.autoCompleteSubCategory.text.toString()
+            updateQuantityFieldVisibility(dialogBinding, category, subCategory)
         }
 
         dialogBinding.btnSaveExpense.text = "MODIFIER"
         dialogBinding.btnSaveExpense.setOnClickListener {
             val category = dialogBinding.autoCompleteCategory.text.toString()
+            val subCategory = dialogBinding.autoCompleteSubCategory.text.toString().takeIf { it.isNotBlank() }
             val amount = dialogBinding.etAmount.text.toString().toDoubleOrNull() ?: 0.0
             val qty = dialogBinding.etQuantityKg.text.toString().toDoubleOrNull() ?: 0.0
             val description = dialogBinding.etDescription.text.toString()
@@ -314,8 +454,9 @@ class ExpensesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
                         date = editDateMs,
                         category = category,
                         amount = amount,
-                        quantityKg = if (category == "Aliment") qty else 0.0,
-                        description = description
+                        quantityKg = if (isQuantityTracked(category, subCategory)) qty else 0.0,
+                        description = description,
+                        subCategory = subCategory
                     )
                     firebaseRepo.updateExpense(updatedExpense)
                     withContext(Dispatchers.Main) {
@@ -391,6 +532,21 @@ class ExpensesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
                 intent.putExtra("userIdString", userId)
                 startActivity(intent)
             }
+            
+            R.id.nav_egg_management -> {
+                isEggMenuExpanded = !isEggMenuExpanded
+                if (isEggMenuExpanded) isHealthMenuExpanded = false
+                rebuildDrawerMenu()
+                return true
+            }
+
+            R.id.nav_health_management -> {
+                isHealthMenuExpanded = !isHealthMenuExpanded
+                if (isHealthMenuExpanded) isEggMenuExpanded = false
+                rebuildDrawerMenu()
+                return true
+            }
+
             R.id.nav_collect -> {
                 val intent = Intent(this, AgentActivity::class.java)
                 intent.putExtra("userIdString", userId)
@@ -406,10 +562,16 @@ class ExpensesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
                 startActivity(intent)
             }
             R.id.nav_expenses -> {}
+            R.id.nav_settings -> {
+                val intent = Intent(this, FarmInfoActivity::class.java)
+                intent.putExtra("role", userRole)
+                intent.putExtra("userIdString", userId)
+                startActivity(intent)
+            }
             R.id.nav_sales -> {
                 val intent = Intent(this, SalesActivity::class.java)
-                intent.putExtra("userIdString", userId)
                 intent.putExtra("role", userRole)
+                intent.putExtra("userIdString", userId)
                 intent.putExtra("selectedBatchId", selectedBatchId)
                 startActivity(intent)
             }
@@ -425,11 +587,13 @@ class ExpensesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
                 startActivity(intent)
             }
             R.id.nav_logout -> {
-                firebaseRepo.logout()
-                val intent = Intent(this, LoginActivity::class.java)
-                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                startActivity(intent)
-                finish()
+                NavMenuStyler.confirmLogout(this) {
+                    firebaseRepo.logout()
+                    val intent = Intent(this, LoginActivity::class.java)
+                    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                    startActivity(intent)
+                    finish()
+                }
             }
         }
         binding.drawerLayout.closeDrawer(GravityCompat.START)
@@ -481,12 +645,18 @@ class ExpensesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
                 val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
                 binding.tvDate.text = sdf.format(Date(item.date))
                 binding.tvCategory.text = item.category
+                if (!item.subCategory.isNullOrBlank()) {
+                    binding.tvSubCategory.text = item.subCategory
+                    binding.tvSubCategory.visibility = View.VISIBLE
+                } else {
+                    binding.tvSubCategory.visibility = View.GONE
+                }
                 binding.tvDescription.text = item.description ?: ""
                 
                 if (item.category == "Aliment" && item.quantityKg != null && item.quantityKg > 0) {
                     binding.tvDescription.text = "${item.quantityKg.toInt()} kg - ${item.description ?: ""}"
                 }
-                
+
                 binding.tvAmount.text = String.format(Locale.getDefault(), "%.0f %s", item.amount, currency)
             }
         }
