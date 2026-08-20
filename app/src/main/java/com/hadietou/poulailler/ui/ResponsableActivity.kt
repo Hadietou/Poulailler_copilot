@@ -5,6 +5,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.MenuItem
+import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import android.widget.Toast
@@ -29,6 +30,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.*
+import com.hadietou.poulailler.util.NavMenuStyler
+import com.hadietou.poulailler.util.NetworkStatusMonitor
 
 class ResponsableActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelectedListener {
 
@@ -39,11 +42,15 @@ class ResponsableActivity : AppCompatActivity(), NavigationView.OnNavigationItem
     private var userRole: String = "RESPONSABLE"
     private var userId: String? = null
     private var isBlocked = false
+    
+    private var isEggMenuExpanded = false
+    private var isHealthMenuExpanded = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityResponsableBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        NetworkStatusMonitor.observe(this, binding.root)
 
         userRole = intent.getStringExtra("role") ?: "RESPONSABLE"
         userId = intent.getStringExtra("userIdString") ?: FirebaseAuth.getInstance().currentUser?.uid
@@ -87,14 +94,40 @@ class ResponsableActivity : AppCompatActivity(), NavigationView.OnNavigationItem
         toggle.syncState()
 
         binding.navigationView.setNavigationItemSelectedListener(this)
-        
-        val menu = binding.navigationView.menu
-        menu.findItem(R.id.nav_users).isVisible = userRole == "RESPONSABLE"
-        menu.findItem(R.id.nav_expenses).isVisible = userRole == "RESPONSABLE"
-        menu.findItem(R.id.nav_vaccines).isVisible = true
-        menu.findItem(R.id.nav_batches).isVisible = userRole == "RESPONSABLE"
 
+        rebuildDrawerMenu()
         updateNavHeader()
+    }
+
+    /**
+     * NavigationView n'affiche pas toujours de manière fiable un item dont on vient
+     * de changer la visibilité de groupe (menu.setGroupVisible) une fois déjà rendu à l'écran :
+     * on force donc une reconstruction complète du menu avant de réappliquer les états courants.
+     */
+    private fun rebuildDrawerMenu() {
+        val nav = binding.navigationView
+        nav.menu.clear()
+        nav.inflateMenu(R.menu.drawer_menu)
+        val menu = nav.menu
+        menu.findItem(R.id.nav_users)?.isVisible = userRole == "RESPONSABLE"
+        menu.findItem(R.id.nav_expenses)?.isVisible = userRole == "RESPONSABLE"
+        menu.findItem(R.id.nav_batches)?.isVisible = userRole == "RESPONSABLE"
+        menu.setGroupVisible(R.id.group_egg_submenu, isEggMenuExpanded)
+        menu.setGroupVisible(R.id.group_health_submenu, isHealthMenuExpanded)
+        refreshDrawerMenuStyle()
+    }
+
+    private fun refreshDrawerMenuStyle() {
+        NavMenuStyler.style(
+            binding.navigationView,
+            this,
+            defaultIconTintRes = R.color.text_secondary,
+            parents = listOf(
+                R.id.nav_egg_management to isEggMenuExpanded,
+                R.id.nav_health_management to isHealthMenuExpanded
+            ),
+            children = listOf(R.id.nav_collect, R.id.nav_sales, R.id.nav_vaccines, R.id.nav_mortality)
+        )
     }
 
     private fun updateNavHeader() {
@@ -143,6 +176,8 @@ class ResponsableActivity : AppCompatActivity(), NavigationView.OnNavigationItem
                 if (isBlocked) { showBlockingDialog() }
                 else { vm.setAgentActive(uid, active) }
             }
+            binding.tvEmptyAgents.visibility = if (list.isEmpty()) View.VISIBLE else View.GONE
+            binding.rvAgents.visibility = if (list.isEmpty()) View.GONE else View.VISIBLE
         }
 
         vm.loginHistory.observe(this) { list ->
@@ -198,6 +233,21 @@ class ResponsableActivity : AppCompatActivity(), NavigationView.OnNavigationItem
                 finish()
             }
             R.id.nav_users -> {}
+            
+            R.id.nav_egg_management -> {
+                isEggMenuExpanded = !isEggMenuExpanded
+                if (isEggMenuExpanded) isHealthMenuExpanded = false
+                rebuildDrawerMenu()
+                return true
+            }
+
+            R.id.nav_health_management -> {
+                isHealthMenuExpanded = !isHealthMenuExpanded
+                if (isHealthMenuExpanded) isEggMenuExpanded = false
+                rebuildDrawerMenu()
+                return true
+            }
+
             R.id.nav_collect -> {
                 val intent = Intent(this, AgentActivity::class.java)
                 intent.putExtra("userIdString", userId)
@@ -212,6 +262,12 @@ class ResponsableActivity : AppCompatActivity(), NavigationView.OnNavigationItem
             }
             R.id.nav_expenses -> {
                 val intent = Intent(this, ExpensesActivity::class.java)
+                intent.putExtra("role", userRole)
+                intent.putExtra("userIdString", userId)
+                startActivity(intent)
+            }
+            R.id.nav_settings -> {
+                val intent = Intent(this, FarmInfoActivity::class.java)
                 intent.putExtra("role", userRole)
                 intent.putExtra("userIdString", userId)
                 startActivity(intent)
@@ -233,11 +289,13 @@ class ResponsableActivity : AppCompatActivity(), NavigationView.OnNavigationItem
                 startActivity(intent)
             }
             R.id.nav_logout -> {
-                FirebaseAuth.getInstance().signOut()
-                val intent = Intent(this, LoginActivity::class.java)
-                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                startActivity(intent)
-                finish()
+                NavMenuStyler.confirmLogout(this) {
+                    FirebaseAuth.getInstance().signOut()
+                    val intent = Intent(this, LoginActivity::class.java)
+                    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                    startActivity(intent)
+                    finish()
+                }
             }
         }
         binding.drawerLayout.closeDrawer(GravityCompat.START)

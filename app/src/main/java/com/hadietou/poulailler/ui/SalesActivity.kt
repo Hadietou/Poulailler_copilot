@@ -14,6 +14,7 @@ import android.widget.Toast
 import androidx.appcompat.app.ActionBarDrawerToggle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.GravityCompat
+import androidx.core.widget.addTextChangedListener
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -33,6 +34,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.*
+import com.hadietou.poulailler.util.NavMenuStyler
+import com.hadietou.poulailler.util.NetworkStatusMonitor
 
 class SalesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelectedListener {
 
@@ -48,11 +51,16 @@ class SalesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
     private var allSales: List<EggSale> = emptyList()
     private var isShowingAll = false
     private var isBlocked = false
+    private var searchQuery: String = ""
+    
+    private var isEggMenuExpanded = true 
+    private var isHealthMenuExpanded = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivitySalesBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        NetworkStatusMonitor.observe(this, binding.root)
 
         userId = intent.getStringExtra("userIdString") ?: FirebaseAuth.getInstance().currentUser?.uid
         userRole = intent.getStringExtra("role") ?: "AGENT"
@@ -71,6 +79,11 @@ class SalesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
 
         binding.btnShowMore.setOnClickListener {
             isShowingAll = true
+            refreshDisplay()
+        }
+
+        binding.etSearchSales.addTextChangedListener { text ->
+            searchQuery = text?.toString().orEmpty()
             refreshDisplay()
         }
     }
@@ -107,25 +120,67 @@ class SalesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
         toggle.syncState()
 
         binding.navigationView.setNavigationItemSelectedListener(this)
-        
-        val menu = binding.navigationView.menu
-        menu.findItem(R.id.nav_users)?.isVisible = userRole == "RESPONSABLE"
-        menu.findItem(R.id.nav_expenses)?.isVisible = userRole == "RESPONSABLE"
-        menu.findItem(R.id.nav_vaccines)?.isVisible = true
-        menu.findItem(R.id.nav_batches)?.isVisible = userRole == "RESPONSABLE"
 
+        rebuildDrawerMenu()
         updateNavHeader()
     }
 
+    /**
+     * NavigationView n'affiche pas toujours de manière fiable un item dont on vient
+     * de changer la visibilité de groupe (menu.setGroupVisible) une fois déjà rendu à l'écran :
+     * on force donc une reconstruction complète du menu avant de réappliquer les états courants.
+     */
+    private fun rebuildDrawerMenu() {
+        val nav = binding.navigationView
+        nav.menu.clear()
+        nav.inflateMenu(R.menu.drawer_menu)
+        val menu = nav.menu
+        menu.findItem(R.id.nav_users)?.isVisible = userRole == "RESPONSABLE"
+        menu.findItem(R.id.nav_expenses)?.isVisible = userRole == "RESPONSABLE"
+        menu.findItem(R.id.nav_batches)?.isVisible = userRole == "RESPONSABLE"
+        menu.setGroupVisible(R.id.group_egg_submenu, isEggMenuExpanded)
+        menu.setGroupVisible(R.id.group_health_submenu, isHealthMenuExpanded)
+        refreshDrawerMenuStyle()
+    }
+
+    private fun refreshDrawerMenuStyle() {
+        NavMenuStyler.style(
+            binding.navigationView,
+            this,
+            defaultIconTintRes = R.color.text_secondary,
+            parents = listOf(
+                R.id.nav_egg_management to isEggMenuExpanded,
+                R.id.nav_health_management to isHealthMenuExpanded
+            ),
+            children = listOf(R.id.nav_collect, R.id.nav_sales, R.id.nav_vaccines, R.id.nav_mortality)
+        )
+    }
+
     private fun setupRecyclerView() {
-        adapter = SaleAdapter(currency) { sale ->
+        adapter = SaleAdapter(currency, { sale ->
             if (isBlocked) { showBlockingDialog(); return@SaleAdapter }
             if (userRole == "RESPONSABLE") {
                 showEditSaleDialog(sale)
             }
-        }
+        }, { sale ->
+            if (isBlocked) { showBlockingDialog(); return@SaleAdapter }
+            togglePaidStatus(sale)
+        })
         binding.rvSalesHistory.layoutManager = LinearLayoutManager(this)
         binding.rvSalesHistory.adapter = adapter
+    }
+
+    private fun togglePaidStatus(sale: EggSale) {
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                val updatedSale = sale.copy(isPaid = !sale.isPaid)
+                firebaseRepo.updateSale(updatedSale)
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(this@SalesActivity, "Erreur statut : ${e.message}", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
     }
 
     private fun observeSales() {
@@ -142,10 +197,22 @@ class SalesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
     }
 
     private fun refreshDisplay() {
-        val toDisplay = if (isShowingAll) allSales else allSales.take(10)
+        val filtered = if (searchQuery.isBlank()) {
+            allSales
+        } else {
+            allSales.filter { it.buyer?.contains(searchQuery, ignoreCase = true) == true }
+        }
+        val toDisplay = if (isShowingAll) filtered else filtered.take(10)
         adapter.updateCurrency(currency)
         adapter.submitList(toDisplay)
-        binding.btnShowMore.visibility = if (!isShowingAll && allSales.size > 10) View.VISIBLE else View.GONE
+        binding.btnShowMore.visibility = if (!isShowingAll && filtered.size > 10) View.VISIBLE else View.GONE
+        binding.tvEmptyState.text = if (allSales.isEmpty()) {
+            "Aucune vente enregistrée pour le moment."
+        } else {
+            "Aucune vente ne correspond à la recherche."
+        }
+        binding.tvEmptyState.visibility = if (filtered.isEmpty()) View.VISIBLE else View.GONE
+        binding.rvSalesHistory.visibility = if (filtered.isEmpty()) View.GONE else View.VISIBLE
     }
 
     private fun updateNavHeader() {
@@ -222,6 +289,7 @@ class SalesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
                 totalPrice = totalPrice,
                 buyer = if (buyer.isBlank()) null else buyer,
                 phoneNumber = if (phone.isBlank()) null else phone,
+                isPaid = false,
                 batchId = selectedBatchId
             )
 
@@ -373,6 +441,21 @@ class SalesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
                 intent.putExtra("userIdString", userId)
                 startActivity(intent)
             }
+            
+            R.id.nav_egg_management -> {
+                isEggMenuExpanded = !isEggMenuExpanded
+                if (isEggMenuExpanded) isHealthMenuExpanded = false
+                rebuildDrawerMenu()
+                return true
+            }
+
+            R.id.nav_health_management -> {
+                isHealthMenuExpanded = !isHealthMenuExpanded
+                if (isHealthMenuExpanded) isEggMenuExpanded = false
+                rebuildDrawerMenu()
+                return true
+            }
+
             R.id.nav_collect -> {
                 val intent = Intent(this, AgentActivity::class.java)
                 intent.putExtra("userIdString", userId)
@@ -394,6 +477,12 @@ class SalesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
                 intent.putExtra("selectedBatchId", selectedBatchId)
                 startActivity(intent)
             }
+            R.id.nav_settings -> {
+                val intent = Intent(this, FarmInfoActivity::class.java)
+                intent.putExtra("role", userRole)
+                intent.putExtra("userIdString", userId)
+                startActivity(intent)
+            }
             R.id.nav_sales -> {}
             R.id.nav_mortality -> {
                 val intent = Intent(this, MortalityActivity::class.java)
@@ -407,11 +496,13 @@ class SalesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
                 startActivity(intent)
             }
             R.id.nav_logout -> {
-                FirebaseAuth.getInstance().signOut()
-                val intent = Intent(this, LoginActivity::class.java)
-                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                startActivity(intent)
-                finish()
+                NavMenuStyler.confirmLogout(this) {
+                    FirebaseAuth.getInstance().signOut()
+                    val intent = Intent(this, LoginActivity::class.java)
+                    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                    startActivity(intent)
+                    finish()
+                }
             }
         }
         binding.drawerLayout.closeDrawer(GravityCompat.START)
@@ -432,7 +523,11 @@ class SalesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
         }
     }
 
-    class SaleAdapter(private var currency: String, private val onItemClick: (EggSale) -> Unit) : RecyclerView.Adapter<SaleAdapter.ViewHolder>() {
+    class SaleAdapter(
+        private var currency: String,
+        private val onItemClick: (EggSale) -> Unit,
+        private val onStatusClick: (EggSale) -> Unit
+    ) : RecyclerView.Adapter<SaleAdapter.ViewHolder>() {
         private var items = listOf<EggSale>()
 
         fun submitList(list: List<EggSale>) {
@@ -452,14 +547,14 @@ class SalesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
 
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             val item = items[position]
-            holder.bind(item, currency)
+            holder.bind(item, currency, onStatusClick)
             holder.itemView.setOnClickListener { onItemClick(item) }
         }
 
         override fun getItemCount() = items.size
 
         class ViewHolder(private val binding: ItemSaleBinding) : RecyclerView.ViewHolder(binding.root) {
-            fun bind(item: EggSale, currency: String) {
+            fun bind(item: EggSale, currency: String, onStatusClick: (EggSale) -> Unit) {
                 val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
                 binding.tvDate.text = sdf.format(Date(item.date))
                 binding.tvClient.text = item.buyer ?: "Client anonyme"
@@ -469,6 +564,18 @@ class SalesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
                 
                 binding.tvDetails.text = String.format(Locale.getDefault(), "%d tablettes x %.0f", trays, trayPrice)
                 binding.tvTotal.text = String.format(Locale.getDefault(), "%.0f %s", item.totalPrice, currency)
+
+                if (item.isPaid) {
+                    binding.ivPaidStatus.setImageResource(android.R.drawable.checkbox_on_background)
+                    binding.ivPaidStatus.imageTintList = android.content.res.ColorStateList.valueOf(binding.root.context.getColor(R.color.emerald_soft))
+                    binding.tvTotal.setTextColor(binding.root.context.getColor(R.color.emerald_soft))
+                } else {
+                    binding.ivPaidStatus.setImageResource(android.R.drawable.checkbox_off_background)
+                    binding.ivPaidStatus.imageTintList = android.content.res.ColorStateList.valueOf(binding.root.context.getColor(R.color.error))
+                    binding.tvTotal.setTextColor(binding.root.context.getColor(R.color.error))
+                }
+
+                binding.ivPaidStatus.setOnClickListener { onStatusClick(item) }
             }
         }
     }

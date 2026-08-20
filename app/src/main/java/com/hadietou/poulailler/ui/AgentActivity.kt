@@ -33,6 +33,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.*
+import com.hadietou.poulailler.util.NavMenuStyler
+import com.hadietou.poulailler.util.NetworkStatusMonitor
 
 class AgentActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelectedListener {
 
@@ -49,11 +51,15 @@ class AgentActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
     private var allEntries: List<EggEntry> = emptyList()
     private var isShowingAll = false
     private var isBlocked = false
+    
+    private var isEggMenuExpanded = true 
+    private var isHealthMenuExpanded = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityAgentBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        NetworkStatusMonitor.observe(this, binding.root)
 
         userId = intent.getStringExtra("userIdString") ?: FirebaseAuth.getInstance().currentUser?.uid
         userRole = intent.getStringExtra("role") ?: "AGENT"
@@ -84,14 +90,40 @@ class AgentActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
         toggle.syncState()
 
         binding.navigationView.setNavigationItemSelectedListener(this)
-        
-        val menu = binding.navigationView.menu
+
+        rebuildDrawerMenu()
+        updateNavHeader()
+    }
+
+    /**
+     * NavigationView n'affiche pas toujours de manière fiable un item dont on vient
+     * de changer la visibilité de groupe (menu.setGroupVisible) une fois déjà rendu à l'écran :
+     * on force donc une reconstruction complète du menu avant de réappliquer les états courants.
+     */
+    private fun rebuildDrawerMenu() {
+        val nav = binding.navigationView
+        nav.menu.clear()
+        nav.inflateMenu(R.menu.drawer_menu)
+        val menu = nav.menu
         menu.findItem(R.id.nav_users)?.isVisible = userRole == "RESPONSABLE"
         menu.findItem(R.id.nav_expenses)?.isVisible = userRole == "RESPONSABLE"
-        menu.findItem(R.id.nav_vaccines)?.isVisible = true
         menu.findItem(R.id.nav_batches)?.isVisible = userRole == "RESPONSABLE"
+        menu.setGroupVisible(R.id.group_egg_submenu, isEggMenuExpanded)
+        menu.setGroupVisible(R.id.group_health_submenu, isHealthMenuExpanded)
+        refreshDrawerMenuStyle()
+    }
 
-        updateNavHeader()
+    private fun refreshDrawerMenuStyle() {
+        NavMenuStyler.style(
+            binding.navigationView,
+            this,
+            defaultIconTintRes = R.color.text_secondary,
+            parents = listOf(
+                R.id.nav_egg_management to isEggMenuExpanded,
+                R.id.nav_health_management to isHealthMenuExpanded
+            ),
+            children = listOf(R.id.nav_collect, R.id.nav_sales, R.id.nav_vaccines, R.id.nav_mortality)
+        )
     }
 
     private fun setupRecyclerView() {
@@ -297,7 +329,6 @@ class AgentActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
     }
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
-        // Navigation is allowed even if blocked for visualization
         when (item.itemId) {
             R.id.nav_dashboard -> {
                 val intent = Intent(this, DashboardActivity::class.java)
@@ -318,6 +349,21 @@ class AgentActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
                 intent.putExtra("userIdString", userId)
                 startActivity(intent)
             }
+            
+            R.id.nav_egg_management -> {
+                isEggMenuExpanded = !isEggMenuExpanded
+                if (isEggMenuExpanded) isHealthMenuExpanded = false
+                rebuildDrawerMenu()
+                return true
+            }
+
+            R.id.nav_health_management -> {
+                isHealthMenuExpanded = !isHealthMenuExpanded
+                if (isHealthMenuExpanded) isEggMenuExpanded = false
+                rebuildDrawerMenu()
+                return true
+            }
+
             R.id.nav_collect -> {}
             R.id.nav_vaccines -> {
                 val intent = Intent(this, VaccineActivity::class.java)
@@ -327,6 +373,12 @@ class AgentActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
             }
             R.id.nav_expenses -> {
                 val intent = Intent(this, ExpensesActivity::class.java)
+                intent.putExtra("role", userRole)
+                intent.putExtra("userIdString", userId)
+                startActivity(intent)
+            }
+            R.id.nav_settings -> {
+                val intent = Intent(this, FarmInfoActivity::class.java)
                 intent.putExtra("role", userRole)
                 intent.putExtra("userIdString", userId)
                 startActivity(intent)
@@ -349,11 +401,13 @@ class AgentActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
                 startActivity(intent)
             }
             R.id.nav_logout -> {
-                FirebaseAuth.getInstance().signOut()
-                val intent = Intent(this, LoginActivity::class.java)
-                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                startActivity(intent)
-                finish()
+                NavMenuStyler.confirmLogout(this) {
+                    FirebaseAuth.getInstance().signOut()
+                    val intent = Intent(this, LoginActivity::class.java)
+                    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                    startActivity(intent)
+                    finish()
+                }
             }
         }
         binding.drawerLayout.closeDrawer(GravityCompat.START)

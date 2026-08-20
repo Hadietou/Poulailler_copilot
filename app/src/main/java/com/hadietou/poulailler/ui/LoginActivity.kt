@@ -25,6 +25,7 @@ class LoginActivity : AppCompatActivity() {
     private var selectedRole: String? = null // "RESPONSABLE" or "AGENT"
     
     private val currencies = arrayOf("MRU", "CFA")
+    private val countries = arrayOf("Mauritanie", "Sénégal", "Mali", "Guinée", "Côte d'Ivoire", "Bénin", "Togo", "Burkina Faso", "Niger")
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -32,7 +33,7 @@ class LoginActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         setupUI()
-        setupCurrencyDropdown()
+        setupDropdowns()
         
         handleIntentData(intent)
         
@@ -98,10 +99,26 @@ class LoginActivity : AppCompatActivity() {
         }
     }
 
-    private fun setupCurrencyDropdown() {
-        val adapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, currencies)
-        binding.actvCurrencySignup.setAdapter(adapter)
+    private fun setupDropdowns() {
+        // Devise
+        val currencyAdapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, currencies)
+        binding.actvCurrencySignup.setAdapter(currencyAdapter)
         binding.actvCurrencySignup.setText(currencies[0], false)
+
+        // Pays
+        val countryAdapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, countries)
+        binding.actvCountry.setAdapter(countryAdapter)
+        binding.actvCountry.setText(countries[0], false)
+
+        // Auto-selection Devise basée sur le pays
+        binding.actvCountry.setOnItemClickListener { _, _, position, _ ->
+            val selectedCountry = countries[position]
+            if (selectedCountry == "Mauritanie") {
+                binding.actvCurrencySignup.setText("MRU", false)
+            } else {
+                binding.actvCurrencySignup.setText("CFA", false)
+            }
+        }
     }
 
     private fun updateUIState() {
@@ -180,14 +197,16 @@ class LoginActivity : AppCompatActivity() {
 
         if (selectedRole == "RESPONSABLE") {
             val farmName = binding.etFarmName.text.toString().trim()
+            val country = binding.actvCountry.text.toString()
+            val city = binding.etCity.text.toString().trim()
             val currency = binding.actvCurrencySignup.text.toString()
 
-            if (farmName.isEmpty()) {
+            if (farmName.isEmpty() || city.isEmpty()) {
                 Toast.makeText(this, "Informations de ferme manquantes", Toast.LENGTH_SHORT).show()
                 return
             }
 
-            vm.register(email, password, username, "RESPONSABLE", farmName, "", currency) { success, msg ->
+            vm.register(email, password, username, "RESPONSABLE", farmName, "", currency, country, city) { success, msg ->
                 if (success) {
                     Toast.makeText(this, msg, Toast.LENGTH_LONG).show()
                     goToDashboard("RESPONSABLE", FirebaseAuth.getInstance().currentUser?.uid ?: "")

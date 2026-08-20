@@ -23,6 +23,7 @@ import com.hadietou.poulailler.BuildConfig
 import com.hadietou.poulailler.databinding.ActivityDashboardBinding
 import com.hadietou.poulailler.repository.FirebaseRepository
 import com.hadietou.poulailler.data.CategoryExpense
+import com.hadietou.poulailler.data.FarmInfo
 import com.hadietou.poulailler.util.SunUtils
 import com.hadietou.poulailler.util.ReportUtils
 import com.google.android.material.navigation.NavigationView
@@ -40,6 +41,9 @@ import com.github.mikephil.charting.data.BarData
 import com.github.mikephil.charting.data.BarDataSet
 import com.github.mikephil.charting.formatter.ValueFormatter
 import java.text.SimpleDateFormat
+import android.content.res.ColorStateList
+import com.hadietou.poulailler.util.NavMenuStyler
+import com.hadietou.poulailler.util.NetworkStatusMonitor
 
 class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelectedListener {
 
@@ -50,13 +54,17 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
     private val firebaseRepo = FirebaseRepository()
     private var isBlocked = false
     private lateinit var reminderAdapter: HealthReminderAdapter
+    
+    private var isEggMenuExpanded = false
+    private var isHealthMenuExpanded = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         try {
             binding = ActivityDashboardBinding.inflate(layoutInflater)
             setContentView(binding.root)
-            
+            NetworkStatusMonitor.observe(this, binding.root)
+
             userId = FirebaseAuth.getInstance().currentUser?.uid
             if (userId == null) {
                 startActivity(Intent(this, LoginActivity::class.java))
@@ -100,10 +108,17 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
         }
         binding.rvHealthReminders.layoutManager = LinearLayoutManager(this)
         binding.rvHealthReminders.adapter = reminderAdapter
+
+        binding.btnToggleReminders.setOnClickListener {
+            val isVisible = binding.rvHealthReminders.visibility == View.VISIBLE
+            binding.rvHealthReminders.visibility = if (isVisible) View.GONE else View.VISIBLE
+            binding.btnToggleReminders.text = if (isVisible) getString(R.string.details_button) else getString(R.string.collapse_button)
+        }
     }
 
     private fun updateLightingIndicator() {
-        val extinctionTime = SunUtils.getExtinctionTime()
+        val lightingHours = viewModel.farmInfo.value?.lightingHoursAfterSunrise ?: FarmInfo.DEFAULT_LIGHTING_HOURS
+        val extinctionTime = SunUtils.getExtinctionTime(lightingHours)
         binding.tvLightingTime.text = getString(R.string.lighting_extinguish_at, extinctionTime)
     }
 
@@ -114,16 +129,33 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
         toggle.syncState()
         binding.navigationView.setNavigationItemSelectedListener(this)
 
-        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
-            override fun handleOnBackPressed() {
-                if (binding.drawerLayout.isDrawerOpen(GravityCompat.START)) {
-                    binding.drawerLayout.closeDrawer(GravityCompat.START)
-                } else {
-                    isEnabled = false
-                    onBackPressedDispatcher.onBackPressed()
-                }
-            }
-        })
+        refreshDrawerMenuStyle()
+    }
+
+    /**
+     * NavigationView n'affiche pas toujours de manière fiable un item dont on vient
+     * de changer la visibilité de groupe (menu.setGroupVisible) une fois déjà rendu à l'écran :
+     * on force donc une reconstruction complète du menu avant de réappliquer les états courants.
+     */
+    private fun rebuildDrawerMenu() {
+        binding.navigationView.menu.clear()
+        binding.navigationView.inflateMenu(R.menu.drawer_menu)
+        updateUIBasedOnRole()
+        updateUIBasedOnBatchType()
+        refreshDrawerMenuStyle()
+    }
+
+    private fun refreshDrawerMenuStyle() {
+        NavMenuStyler.style(
+            binding.navigationView,
+            this,
+            defaultIconTintRes = R.color.text_secondary,
+            parents = listOf(
+                R.id.nav_egg_management to isEggMenuExpanded,
+                R.id.nav_health_management to isHealthMenuExpanded
+            ),
+            children = listOf(R.id.nav_collect, R.id.nav_sales, R.id.nav_vaccines, R.id.nav_mortality)
+        )
     }
 
     private fun setupClickListeners() {
@@ -159,6 +191,7 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
         
         binding.cardStockCircle.setOnClickListener { navigateTo(SalesActivity::class.java) }
         binding.cardFeedStockCircle.setOnClickListener { navigateTo(ExpensesActivity::class.java) }
+        binding.cardEggTraysStock.setOnClickListener { navigateTo(ExpensesActivity::class.java) }
         
         binding.layoutMonthlyCollected.setOnClickListener { navigateToStats("COLLECTION") }
         binding.layoutMonthlySold.setOnClickListener { navigateToStats("SALES") }
@@ -213,7 +246,6 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
         menu.findItem(R.id.nav_users)?.isVisible = isResp
         menu.findItem(R.id.nav_expenses)?.isVisible = isResp
         menu.findItem(R.id.nav_batches)?.isVisible = isResp
-        menu.findItem(R.id.nav_vaccines)?.isVisible = true
         
         binding.titleFinance.visibility = if (isResp) View.VISIBLE else View.GONE
         binding.cardNetProfit.visibility = if (isResp) View.VISIBLE else View.GONE
@@ -227,16 +259,24 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
     }
 
     private fun updateUIBasedOnBatchType() {
-        val batch = viewModel.selectedBatch.value ?: return
-        val isChair = batch.typeLot == "CHAIR"
+        val batch = viewModel.selectedBatch.value
+        val isChair = batch?.typeLot == "CHAIR"
         
         val eggVisibility = if (isChair) View.GONE else View.VISIBLE
         binding.cardLayingRate.visibility = eggVisibility
         binding.cardLightingAlert.visibility = eggVisibility
         binding.cardStockCircle.visibility = eggVisibility
+        binding.cardEggTraysStock.visibility = eggVisibility
         
         binding.cardFeedStockCircle.visibility = View.VISIBLE
-        binding.navigationView.menu.findItem(R.id.nav_collect)?.isVisible = !isChair
+        
+        val menu = binding.navigationView.menu
+        
+        menu.findItem(R.id.nav_egg_management)?.isVisible = !isChair
+        menu.setGroupVisible(R.id.group_egg_submenu, !isChair && isEggMenuExpanded)
+        
+        menu.findItem(R.id.nav_health_management)?.isVisible = true
+        menu.setGroupVisible(R.id.group_health_submenu, isHealthMenuExpanded)
     }
 
     private fun observeViewModel() {
@@ -251,6 +291,7 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
             if (info != null) {
                 binding.tvWelcome.text = info.farmName.uppercase()
             }
+            updateLightingIndicator()
         }
 
         viewModel.allBatches.observe(this) { batches ->
@@ -338,6 +379,12 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
 
         viewModel.survivalRate.observe(this) { rate ->
             binding.tvSurvivalRate.text = String.format(Locale.getDefault(), "%.1f%%", rate)
+            val color = when {
+                rate < 90.0 -> R.color.error
+                rate < 95.0 -> R.color.earthy_orange
+                else -> R.color.emerald_soft
+            }
+            binding.tvSurvivalRate.setTextColor(getColor(color))
         }
         viewModel.monthlyMortalityCount.observe(this) { count ->
             binding.tvMonthlyMortality.text = count.toString()
@@ -362,10 +409,14 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
         viewModel.feedAutonomyDays.observe(this) { days ->
             binding.tvFeedAutonomyDashboard.text = getString(R.string.feed_autonomy, days)
             binding.tvFeedStockCircleValue.text = "Stock : ${days}j"
-            
-            if (days < 5) {
+
+            val info = viewModel.farmInfo.value
+            val criticalDays = info?.feedStockCriticalDays ?: FarmInfo.DEFAULT_FEED_STOCK_CRITICAL_DAYS
+            val warningDays = info?.feedStockWarningDays ?: FarmInfo.DEFAULT_FEED_STOCK_WARNING_DAYS
+
+            if (days < criticalDays) {
                 binding.cardFeedStockCircle.setCardBackgroundColor(getColor(R.color.error))
-            } else if (days < 10) {
+            } else if (days < warningDays) {
                 binding.cardFeedStockCircle.setCardBackgroundColor(getColor(R.color.earthy_orange))
             } else {
                 binding.cardFeedStockCircle.setCardBackgroundColor(getColor(R.color.emerald_soft))
@@ -381,9 +432,37 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
             binding.tvStockCircleValue.text = "${tablettes} Tab dispo"
         }
 
+        viewModel.totalSales.observe(this) {
+            val curr = viewModel.farmInfo.value?.currency ?: "MRU"
+            binding.tvTotalRevenueValue.text = getString(R.string.currency_format, NumberFormat.getInstance().format(it), curr)
+        }
+
+        viewModel.totalExpenses.observe(this) {
+            val curr = viewModel.farmInfo.value?.currency ?: "MRU"
+            binding.tvTotalExpensesValue.text = getString(R.string.currency_format, NumberFormat.getInstance().format(it), curr)
+        }
+
         viewModel.netProfit.observe(this) {
             val curr = viewModel.farmInfo.value?.currency ?: "MRU"
             binding.tvNetProfit.text = getString(R.string.currency_format, NumberFormat.getInstance().format(it), curr)
+            if (it < 0) {
+                binding.tvNetProfit.setTextColor(getColor(R.color.error))
+            } else {
+                binding.tvNetProfit.setTextColor(getColor(R.color.text_primary))
+            }
+        }
+
+        viewModel.eggTraysStock.observe(this) { stock ->
+            if (stock == null) return@observe // On ignore tant que ce n'est pas chargé
+
+            binding.tvEggTraysStockValue.text = "Alvéoles : $stock"
+            val criticalThreshold = viewModel.farmInfo.value?.eggTraysCriticalThreshold ?: FarmInfo.DEFAULT_EGG_TRAYS_CRITICAL
+            if (stock < criticalThreshold) {
+                binding.cardEggTraysStock.setCardBackgroundColor(getColor(R.color.error))
+                showLowEggTraysAlert(stock)
+            } else {
+                binding.cardEggTraysStock.setCardBackgroundColor(getColor(R.color.accent_amber))
+            }
         }
         
         viewModel.weeklyProduction.observe(this) { list ->
@@ -399,9 +478,27 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
                 binding.layoutHealthReminders.visibility = View.GONE
             } else {
                 binding.layoutHealthReminders.visibility = View.VISIBLE
+                val summary = if (list.size > 1) {
+                    getString(R.string.health_reminders_summary_plural, list.size)
+                } else {
+                    getString(R.string.health_reminders_summary_singular)
+                }
+                binding.tvHealthRemindersSummary.text = summary
                 reminderAdapter.submitList(list)
             }
         }
+    }
+
+    private var hasShownLowTraysAlert = false
+    private fun showLowEggTraysAlert(stock: Int) {
+        if (hasShownLowTraysAlert) return
+        hasShownLowTraysAlert = true
+        AlertDialog.Builder(this)
+            .setTitle("Stock d'alvéoles critique")
+            .setMessage("Il ne vous reste que $stock alvéoles à œufs. Veuillez en commander pour ne pas interrompre la mise en tablettes.")
+            .setPositiveButton("Commander") { _, _ -> navigateTo(ExpensesActivity::class.java) }
+            .setNegativeButton("Plus tard", null)
+            .show()
     }
 
     private fun showBlockingDialog() {
@@ -519,6 +616,7 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
         }
 
         val sortedExpenses = expenses.sortedByDescending { it.totalAmount }
+        val totalExp = sortedExpenses.sumOf { it.totalAmount }
 
         val entries = sortedExpenses.mapIndexed { index, catExp ->
             BarEntry(index.toFloat(), catExp.totalAmount.toFloat())
@@ -540,7 +638,11 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
         dataSet.valueTextSize = 10f
         dataSet.valueTextColor = textColor
         dataSet.valueFormatter = object : ValueFormatter() {
-            override fun getFormattedValue(value: Float): String = value.toInt().toString()
+            override fun getFormattedValue(value: Float): String {
+                val amountK = (value / 1000f).toInt()
+                val percentage = if (totalExp > 0) (value.toDouble() / totalExp * 100).toInt() else 0
+                return String.format(Locale.getDefault(), "%d%% | %dk", percentage, amountK)
+            }
         }
 
         binding.expensesBarChart.apply {
@@ -594,18 +696,37 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
             R.id.nav_batches -> navigateTo(BatchActivity::class.java)
             R.id.nav_users -> navigateTo(ResponsableActivity::class.java)
             R.id.nav_expenses -> navigateTo(ExpensesActivity::class.java)
-            R.id.nav_vaccines -> navigateTo(VaccineActivity::class.java)
+            R.id.nav_settings -> navigateTo(FarmInfoActivity::class.java)
+
+            R.id.nav_egg_management -> {
+                isEggMenuExpanded = !isEggMenuExpanded
+                if (isEggMenuExpanded) isHealthMenuExpanded = false
+                rebuildDrawerMenu()
+                return true
+            }
+
+            R.id.nav_health_management -> {
+                isHealthMenuExpanded = !isHealthMenuExpanded
+                if (isHealthMenuExpanded) isEggMenuExpanded = false
+                rebuildDrawerMenu()
+                return true
+            }
+
             R.id.nav_collect -> navigateTo(AgentActivity::class.java)
             R.id.nav_sales -> navigateTo(SalesActivity::class.java)
+            R.id.nav_vaccines -> navigateTo(VaccineActivity::class.java)
             R.id.nav_mortality -> navigateTo(MortalityActivity::class.java)
+
             R.id.nav_delete_account -> {
                 val intent = Intent(Intent.ACTION_VIEW, Uri.parse(getString(R.string.delete_account_url)))
                 startActivity(intent)
             }
             R.id.nav_logout -> {
-                FirebaseAuth.getInstance().signOut()
-                startActivity(Intent(this, LoginActivity::class.java))
-                finish()
+                NavMenuStyler.confirmLogout(this) {
+                    FirebaseAuth.getInstance().signOut()
+                    startActivity(Intent(this, LoginActivity::class.java))
+                    finish()
+                }
             }
         }
         binding.drawerLayout.closeDrawer(GravityCompat.START)

@@ -13,6 +13,7 @@ data class EggSale(
     val totalPrice: Double,
     val buyer: String? = null,
     val phoneNumber: String? = null,
+    val isPaid: Boolean = false,
     val firestoreId: String? = null,
     val farmId: String? = null,
     val batchId: String? = null

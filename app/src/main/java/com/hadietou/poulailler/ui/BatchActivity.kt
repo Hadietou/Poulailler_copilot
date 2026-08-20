@@ -108,13 +108,24 @@ class BatchActivity : AppCompatActivity() {
             val countStr = dialogBinding.etHensCount.text.toString().trim()
             val breed = dialogBinding.actvHenBreed.text.toString().trim()
             val typeLot = dialogBinding.actvBatchType.text.toString().trim()
+            val providerName = dialogBinding.etProviderName.text.toString().trim()
+            val providerPhone = dialogBinding.etProviderPhone.text.toString().trim()
 
             if (name.isEmpty() || countStr.isEmpty() || breed.isEmpty() || typeLot.isEmpty()) {
-                Toast.makeText(this, "Veuillez remplir tous les champs", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Veuillez remplir tous les champs obligatoires", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
-            viewModel.addBatch(name, countStr.toInt(), breed, arrivalDate, birthDate, typeLot)
+            viewModel.addBatch(
+                name,
+                countStr.toInt(),
+                breed,
+                arrivalDate,
+                birthDate,
+                typeLot,
+                providerName.ifEmpty { null },
+                providerPhone.ifEmpty { null }
+            )
             dialog.dismiss()
         }
 

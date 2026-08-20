@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.drawerlayout.widget.DrawerLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/drawerLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -34,6 +35,75 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
                 android:padding="16dp">
+
+                <!-- Section Ration Alimentaire -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardFeedRation"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    app:cardBackgroundColor="#111111"
+                    app:cardCornerRadius="16dp"
+                    app:strokeColor="#FFD700"
+                    app:strokeWidth="1dp"
+                    app:cardElevation="0dp">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="16dp">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="RATION ALIMENTAIRE"
+                            android:textColor="#FFD700"
+                            android:textSize="16sp"
+                            android:textStyle="bold"
+                            android:layout_marginBottom="8dp"/>
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Définissez la ration journalière par sujet (en grammes) pour ajuster le calcul du stock."
+                            android:textColor="#B0B0B0"
+                            android:textSize="12sp"
+                            android:layout_marginBottom="12dp"/>
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical">
+
+                            <com.google.android.material.textfield.TextInputLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:hint="Ration (g/sujet)"
+                                app:hintTextColor="#B0B0B0"
+                                app:boxStrokeColor="#FFD700"
+                                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+                                <com.google.android.material.textfield.TextInputEditText
+                                    android:id="@+id/etFeedRation"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:inputType="numberDecimal"
+                                    android:textColor="@color/white"
+                                    android:textSize="16sp"/>
+                            </com.google.android.material.textfield.TextInputLayout>
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnSaveRation"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="12dp"
+                                android:text="VALIDER"
+                                app:cornerRadius="8dp"
+                                android:backgroundTint="#FFD700"
+                                android:textColor="@color/black" />
+                        </LinearLayout>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
 
                 <!-- Mode Affichage Amélioré -->
                 <LinearLayout
@@ -134,6 +204,42 @@
                                 <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Monnaie utilisée" android:textColor="#B0B0B0" android:textSize="12sp"/>
                                 <TextView android:id="@+id/tvDisplayCurrency" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="@color/white" android:textSize="16sp" android:textStyle="bold" android:text="MRU"/>
                             </LinearLayout>
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <!-- Seuils d'alerte (résumé) -->
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        app:cardBackgroundColor="#1A1A1A"
+                        app:cardCornerRadius="12dp"
+                        app:strokeColor="#1E90FF"
+                        app:strokeWidth="1dp">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:padding="16dp">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Seuils d'alerte"
+                                android:textColor="#1E90FF"
+                                android:textSize="18sp"
+                                android:textStyle="bold"
+                                android:layout_marginBottom="12dp"/>
+
+                            <TextView
+                                android:id="@+id/tvDisplayThresholds"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:textColor="@color/white"
+                                android:textSize="14sp"
+                                android:lineSpacingExtra="4dp"
+                                tools:text="Stock alvéoles critique : 50\nStock aliment : critique &lt; 5j, alerte &lt; 10j\nCanicule : 35°C\nPhotopériode : 15h après le lever du soleil\nRappels vaccins : tous les 2 mois\nDéparasitage interne : tous les 3 mois\nDéparasitage externe : tous les 2 mois" />
                         </LinearLayout>
                     </com.google.android.material.card.MaterialCardView>
 
@@ -271,6 +377,108 @@
                             android:inputType="none"
                             android:textColor="@color/white" />
                     </com.google.android.material.textfield.TextInputLayout>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Seuils d'alerte"
+                        android:textColor="@color/white"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="12dp"/>
+
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
+                        <com.google.android.material.textfield.TextInputLayout
+                            android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"
+                            android:hint="Alvéoles critique (nb)"
+                            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                            android:layout_marginEnd="6dp" android:layout_marginBottom="12dp"
+                            app:hintTextColor="@color/white" app:boxStrokeColor="@color/white">
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/etEggTraysCritical" android:layout_width="match_parent" android:layout_height="wrap_content"
+                                android:inputType="number" android:textColor="@color/white" />
+                        </com.google.android.material.textfield.TextInputLayout>
+                        <com.google.android.material.textfield.TextInputLayout
+                            android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"
+                            android:hint="Canicule (°C)"
+                            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                            android:layout_marginStart="6dp" android:layout_marginBottom="12dp"
+                            app:hintTextColor="@color/white" app:boxStrokeColor="@color/white">
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/etHeatAlertTemp" android:layout_width="match_parent" android:layout_height="wrap_content"
+                                android:inputType="number" android:textColor="@color/white" />
+                        </com.google.android.material.textfield.TextInputLayout>
+                    </LinearLayout>
+
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
+                        <com.google.android.material.textfield.TextInputLayout
+                            android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"
+                            android:hint="Aliment critique (jours)"
+                            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                            android:layout_marginEnd="6dp" android:layout_marginBottom="12dp"
+                            app:hintTextColor="@color/white" app:boxStrokeColor="@color/white">
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/etFeedStockCriticalDays" android:layout_width="match_parent" android:layout_height="wrap_content"
+                                android:inputType="number" android:textColor="@color/white" />
+                        </com.google.android.material.textfield.TextInputLayout>
+                        <com.google.android.material.textfield.TextInputLayout
+                            android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"
+                            android:hint="Aliment alerte (jours)"
+                            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                            android:layout_marginStart="6dp" android:layout_marginBottom="12dp"
+                            app:hintTextColor="@color/white" app:boxStrokeColor="@color/white">
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/etFeedStockWarningDays" android:layout_width="match_parent" android:layout_height="wrap_content"
+                                android:inputType="number" android:textColor="@color/white" />
+                        </com.google.android.material.textfield.TextInputLayout>
+                    </LinearLayout>
+
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
+                        <com.google.android.material.textfield.TextInputLayout
+                            android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"
+                            android:hint="Photopériode (h)"
+                            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                            android:layout_marginEnd="6dp" android:layout_marginBottom="12dp"
+                            app:hintTextColor="@color/white" app:boxStrokeColor="@color/white">
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/etLightingHours" android:layout_width="match_parent" android:layout_height="wrap_content"
+                                android:inputType="number" android:textColor="@color/white" />
+                        </com.google.android.material.textfield.TextInputLayout>
+                        <com.google.android.material.textfield.TextInputLayout
+                            android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"
+                            android:hint="Vaccins (mois)"
+                            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                            android:layout_marginStart="6dp" android:layout_marginBottom="12dp"
+                            app:hintTextColor="@color/white" app:boxStrokeColor="@color/white">
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/etVaccineInterval" android:layout_width="match_parent" android:layout_height="wrap_content"
+                                android:inputType="number" android:textColor="@color/white" />
+                        </com.google.android.material.textfield.TextInputLayout>
+                    </LinearLayout>
+
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
+                        <com.google.android.material.textfield.TextInputLayout
+                            android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"
+                            android:hint="Déparasitage interne (mois)"
+                            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                            android:layout_marginEnd="6dp" android:layout_marginBottom="24dp"
+                            app:hintTextColor="@color/white" app:boxStrokeColor="@color/white">
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/etDewormingInternalInterval" android:layout_width="match_parent" android:layout_height="wrap_content"
+                                android:inputType="number" android:textColor="@color/white" />
+                        </com.google.android.material.textfield.TextInputLayout>
+                        <com.google.android.material.textfield.TextInputLayout
+                            android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"
+                            android:hint="Déparasitage externe (mois)"
+                            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                            android:layout_marginStart="6dp" android:layout_marginBottom="24dp"
+                            app:hintTextColor="@color/white" app:boxStrokeColor="@color/white">
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/etDewormingExternalInterval" android:layout_width="match_parent" android:layout_height="wrap_content"
+                                android:inputType="number" android:textColor="@color/white" />
+                        </com.google.android.material.textfield.TextInputLayout>
+                    </LinearLayout>
+
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnSaveFarmInfo"
                         android:layout_width="match_parent"
@@ -298,9 +506,10 @@
         android:layout_width="wrap_content"
         android:layout_height="match_parent"
         android:layout_gravity="start"
+        android:background="@color/surface"
         app:headerLayout="@layout/nav_header"
-        app:itemIconTint="@color/accent_blue"
-        app:itemTextColor="@color/white"
+        app:itemIconTint="@color/text_secondary"
+        app:itemTextColor="@color/text_primary"
         app:menu="@menu/drawer_menu" />
 
 </androidx.drawerlayout.widget.DrawerLayout>
