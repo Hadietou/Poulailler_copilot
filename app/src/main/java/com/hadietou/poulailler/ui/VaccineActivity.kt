@@ -21,13 +21,14 @@ import androidx.recyclerview.widget.RecyclerView
 import com.hadietou.poulailler.R
 import com.hadietou.poulailler.BuildConfig
 import com.hadietou.poulailler.data.AppDatabase
+import com.hadietou.poulailler.data.FarmInfo
 import com.hadietou.poulailler.data.VaccineEntry
 import com.hadietou.poulailler.data.HealthReminder
 import com.hadietou.poulailler.databinding.ActivityVaccineBinding
 import com.hadietou.poulailler.databinding.DialogAddVaccineBinding
 import com.hadietou.poulailler.databinding.ItemVaccineBinding
 import com.hadietou.poulailler.repository.FirebaseRepository
-import com.hadietou.poulailler.network.RetrofitClient
+import com.hadietou.poulailler.network.WeatherUtils
 import com.google.android.material.navigation.NavigationView
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.Dispatchers
@@ -49,6 +50,7 @@ class VaccineActivity : AppCompatActivity(), NavigationView.OnNavigationItemSele
     private var selectedBatchId: String? = null
     private val firebaseRepo = FirebaseRepository()
     private lateinit var adapter: VaccineAdapter
+    private lateinit var reminderAdapter: HealthReminderAdapter
 
     private var allVaccines: List<VaccineEntry> = emptyList()
     private var allHealthReminders: List<HealthReminder> = emptyList()
@@ -70,6 +72,7 @@ class VaccineActivity : AppCompatActivity(), NavigationView.OnNavigationItemSele
 
         setupNavigation()
         setupRecyclerView()
+        setupHealthReminders()
         setupCalendar()
         observeVaccines()
         observeHealthReminders()
@@ -125,15 +128,18 @@ class VaccineActivity : AppCompatActivity(), NavigationView.OnNavigationItemSele
         binding.weatherProgressBar.visibility = View.VISIBLE
         lifecycleScope.launch(Dispatchers.IO) {
             try {
-                val response = RetrofitClient.weatherApi.getForecast()
+                val info = firebaseRepo.getFarmInfo()
+                val response = WeatherUtils.fetchForecast(info?.latitude, info?.longitude)
                 val daily = response.daily
-                
+                val offset = info?.weatherTempOffsetCelsius ?: FarmInfo.DEFAULT_WEATHER_TEMP_OFFSET
+                val maxTemperatures = WeatherUtils.applyOffset(daily.maxTemperatures, offset)
+
                 val weatherText = StringBuilder()
                 for (i in 0 until daily.time.size) {
                     val date = daily.time[i]
-                    val temp = daily.maxTemperatures[i]
+                    val temp = maxTemperatures[i]
                     val emoji = if (temp >= 35) "🔥" else "☀️"
-                    weatherText.append("• $date : $temp°C $emoji\n")
+                    weatherText.append("• $date : ${"%.1f".format(temp)}°C $emoji\n")
                 }
 
                 withContext(Dispatchers.Main) {
@@ -228,6 +234,20 @@ class VaccineActivity : AppCompatActivity(), NavigationView.OnNavigationItemSele
         binding.rvVaccineHistory.adapter = adapter
     }
 
+    private fun setupHealthReminders() {
+        reminderAdapter = HealthReminderAdapter { reminder ->
+            lifecycleScope.launch {
+                try {
+                    firebaseRepo.updateHealthReminder(reminder.copy(isDone = true))
+                } catch (e: Exception) {
+                    Toast.makeText(this@VaccineActivity, e.message ?: "Erreur", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+        binding.rvHealthReminders.layoutManager = LinearLayoutManager(this)
+        binding.rvHealthReminders.adapter = reminderAdapter
+    }
+
     private fun observeVaccines() {
         lifecycleScope.launch {
             firebaseRepo.getVaccinesFlow().collectLatest { list ->
@@ -238,8 +258,22 @@ class VaccineActivity : AppCompatActivity(), NavigationView.OnNavigationItemSele
                 }
                 withContext(Dispatchers.Main) {
                     refreshDisplay()
+                    refreshNextVaccineStat()
                 }
             }
+        }
+    }
+
+    private fun refreshNextVaccineStat() {
+        val now = System.currentTimeMillis()
+        val next = allVaccines.filter { it.date >= now }.minByOrNull { it.date }
+        if (next != null) {
+            val sdf = SimpleDateFormat("dd/MM", Locale.getDefault())
+            binding.tvStatNextVaccine.text = next.name
+            binding.tvStatNextVaccineDate.text = "Prévu le ${sdf.format(Date(next.date))}"
+        } else {
+            binding.tvStatNextVaccine.text = "Aucun soin planifié"
+            binding.tvStatNextVaccineDate.text = ""
         }
     }
 
@@ -251,7 +285,26 @@ class VaccineActivity : AppCompatActivity(), NavigationView.OnNavigationItemSele
                 } else {
                     list
                 }
+                withContext(Dispatchers.Main) {
+                    refreshHealthRemindersDisplay()
+                }
             }
+        }
+    }
+
+    private fun refreshHealthRemindersDisplay() {
+        val active = allHealthReminders.filter { !it.isDone }.distinctBy { it.title }
+
+        binding.tvStatRemindersCount.text = active.size.toString()
+        binding.tvStatRemindersSubtitle.text = if (active.isEmpty()) "Tout est à jour" else "en attente"
+
+        if (active.isEmpty()) {
+            binding.rvHealthReminders.visibility = View.GONE
+            binding.cardNoReminders.visibility = View.VISIBLE
+        } else {
+            binding.rvHealthReminders.visibility = View.VISIBLE
+            binding.cardNoReminders.visibility = View.GONE
+            reminderAdapter.submitList(active)
         }
     }
 

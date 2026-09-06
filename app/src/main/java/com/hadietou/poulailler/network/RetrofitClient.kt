@@ -31,4 +31,13 @@ object RetrofitClient {
             .build()
             .create(WeatherApiService::class.java)
     }
+
+    val geocodingApi: GeocodingApiService by lazy {
+        Retrofit.Builder()
+            .baseUrl(GeocodingApiService.BASE_URL)
+            .addConverterFactory(GsonConverterFactory.create())
+            .client(httpClient)
+            .build()
+            .create(GeocodingApiService::class.java)
+    }
 }

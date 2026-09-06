@@ -4,9 +4,10 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginBottom="8dp"
-    app:cardBackgroundColor="#1A1A1A"
-    app:cardCornerRadius="8dp"
-    app:strokeColor="#333333"
+    app:cardBackgroundColor="@color/surface"
+    app:cardCornerRadius="14dp"
+    app:cardElevation="0dp"
+    app:strokeColor="@color/emerald_container"
     app:strokeWidth="1dp">
 
     <LinearLayout
@@ -16,26 +17,34 @@
         android:padding="12dp"
         android:gravity="center_vertical">
 
-        <ImageView
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:src="@android:drawable/ic_menu_add"
-            app:tint="#4CAF50"
-            android:contentDescription="Icône soin" />
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            app:cardCornerRadius="18dp"
+            app:cardElevation="0dp"
+            app:cardBackgroundColor="@color/emerald_soft">
+            <ImageView
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:layout_gravity="center"
+                android:src="@android:drawable/ic_menu_add"
+                app:tint="@color/white"
+                android:contentDescription="Icône soin" />
+        </com.google.android.material.card.MaterialCardView>
 
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:orientation="vertical"
-            android:layout_marginStart="16dp">
+            android:layout_marginStart="12dp">
 
             <TextView
                 android:id="@+id/tvVaccineName"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textColor="@color/white"
-                android:textSize="16sp"
+                android:textColor="@color/text_primary"
+                android:textSize="15sp"
                 android:textStyle="bold"
                 android:text="Nom du soin"/>
 
@@ -43,7 +52,7 @@
                 android:id="@+id/tvRemarks"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textColor="#B0B0B0"
+                android:textColor="@color/text_secondary"
                 android:textSize="12sp"
                 android:text="Remarques..."/>
 
@@ -51,7 +60,8 @@
                 android:id="@+id/tvDate"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textColor="#777777"
+                android:layout_marginTop="2dp"
+                android:textColor="@color/text_secondary"
                 android:textSize="11sp"
                 android:text="Date"/>
         </LinearLayout>

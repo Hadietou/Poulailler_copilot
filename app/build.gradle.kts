@@ -91,7 +91,13 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-livedata-ktx:2.8.4")
 
     implementation("androidx.recyclerview:recyclerview:1.3.2")
-    
+
+    // WorkManager (planification de l'alerte canicule en arrière-plan)
+    implementation("androidx.work:work-runtime-ktx:2.11.2")
+
+    // Carte pour choisir la localité de la ferme (OpenStreetMap, sans clé API)
+    implementation("org.osmdroid:osmdroid-android:6.1.20")
+
     // Graphiques
     implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
 

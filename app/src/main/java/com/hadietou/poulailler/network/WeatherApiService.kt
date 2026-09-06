@@ -10,7 +10,10 @@ interface WeatherApiService {
         @Query("longitude") lon: Double = -15.9785,
         @Query("daily") daily: String = "temperature_2m_max",
         @Query("timezone") timezone: String = "auto",
-        @Query("forecast_days") days: Int = 5
+        @Query("forecast_days") days: Int = 5,
+        // ECMWF IFS (0.25°) : modèle le plus fiable pour le Sahel/Mauritanie,
+        // plus précis qu'un modèle "best_match" générique sur cette zone.
+        @Query("models") models: String = "ecmwf_ifs025"
     ): WeatherResponse
 
     companion object {
