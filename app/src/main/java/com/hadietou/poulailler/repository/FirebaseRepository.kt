@@ -343,10 +343,14 @@ class FirebaseRepository {
         farmName = s.getString("farmName") ?: "",
         currency = s.getString("currency") ?: "MRU",
         setupDate = s.getLong("setupDate") ?: System.currentTimeMillis(),
+        locality = s.getString("locality"),
+        latitude = s.getDouble("latitude"),
+        longitude = s.getDouble("longitude"),
         eggTraysCriticalThreshold = s.getLong("eggTraysCriticalThreshold")?.toInt() ?: FarmInfo.DEFAULT_EGG_TRAYS_CRITICAL,
         feedStockCriticalDays = s.getLong("feedStockCriticalDays")?.toInt() ?: FarmInfo.DEFAULT_FEED_STOCK_CRITICAL_DAYS,
         feedStockWarningDays = s.getLong("feedStockWarningDays")?.toInt() ?: FarmInfo.DEFAULT_FEED_STOCK_WARNING_DAYS,
         heatAlertTempCelsius = s.getLong("heatAlertTempCelsius")?.toInt() ?: FarmInfo.DEFAULT_HEAT_ALERT_TEMP,
+        weatherTempOffsetCelsius = s.getDouble("weatherTempOffsetCelsius") ?: FarmInfo.DEFAULT_WEATHER_TEMP_OFFSET,
         lightingHoursAfterSunrise = s.getLong("lightingHoursAfterSunrise")?.toInt() ?: FarmInfo.DEFAULT_LIGHTING_HOURS,
         vaccineIntervalMonths = s.getLong("vaccineIntervalMonths")?.toInt() ?: FarmInfo.DEFAULT_VACCINE_INTERVAL_MONTHS,
         dewormingInternalIntervalMonths = s.getLong("dewormingInternalIntervalMonths")?.toInt() ?: FarmInfo.DEFAULT_DEWORMING_INTERNAL_MONTHS,
@@ -380,7 +384,8 @@ class FirebaseRepository {
                             typeLot = doc.getString("typeLot") ?: "PONDEUSE",
                             firestoreId = doc.id,
                             farmId = id,
-                            feedRation = doc.getDouble("feedRation") ?: 0.120
+                            feedRation = doc.getDouble("feedRation") ?: 0.120,
+                            feedRationHistory = doc.getString("feedRationHistory") ?: ""
                         )
                     } ?: emptyList()
                     trySend(list)
@@ -525,10 +530,14 @@ class FirebaseRepository {
             hashMapOf(
                 "farmName" to info.farmName,
                 "currency" to info.currency,
+                "locality" to info.locality,
+                "latitude" to info.latitude,
+                "longitude" to info.longitude,
                 "eggTraysCriticalThreshold" to info.eggTraysCriticalThreshold,
                 "feedStockCriticalDays" to info.feedStockCriticalDays,
                 "feedStockWarningDays" to info.feedStockWarningDays,
                 "heatAlertTempCelsius" to info.heatAlertTempCelsius,
+                "weatherTempOffsetCelsius" to info.weatherTempOffsetCelsius,
                 "lightingHoursAfterSunrise" to info.lightingHoursAfterSunrise,
                 "vaccineIntervalMonths" to info.vaccineIntervalMonths,
                 "dewormingInternalIntervalMonths" to info.dewormingInternalIntervalMonths,
@@ -549,7 +558,8 @@ class FirebaseRepository {
             "chickBirthDate" to batch.chickBirthDate,
             "status" to batch.status,
             "typeLot" to batch.typeLot,
-            "feedRation" to batch.feedRation
+            "feedRation" to batch.feedRation,
+            "feedRationHistory" to batch.feedRationHistory
         )).await()
     }
 
@@ -565,7 +575,8 @@ class FirebaseRepository {
                 "chickBirthDate" to batch.chickBirthDate,
                 "status" to batch.status,
                 "typeLot" to batch.typeLot,
-                "feedRation" to batch.feedRation
+                "feedRation" to batch.feedRation,
+                "feedRationHistory" to batch.feedRationHistory
             ) as Map<String, Any>).await()
         }
     }

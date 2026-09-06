@@ -44,6 +44,7 @@ import java.text.SimpleDateFormat
 import android.content.res.ColorStateList
 import com.hadietou.poulailler.util.NavMenuStyler
 import com.hadietou.poulailler.util.NetworkStatusMonitor
+import com.hadietou.poulailler.network.WeatherUtils
 
 class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelectedListener {
 
@@ -81,7 +82,8 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
             updateLightingIndicator()
             
             updateUIBasedOnRole()
-            
+            fetchTodayTemperature()
+
             lifecycleScope.launch {
                 try {
                     val profile = firebaseRepo.getUserProfile(userId!!)
@@ -116,6 +118,26 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
         }
     }
 
+    private fun fetchTodayTemperature() {
+        lifecycleScope.launch {
+            try {
+                val info = withContext(Dispatchers.IO) { firebaseRepo.getFarmInfo() }
+                val response = withContext(Dispatchers.IO) { WeatherUtils.fetchForecast(info?.latitude, info?.longitude) }
+                val offset = info?.weatherTempOffsetCelsius ?: FarmInfo.DEFAULT_WEATHER_TEMP_OFFSET
+                val todayTemp = response.daily.maxTemperatures.firstOrNull()?.plus(offset)
+                if (todayTemp != null) {
+                    val emoji = if (todayTemp >= 35) "🔥" else "☀️"
+                    binding.tvDashHealthTemperature.text = "${Math.round(todayTemp)}°C $emoji"
+                } else {
+                    binding.tvDashHealthTemperature.text = "--"
+                }
+            } catch (e: Exception) {
+                Log.e("Dashboard", "Error fetching weather", e)
+                binding.tvDashHealthTemperature.text = "--"
+            }
+        }
+    }
+
     private fun updateLightingIndicator() {
         val lightingHours = viewModel.farmInfo.value?.lightingHoursAfterSunrise ?: FarmInfo.DEFAULT_LIGHTING_HOURS
         val extinctionTime = SunUtils.getExtinctionTime(lightingHours)
@@ -132,11 +154,6 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
         refreshDrawerMenuStyle()
     }
 
-    /**
-     * NavigationView n'affiche pas toujours de manière fiable un item dont on vient
-     * de changer la visibilité de groupe (menu.setGroupVisible) une fois déjà rendu à l'écran :
-     * on force donc une reconstruction complète du menu avant de réappliquer les états courants.
-     */
     private fun rebuildDrawerMenu() {
         binding.navigationView.menu.clear()
         binding.navigationView.inflateMenu(R.menu.drawer_menu)
@@ -193,18 +210,92 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
         binding.cardFeedStockCircle.setOnClickListener { navigateTo(ExpensesActivity::class.java) }
         binding.cardEggTraysStock.setOnClickListener { navigateTo(ExpensesActivity::class.java) }
         
-        binding.layoutMonthlyCollected.setOnClickListener { navigateToStats("COLLECTION") }
-        binding.layoutMonthlySold.setOnClickListener { navigateToStats("SALES") }
-        binding.layoutMonthlyRevenue.setOnClickListener { navigateToStats("REVENUE") }
-        binding.layoutMonthlyBroken.setOnClickListener { navigateToStats("BROKEN") }
-        binding.layoutMonthlyMortality.setOnClickListener { navigateToStats("MORTALITY") }
-        binding.layoutMonthlyExpenses.setOnClickListener { navigateToStats("EXPENSES") }
+        binding.cardEggProduction.setOnClickListener { showEggProductionMenu(it) }
+        binding.cardEggSales.setOnClickListener { showSalesMenu(it) }
 
-        binding.cardFeed.setOnClickListener { navigateTo(ExpensesActivity::class.java) }
+        binding.cardDashExpenses.setOnClickListener { showExpensesMenu(it) }
+        binding.cardDashFeed.setOnClickListener { showFeedMenu(it) }
+        binding.cardDashHealth.setOnClickListener { showHealthMenu(it) }
+
         binding.cardNetProfit.setOnClickListener { navigateTo(SalesActivity::class.java) }
-        
-        binding.cardTechHealth.setOnClickListener { navigateTo(VaccineActivity::class.java) }
+
         binding.cardSanitaryAlert.setOnClickListener { navigateTo(VaccineActivity::class.java) }
+    }
+
+    private fun showEggProductionMenu(anchor: View) {
+        val popup = android.widget.PopupMenu(this, anchor)
+        popup.menu.add(0, 1, 0, "+ Saisir la ponte")
+        popup.menu.add(0, 2, 1, "Suivi de la production")
+        popup.menu.add(0, 3, 2, "Suivi des œufs cassés")
+        popup.setOnMenuItemClickListener { item ->
+            when (item.itemId) {
+                1 -> navigateTo(AgentActivity::class.java)
+                2 -> navigateToStats("COLLECTION")
+                3 -> navigateToStats("BROKEN")
+            }
+            true
+        }
+        popup.show()
+    }
+
+    private fun showSalesMenu(anchor: View) {
+        val popup = android.widget.PopupMenu(this, anchor)
+        popup.menu.add(0, 1, 0, "Saisie des ventes")
+        popup.menu.add(0, 2, 1, "Suivi des ventes")
+        popup.menu.add(0, 3, 2, "Suivi de la recette")
+        popup.setOnMenuItemClickListener { item ->
+            when (item.itemId) {
+                1 -> navigateTo(SalesActivity::class.java)
+                2 -> navigateToStats("SALES")
+                3 -> navigateToStats("REVENUE")
+            }
+            true
+        }
+        popup.show()
+    }
+
+    private fun showExpensesMenu(anchor: View) {
+        val popup = android.widget.PopupMenu(this, anchor)
+        popup.menu.add(0, 1, 0, "+ Ajouter une dépense")
+        popup.menu.add(0, 2, 1, "Suivi des dépenses")
+        popup.setOnMenuItemClickListener { item ->
+            when (item.itemId) {
+                1 -> navigateTo(ExpensesActivity::class.java)
+                2 -> navigateToStats("EXPENSES")
+            }
+            true
+        }
+        popup.show()
+    }
+
+    private fun showFeedMenu(anchor: View) {
+        val popup = android.widget.PopupMenu(this, anchor)
+        popup.menu.add(0, 1, 0, "Saisie des dépenses")
+        popup.menu.add(0, 2, 1, "Suivi de la consommation")
+        popup.setOnMenuItemClickListener { item ->
+            when (item.itemId) {
+                1 -> navigateTo(ExpensesActivity::class.java)
+                2 -> navigateTo(FeedConsumptionActivity::class.java)
+            }
+            true
+        }
+        popup.show()
+    }
+
+    private fun showHealthMenu(anchor: View) {
+        val popup = android.widget.PopupMenu(this, anchor)
+        popup.menu.add(0, 1, 0, "+ Enregistrer une mortalité")
+        popup.menu.add(0, 2, 1, "Vaccins & rappels")
+        popup.menu.add(0, 3, 2, "Suivi de la mortalité")
+        popup.setOnMenuItemClickListener { item ->
+            when (item.itemId) {
+                1 -> navigateTo(MortalityActivity::class.java)
+                2 -> navigateTo(VaccineActivity::class.java)
+                3 -> navigateToStats("MORTALITY")
+            }
+            true
+        }
+        popup.show()
     }
 
     private fun navigateToStats(type: String) {
@@ -267,6 +358,7 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
         binding.cardLightingAlert.visibility = eggVisibility
         binding.cardStockCircle.visibility = eggVisibility
         binding.cardEggTraysStock.visibility = eggVisibility
+        binding.cardEggProduction.visibility = eggVisibility
         
         binding.cardFeedStockCircle.visibility = View.VISIBLE
         
@@ -350,44 +442,38 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
             }
         }
 
-        viewModel.monthlyBrokenCount.observe(this) { count ->
-            binding.tvMonthlyBroken.text = count.toString()
-        }
         viewModel.monthlySalesTablettes.observe(this) { tablettes ->
-            binding.tvMonthlySoldTablettes.text = getString(R.string.tablettes_count, tablettes)
+            binding.tvSalesMonthlyValue.text = tablettes.toString()
         }
 
         viewModel.monthlyCollectedCount.observe(this) { count ->
-            val tablettes = count / 30
-            binding.tvMonthlyCollectedTablettes.text = getString(R.string.tablettes_count, tablettes)
+            binding.tvEggProdMonthlyValue.text = "${NumberFormat.getInstance().format(count)} œufs produits ce mois-ci"
         }
         viewModel.monthlySalesAmount.observe(this) { amount ->
-            binding.tvMonthlySalesAmount.text = getString(R.string.k_format, amount / 1000.0)
+            val curr = viewModel.farmInfo.value?.currency ?: "MRU"
+            binding.tvSalesRevenueValue.text = "${getString(R.string.k_format, amount / 1000.0)} $curr de recette ce mois-ci"
         }
         viewModel.monthlyExpensesAmount.observe(this) { amount ->
-            binding.tvMonthlyExpensesAmount.text = getString(R.string.k_format, amount / 1000.0)
+            binding.tvDashExpensesMonthly.text = getString(R.string.k_format, amount / 1000.0)
         }
-        
-        viewModel.feedConversionRatio.observe(this) { ic ->
-            binding.tvICValue.text = String.format(Locale.getDefault(), "%.2f", ic)
-        }
+
         viewModel.layingGapVsStandard.observe(this) { gap ->
             val prefix = if (gap > 0) "+" else ""
-            binding.tvGapStdValue.text = String.format(Locale.getDefault(), "%s%.1f%%", prefix, gap)
-            binding.tvGapStdValue.setTextColor(if (gap >= 0) getColor(R.color.emerald_soft) else getColor(R.color.error))
+            binding.tvDashGapStd.text = String.format(Locale.getDefault(), "Écart vs standard : %s%.1f%%", prefix, gap)
+            binding.tvDashGapStd.setTextColor(if (gap >= 0) getColor(R.color.emerald_soft) else getColor(R.color.error))
         }
 
         viewModel.survivalRate.observe(this) { rate ->
-            binding.tvSurvivalRate.text = String.format(Locale.getDefault(), "%.1f%%", rate)
             val color = when {
                 rate < 90.0 -> R.color.error
                 rate < 95.0 -> R.color.earthy_orange
                 else -> R.color.emerald_soft
             }
-            binding.tvSurvivalRate.setTextColor(getColor(color))
+            binding.tvDashHealthSurvival.text = String.format(Locale.getDefault(), "%.1f%%", rate)
+            binding.tvDashHealthSurvival.setTextColor(getColor(color))
         }
         viewModel.monthlyMortalityCount.observe(this) { count ->
-            binding.tvMonthlyMortality.text = count.toString()
+            binding.tvDashHealthMortality.text = count.toString()
         }
 
         viewModel.nextVaccine.observe(this) { vaccine ->
@@ -400,15 +486,12 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
             }
         }
 
-        viewModel.dailyConsumptionPerHenG.observe(this) {
-            binding.tvConsumptionPerHen.text = getString(R.string.gram_unit, it)
-        }
         viewModel.currentStockKg.observe(this) {
-            binding.tvStockAvailable.text = getString(R.string.kg_unit, it.toInt())
+            binding.tvDashFeedStock.text = it.toInt().toString()
         }
         viewModel.feedAutonomyDays.observe(this) { days ->
-            binding.tvFeedAutonomyDashboard.text = getString(R.string.feed_autonomy, days)
             binding.tvFeedStockCircleValue.text = "Stock : ${days}j"
+            binding.tvDashFeedAutonomy.text = "Autonomie : $days jours"
 
             val info = viewModel.farmInfo.value
             val criticalDays = info?.feedStockCriticalDays ?: FarmInfo.DEFAULT_FEED_STOCK_CRITICAL_DAYS
@@ -430,6 +513,7 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
         viewModel.totalRemaining.observe(this) { total ->
             val tablettes = total / 30
             binding.tvStockCircleValue.text = "${tablettes} Tab dispo"
+            binding.tvEggProdStockValue.text = tablettes.toString()
         }
 
         viewModel.totalSales.observe(this) {
@@ -440,6 +524,7 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
         viewModel.totalExpenses.observe(this) {
             val curr = viewModel.farmInfo.value?.currency ?: "MRU"
             binding.tvTotalExpensesValue.text = getString(R.string.currency_format, NumberFormat.getInstance().format(it), curr)
+            binding.tvDashExpensesTotal.text = "${getString(R.string.k_format, it / 1000.0)} $curr au total"
         }
 
         viewModel.netProfit.observe(this) {
@@ -486,6 +571,10 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
                 binding.tvHealthRemindersSummary.text = summary
                 reminderAdapter.submitList(list)
             }
+
+            val count = list?.size ?: 0
+            binding.tvDashHealthReminders.text = if (count > 0) "$count en attente" else "Aucun"
+            binding.tvDashHealthReminders.setTextColor(getColor(if (count > 0) R.color.error else R.color.emerald_soft))
         }
     }
 

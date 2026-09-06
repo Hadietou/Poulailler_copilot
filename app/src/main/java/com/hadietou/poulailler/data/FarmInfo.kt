@@ -10,6 +10,13 @@ data class FarmInfo(
     val currency: String = "MRU", // Default currency
     val setupDate: Long = System.currentTimeMillis(),
 
+    // --- Localisation (saisie manuelle ou choisie sur la carte) ---
+    // Sert notamment à interroger l'API météo avec les coordonnées réelles de la ferme
+    // au lieu des coordonnées par défaut (Nouakchott) utilisées tant qu'aucune n'est définie.
+    val locality: String? = null,
+    val latitude: Double? = null,
+    val longitude: Double? = null,
+
     // --- Seuils d'alerte (réglables depuis Paramètres) ---
     // Stock d'alvéoles à œufs en dessous duquel l'alerte critique se déclenche.
     val eggTraysCriticalThreshold: Int = DEFAULT_EGG_TRAYS_CRITICAL,
@@ -18,6 +25,10 @@ data class FarmInfo(
     val feedStockWarningDays: Int = DEFAULT_FEED_STOCK_WARNING_DAYS,
     // Température (°C) à partir de laquelle une alerte canicule est envoyée.
     val heatAlertTempCelsius: Int = DEFAULT_HEAT_ALERT_TEMP,
+    // Correction manuelle (°C) appliquée aux températures prévues par l'API, pour compenser
+    // l'écart constaté entre la prévision (modèle large échelle, température sous abri) et le
+    // relevé de terrain, en l'absence de capteur sur place. Peut être positive ou négative.
+    val weatherTempOffsetCelsius: Double = DEFAULT_WEATHER_TEMP_OFFSET,
     // Photopériode : nombre d'heures d'éclairage artificiel après le lever du soleil.
     val lightingHoursAfterSunrise: Int = DEFAULT_LIGHTING_HOURS,
     // Intervalles (en mois) des rappels sanitaires récurrents.
@@ -30,6 +41,7 @@ data class FarmInfo(
         const val DEFAULT_FEED_STOCK_CRITICAL_DAYS = 5
         const val DEFAULT_FEED_STOCK_WARNING_DAYS = 10
         const val DEFAULT_HEAT_ALERT_TEMP = 35
+        const val DEFAULT_WEATHER_TEMP_OFFSET = 0.0
         const val DEFAULT_LIGHTING_HOURS = 15
         const val DEFAULT_VACCINE_INTERVAL_MONTHS = 2
         const val DEFAULT_DEWORMING_INTERNAL_MONTHS = 3

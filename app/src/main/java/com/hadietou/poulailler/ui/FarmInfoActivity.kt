@@ -3,11 +3,13 @@ package com.hadietou.poulailler.ui
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.util.Log
 import android.view.MenuItem
 import android.view.View
 import android.widget.ArrayAdapter
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.ActionBarDrawerToggle
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -17,7 +19,11 @@ import com.hadietou.poulailler.R
 import com.hadietou.poulailler.BuildConfig
 import com.hadietou.poulailler.data.Batch
 import com.hadietou.poulailler.data.FarmInfo
+import com.hadietou.poulailler.data.FeedRationChange
+import com.hadietou.poulailler.data.parseFeedRationHistory
+import com.hadietou.poulailler.data.toHistoryString
 import com.hadietou.poulailler.databinding.ActivityFarmInfoBinding
+import com.hadietou.poulailler.network.RetrofitClient
 import com.hadietou.poulailler.repository.FirebaseRepository
 import com.google.android.material.navigation.NavigationView
 import com.google.firebase.auth.FirebaseAuth
@@ -44,6 +50,24 @@ class FarmInfoActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
     
     private var isEggMenuExpanded = false
     private var isHealthMenuExpanded = false
+
+    // Position choisie pour la localité (saisie manuelle géocodée ou sélection sur la carte).
+    private var pickedLatitude: Double? = null
+    private var pickedLongitude: Double? = null
+
+    private val locationPickerLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == RESULT_OK) {
+            val data = result.data ?: return@registerForActivityResult
+            val lat = data.getDoubleExtra(LocationPickerActivity.EXTRA_LAT, Double.NaN)
+            val lon = data.getDoubleExtra(LocationPickerActivity.EXTRA_LON, Double.NaN)
+            if (!lat.isNaN() && !lon.isNaN()) {
+                pickedLatitude = lat
+                pickedLongitude = lon
+                data.getStringExtra(LocationPickerActivity.EXTRA_LOCALITY)?.let { binding.etLocality.setText(it) }
+                updatePickedLocationSummary()
+            }
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -77,6 +101,16 @@ class FarmInfoActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
         binding.btnSaveRation.setOnClickListener {
             if (isBlocked) { showBlockingDialog(); return@setOnClickListener }
             saveManualRation()
+        }
+
+        binding.btnPickOnMap.setOnClickListener {
+            if (isBlocked) { showBlockingDialog(); return@setOnClickListener }
+            val intent = Intent(this, LocationPickerActivity::class.java).apply {
+                pickedLatitude?.let { putExtra(LocationPickerActivity.EXTRA_LAT, it) }
+                pickedLongitude?.let { putExtra(LocationPickerActivity.EXTRA_LON, it) }
+                putExtra(LocationPickerActivity.EXTRA_LOCALITY, binding.etLocality.text?.toString())
+            }
+            locationPickerLauncher.launch(intent)
         }
 
         binding.cardFeedRation.visibility = if (userRole == "RESPONSABLE") View.VISIBLE else View.GONE
@@ -114,9 +148,23 @@ class FarmInfoActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
         val rationG = rationStr.toDoubleOrNull() ?: 0.0
         val rationKg = rationG / 1000.0
 
+        // La ration ne doit s'appliquer qu'à partir d'aujourd'hui : on enregistre ce
+        // changement dans l'historique (à la date du jour) plutôt que d'écraser la valeur
+        // utilisée pour recalculer la consommation depuis le début du lot.
+        val todayStart = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
+        }.timeInMillis
+        val history = batch.parseFeedRationHistory().toMutableList()
+        val todayIndex = history.indexOfFirst { it.effectiveDate == todayStart }
+        if (todayIndex >= 0) {
+            history[todayIndex] = FeedRationChange(todayStart, rationKg)
+        } else {
+            history.add(FeedRationChange(todayStart, rationKg))
+        }
+
         lifecycleScope.launch(Dispatchers.IO) {
             try {
-                val updatedBatch = batch.copy(feedRation = rationKg)
+                val updatedBatch = batch.copy(feedRation = rationKg, feedRationHistory = history.toHistoryString())
                 firebaseRepo.updateBatch(updatedBatch)
                 withContext(Dispatchers.Main) {
                     Toast.makeText(this@FarmInfoActivity, "Ration mise à jour : ${rationG.toInt()}g/sujet", Toast.LENGTH_SHORT).show()
@@ -243,14 +291,20 @@ class FarmInfoActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
     private fun displayInfo(info: FarmInfo) {
         binding.tvDisplayFarmName.text = info.farmName
         binding.tvDisplayCurrency.text = info.currency
+        binding.tvDisplayLocality.text = info.locality?.takeIf { it.isNotEmpty() } ?: "Non définie"
 
         binding.etFarmName.setText(info.farmName)
         binding.actvCurrency.setText(info.currency, false)
+        binding.etLocality.setText(info.locality ?: "")
+        pickedLatitude = info.latitude
+        pickedLongitude = info.longitude
+        updatePickedLocationSummary()
 
         binding.etEggTraysCritical.setText(info.eggTraysCriticalThreshold.toString())
         binding.etFeedStockCriticalDays.setText(info.feedStockCriticalDays.toString())
         binding.etFeedStockWarningDays.setText(info.feedStockWarningDays.toString())
         binding.etHeatAlertTemp.setText(info.heatAlertTempCelsius.toString())
+        binding.etWeatherTempOffset.setText(info.weatherTempOffsetCelsius.toString())
         binding.etLightingHours.setText(info.lightingHoursAfterSunrise.toString())
         binding.etVaccineInterval.setText(info.vaccineIntervalMonths.toString())
         binding.etDewormingInternalInterval.setText(info.dewormingInternalIntervalMonths.toString())
@@ -265,7 +319,8 @@ class FarmInfoActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
             info.lightingHoursAfterSunrise,
             info.vaccineIntervalMonths,
             info.dewormingInternalIntervalMonths,
-            info.dewormingExternalIntervalMonths
+            info.dewormingExternalIntervalMonths,
+            info.weatherTempOffsetCelsius
         )
 
         binding.tvDisplayHensCount.visibility = View.GONE
@@ -277,6 +332,16 @@ class FarmInfoActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
         binding.tilHenBreed.visibility = View.GONE
         binding.tilArrivalDate.visibility = View.GONE
         binding.tilBirthDate.visibility = View.GONE
+    }
+
+    private fun updatePickedLocationSummary() {
+        val lat = pickedLatitude
+        val lon = pickedLongitude
+        binding.tvPickedLocationSummary.text = if (lat != null && lon != null) {
+            "Position : %.4f, %.4f".format(Locale.US, lat, lon)
+        } else {
+            "Aucune position précise définie (météo par défaut : Nouakchott)"
+        }
     }
 
     private fun showEditMode(isEditing: Boolean) {
@@ -293,6 +358,7 @@ class FarmInfoActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
     private fun saveData() {
         val name = binding.etFarmName.text.toString()
         val currency = binding.actvCurrency.text.toString()
+        val localityText = binding.etLocality.text?.toString()?.trim().orEmpty()
 
         if (name.isEmpty()) {
             Toast.makeText(this, "Veuillez saisir le nom de la ferme", Toast.LENGTH_SHORT).show()
@@ -301,10 +367,37 @@ class FarmInfoActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
 
         lifecycleScope.launch(Dispatchers.IO) {
             try {
+                // Si l'utilisateur a tapé/modifié un nom de localité sans passer par la carte,
+                // on tente de le géocoder pour obtenir des coordonnées (nécessaires à la météo).
+                // Si la position venait déjà de la carte, on la garde telle quelle.
+                if (localityText.isNotEmpty() && localityText != currentFarmInfo?.locality) {
+                    try {
+                        val geocoded = RetrofitClient.geocodingApi.search(localityText).results?.firstOrNull()
+                        if (geocoded != null) {
+                            pickedLatitude = geocoded.latitude
+                            pickedLongitude = geocoded.longitude
+                        } else {
+                            pickedLatitude = null
+                            pickedLongitude = null
+                            withContext(Dispatchers.Main) {
+                                Toast.makeText(this@FarmInfoActivity, "Localité introuvable : la météo utilisera l'emplacement par défaut", Toast.LENGTH_LONG).show()
+                            }
+                        }
+                    } catch (e: Exception) {
+                        Log.e("FarmInfoActivity", "Error geocoding locality", e)
+                    }
+                } else if (localityText.isEmpty()) {
+                    pickedLatitude = null
+                    pickedLongitude = null
+                }
+
                 val info = FarmInfo(
                     id = 1,
                     farmName = name,
                     currency = currency,
+                    locality = localityText.ifEmpty { null },
+                    latitude = pickedLatitude,
+                    longitude = pickedLongitude,
                     eggTraysCriticalThreshold = binding.etEggTraysCritical.text.toString().toIntOrNull()
                         ?: FarmInfo.DEFAULT_EGG_TRAYS_CRITICAL,
                     feedStockCriticalDays = binding.etFeedStockCriticalDays.text.toString().toIntOrNull()
@@ -313,6 +406,8 @@ class FarmInfoActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
                         ?: FarmInfo.DEFAULT_FEED_STOCK_WARNING_DAYS,
                     heatAlertTempCelsius = binding.etHeatAlertTemp.text.toString().toIntOrNull()
                         ?: FarmInfo.DEFAULT_HEAT_ALERT_TEMP,
+                    weatherTempOffsetCelsius = binding.etWeatherTempOffset.text.toString().toDoubleOrNull()
+                        ?: FarmInfo.DEFAULT_WEATHER_TEMP_OFFSET,
                     lightingHoursAfterSunrise = binding.etLightingHours.text.toString().toIntOrNull()
                         ?: FarmInfo.DEFAULT_LIGHTING_HOURS,
                     vaccineIntervalMonths = binding.etVaccineInterval.text.toString().toIntOrNull()

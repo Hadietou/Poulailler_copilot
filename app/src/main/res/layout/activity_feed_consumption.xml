@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/background">
+
+    <com.google.android.material.appbar.AppBarLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/primary">
+
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            app:titleTextColor="@color/white"
+            app:navigationIcon="@android:drawable/ic_menu_revert"
+            app:navigationIconTint="@color/white" />
+
+        <!-- Entête colorée : titre de la page -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/primary"
+            android:orientation="vertical"
+            android:paddingHorizontal="20dp"
+            android:paddingBottom="16dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Suivi de la consommation"
+                android:textColor="@color/white"
+                android:textSize="20sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:paddingBottom="48dp"
+        android:clipToPadding="false">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <GridLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:columnCount="2">
+
+                <!-- Case 1 : Stock disponible -->
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_columnWeight="1"
+                    android:layout_margin="4dp"
+                    app:cardBackgroundColor="@color/surface"
+                    app:cardCornerRadius="18dp"
+                    app:cardElevation="0dp"
+                    app:strokeColor="@color/earthy_container"
+                    app:strokeWidth="1dp">
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="14dp">
+                        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical">
+                            <com.google.android.material.card.MaterialCardView android:layout_width="32dp" android:layout_height="32dp" app:cardCornerRadius="16dp" app:cardElevation="0dp" app:cardBackgroundColor="@color/earthy_orange">
+                                <ImageView android:layout_width="16dp" android:layout_height="16dp" android:layout_gravity="center" android:src="@drawable/ic_feed" app:tint="@color/white" />
+                            </com.google.android.material.card.MaterialCardView>
+                            <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="10dp" android:text="Stock disponible" android:textColor="@color/text_primary" android:textSize="12sp" android:textStyle="bold" />
+                        </LinearLayout>
+                        <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:orientation="horizontal" android:gravity="bottom">
+                            <TextView android:id="@+id/tvFeedStockValue" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="@color/earthy_orange" android:textSize="24sp" android:textStyle="bold" android:maxLines="1" tools:text="450" />
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="4dp" android:layout_marginBottom="3dp" android:text="kg" android:textColor="@color/text_secondary" android:textSize="11sp" android:textStyle="bold" android:maxLines="1" />
+                        </LinearLayout>
+                        <TextView android:id="@+id/tvFeedAutonomySubtitle" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="2dp" android:textColor="@color/text_secondary" android:textSize="11sp" tools:text="Autonomie : 12 jours" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Case 2 : Consommation journalière par poule -->
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_columnWeight="1"
+                    android:layout_margin="4dp"
+                    app:cardBackgroundColor="@color/surface"
+                    app:cardCornerRadius="18dp"
+                    app:cardElevation="0dp"
+                    app:strokeColor="@color/emerald_container"
+                    app:strokeWidth="1dp">
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="14dp">
+                        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical">
+                            <com.google.android.material.card.MaterialCardView android:layout_width="32dp" android:layout_height="32dp" app:cardCornerRadius="16dp" app:cardElevation="0dp" app:cardBackgroundColor="@color/emerald_soft">
+                                <ImageView android:layout_width="16dp" android:layout_height="16dp" android:layout_gravity="center" android:src="@drawable/ic_feed" app:tint="@color/white" />
+                            </com.google.android.material.card.MaterialCardView>
+                            <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="10dp" android:text="Conso / poule / jour" android:textColor="@color/text_primary" android:textSize="12sp" android:textStyle="bold" />
+                        </LinearLayout>
+                        <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:orientation="horizontal" android:gravity="bottom">
+                            <TextView android:id="@+id/tvFeedPerHenValue" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="@color/emerald_soft" android:textSize="24sp" android:textStyle="bold" android:maxLines="1" tools:text="115" />
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="4dp" android:layout_marginBottom="3dp" android:text="g" android:textColor="@color/text_secondary" android:textSize="11sp" android:textStyle="bold" android:maxLines="1" />
+                        </LinearLayout>
+                        <TextView android:id="@+id/tvFeedTotalDailySubtitle" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="2dp" android:textColor="@color/text_secondary" android:textSize="11sp" tools:text="Troupeau : 57.5 kg/jour" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Case 3 : Indice de Consommation -->
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_columnWeight="1"
+                    android:layout_margin="4dp"
+                    app:cardBackgroundColor="@color/surface"
+                    app:cardCornerRadius="18dp"
+                    app:cardElevation="0dp"
+                    app:strokeColor="@color/accent_blue_container"
+                    app:strokeWidth="1dp">
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="14dp">
+                        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical">
+                            <com.google.android.material.card.MaterialCardView android:layout_width="32dp" android:layout_height="32dp" app:cardCornerRadius="16dp" app:cardElevation="0dp" app:cardBackgroundColor="@color/accent_blue">
+                                <ImageView android:layout_width="16dp" android:layout_height="16dp" android:layout_gravity="center" android:src="@android:drawable/ic_dialog_info" app:tint="@color/white" />
+                            </com.google.android.material.card.MaterialCardView>
+                            <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="10dp" android:text="Indice de Consommation" android:textColor="@color/text_primary" android:textSize="12sp" android:textStyle="bold" />
+                        </LinearLayout>
+                        <TextView android:id="@+id/tvFeedICValue" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:textColor="@color/accent_blue" android:textSize="24sp" android:textStyle="bold" android:maxLines="1" tools:text="2.14" />
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="2dp" android:text="kg aliment / plateau produit" android:textColor="@color/text_secondary" android:textSize="11sp" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Case 4 : Coût total aliment -->
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_columnWeight="1"
+                    android:layout_margin="4dp"
+                    app:cardBackgroundColor="@color/surface"
+                    app:cardCornerRadius="18dp"
+                    app:cardElevation="0dp"
+                    app:strokeColor="@color/error_container"
+                    app:strokeWidth="1dp">
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="14dp">
+                        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical">
+                            <com.google.android.material.card.MaterialCardView android:layout_width="32dp" android:layout_height="32dp" app:cardCornerRadius="16dp" app:cardElevation="0dp" app:cardBackgroundColor="@color/error">
+                                <ImageView android:layout_width="16dp" android:layout_height="16dp" android:layout_gravity="center" android:src="@drawable/ic_finance" app:tint="@color/white" />
+                            </com.google.android.material.card.MaterialCardView>
+                            <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="10dp" android:text="Coût total aliment" android:textColor="@color/text_primary" android:textSize="12sp" android:textStyle="bold" />
+                        </LinearLayout>
+                        <TextView android:id="@+id/tvFeedCostValue" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:textColor="@color/error" android:textSize="24sp" android:textStyle="bold" android:maxLines="1" tools:text="≈ 58 200 MRU" />
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="2dp" android:text="Depuis l'arrivée du lot" android:textColor="@color/text_secondary" android:textSize="11sp" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+            </GridLayout>
+
+            <!-- Bilan global aliment -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:text="BILAN ALIMENT (DEPUIS L'ARRIVÉE DU LOT)"
+                android:textColor="@color/primary"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.06" />
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                app:cardBackgroundColor="@color/surface"
+                app:cardCornerRadius="18dp"
+                app:cardElevation="0dp"
+                app:strokeColor="@color/earthy_container"
+                app:strokeWidth="1dp">
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="16dp">
+
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:padding="8dp">
+                        <ImageView android:layout_width="18dp" android:layout_height="18dp" android:src="@drawable/ic_feed" app:tint="@color/earthy_orange" />
+                        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="10dp" android:text="Total acheté" android:textColor="@color/text_secondary" android:textSize="13sp" android:textStyle="bold" />
+                        <TextView android:id="@+id/tvFeedTotalPurchased" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="@color/earthy_orange" android:textSize="14sp" android:textStyle="bold" tools:text="900 kg" />
+                    </LinearLayout>
+
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:padding="8dp">
+                        <ImageView android:layout_width="18dp" android:layout_height="18dp" android:src="@drawable/ic_feed" app:tint="@color/text_secondary" />
+                        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="10dp" android:text="Total consommé" android:textColor="@color/text_secondary" android:textSize="13sp" android:textStyle="bold" />
+                        <TextView android:id="@+id/tvFeedTotalConsumed" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="@color/text_primary" android:textSize="14sp" android:textStyle="bold" tools:text="450 kg" />
+                    </LinearLayout>
+
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:padding="8dp">
+                        <ImageView android:layout_width="18dp" android:layout_height="18dp" android:src="@drawable/ic_feed" app:tint="@color/emerald_soft" />
+                        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="10dp" android:text="Stock restant" android:textColor="@color/text_secondary" android:textSize="13sp" android:textStyle="bold" />
+                        <TextView android:id="@+id/tvFeedTotalRemaining" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="@color/emerald_soft" android:textSize="14sp" android:textStyle="bold" tools:text="450 kg" />
+                    </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+</LinearLayout>

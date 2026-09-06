@@ -7,7 +7,6 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
 import com.hadietou.poulailler.data.*
-import com.hadietou.poulailler.network.RetrofitClient
 import com.hadietou.poulailler.repository.FirebaseRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
@@ -16,6 +15,7 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
+import java.util.TimeZone
 import java.util.concurrent.TimeUnit
 
 class DashboardViewModel(application: Application) : AndroidViewModel(application) {
@@ -95,7 +95,6 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     val isAccessBlocked = MutableLiveData<Boolean>(false)
 
     // Anti-doublons en mémoire pour la session actuelle
-    private var isCheckingHeatAlert = false
     private var isCheckingStockAlert = false
     private var isGeneratingReminders = false
 
@@ -112,10 +111,9 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
 
     fun loadData() {
         checkAccessStatus()
-        if (!isCheckingHeatAlert) {
-            checkHeatAlert()
-        }
-        
+        // La vérification météo (alerte canicule) est prise en charge par HeatAlertWorker,
+        // planifié toutes les 6h par PoulaillerApplication, y compris appli fermée.
+
         viewModelScope.launch {
             try {
                 val user = firebaseRepo.getCurrentUserProfile()
@@ -201,69 +199,6 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
             ?.distinctBy { it.title } // Anti-doublons visuel simple
             ?: emptyList()
         activeHealthReminders.postValue(active)
-    }
-
-    private fun checkHeatAlert() {
-        val prefs = getApplication<Application>().getSharedPreferences("HeatAlertPrefs", Context.MODE_PRIVATE)
-        val lastCheckDate = prefs.getString("lastCheckDate", "")
-        val todayDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
-
-        if (lastCheckDate == todayDate) return
-        if (isCheckingHeatAlert) return
-
-        isCheckingHeatAlert = true
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                val email = firebaseRepo.getResponsibleEmail()
-                val info = firebaseRepo.getFarmInfo()
-                
-                if (email == null || info == null) {
-                    isCheckingHeatAlert = false
-                    return@launch
-                }
-
-                val response = RetrofitClient.weatherApi.getForecast()
-                val daily = response.daily
-                
-                var alertNeeded = false
-                var highTempDay = ""
-                var highTempValue = 0.0
-
-                // On démarre à i = 1 (demain) et non i = 0 (aujourd'hui) afin d'envoyer
-                // l'alerte 24 heures à l'avance et laisser le temps de prendre les précautions,
-                // au lieu d'alerter le jour même de la chaleur.
-                val heatThreshold = info.heatAlertTempCelsius
-                for (i in 1 until daily.time.size) {
-                    val temp = daily.maxTemperatures[i]
-                    if (temp >= heatThreshold) {
-                        alertNeeded = true
-                        highTempDay = daily.time[i]
-                        highTempValue = temp
-                        break
-                    }
-                }
-
-                if (alertNeeded) {
-                    firebaseRepo.sendHeatAlertEmail(email, info.farmName, highTempDay, highTempValue)
-                    
-                    val batch = selectedBatch.value
-                    if (batch != null && batch.firestoreId != null) {
-                        addVitaminReminder(
-                            batch.firestoreId,
-                            "Vitamine C / Électrolytes",
-                            "Période de chaleur prévue ($highTempValue°C le $highTempDay). Hydratation et anti-stress recommandés."
-                        )
-                    }
-                }
-                
-                prefs.edit().putString("lastCheckDate", todayDate).apply()
-
-            } catch (e: Exception) {
-                Log.e("DashboardVM", "Error checking heat alert", e)
-            } finally {
-                isCheckingHeatAlert = false
-            }
-        }
     }
 
     private fun addVitaminReminder(batchId: String, title: String, desc: String) {
@@ -590,6 +525,34 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         }
     }
 
+    /**
+     * Détermine la ration journalière (kg/sujet) réellement en vigueur pour un jour donné.
+     *
+     * S'appuie sur [Batch.feedRationHistory] : la ration appliquée est celle du dernier
+     * changement dont la date effective est <= [day], de sorte qu'un changement de ration
+     * saisi aujourd'hui ne s'applique qu'à partir d'aujourd'hui et ne modifie pas le calcul
+     * de consommation des jours passés. Si aucun changement n'est encore en vigueur à cette
+     * date, on retombe sur la courbe de croissance standard selon l'âge du lot ce jour-là.
+     */
+    private fun resolveDailyRation(batch: Batch, day: Long, isChair: Boolean, dayMillis: Long): Double {
+        val history = batch.parseFeedRationHistory()
+        if (history.isNotEmpty()) {
+            val applicable = history.filter { it.effectiveDate <= day }.maxByOrNull { it.effectiveDate }
+            if (applicable != null) return applicable.ration
+        } else if (batch.feedRation > 0 && batch.feedRation != 0.120) {
+            // Compatibilité avec les lots existants dont la ration a été modifiée avant
+            // l'introduction de l'historique : on garde l'ancien comportement (valeur fixe).
+            return batch.feedRation
+        }
+
+        val ageInWeeks = ((day - batch.chickBirthDate) / (dayMillis * 7)).toInt()
+        return if (isChair) {
+            when { ageInWeeks < 2 -> 0.040; ageInWeeks < 4 -> 0.100; ageInWeeks < 6 -> 0.160; else -> 0.200 }
+        } else {
+            when { ageInWeeks < 4 -> 0.040; ageInWeeks < 8 -> 0.070; ageInWeeks < 17 -> 0.090; else -> 0.120 }
+        }
+    }
+
     private fun calculateFeedStats(batch: Batch, mortalities: List<Mortality>, totalPurchased: Double) {
         val initialHens = batch.hensCount
         val startDate = batch.arrivalDate
@@ -606,16 +569,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         while (currentDay < today) {
             val mortalityUntilThen = mortalities.filter { it.date <= currentDay }.sumOf { it.count }
             val hensThatDay = (initialHens - mortalityUntilThen).coerceAtLeast(0)
-            val dailyFeed = if (batch.feedRation > 0 && batch.feedRation != 0.120) {
-                batch.feedRation
-            } else {
-                val ageInWeeks = ((currentDay - batch.chickBirthDate) / (dayMillis * 7)).toInt()
-                if (isChair) {
-                    when { ageInWeeks < 2 -> 0.040; ageInWeeks < 4 -> 0.100; ageInWeeks < 6 -> 0.160; else -> 0.200 }
-                } else {
-                    when { ageInWeeks < 4 -> 0.040; ageInWeeks < 8 -> 0.070; ageInWeeks < 17 -> 0.090; else -> 0.120 }
-                }
-            }
+            val dailyFeed = resolveDailyRation(batch, currentDay, isChair, dayMillis)
             totalConsumed += hensThatDay * dailyFeed
             currentDay += dayMillis
         }
@@ -635,16 +589,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         }
 
         val currentHens = (initialHens - mortalities.sumOf { it.count }).coerceAtLeast(0)
-        val currentAgeInWeeks = if (batch.chickBirthDate > 0) ((today - batch.chickBirthDate) / (dayMillis * 7)).toInt() else 20
-        val dailyFeedPerHen = if (batch.feedRation > 0 && batch.feedRation != 0.120) {
-            batch.feedRation
-        } else {
-            if (isChair) {
-                when { currentAgeInWeeks < 2 -> 0.040; currentAgeInWeeks < 4 -> 0.100; currentAgeInWeeks < 6 -> 0.160; else -> 0.200 }
-            } else {
-                when { currentAgeInWeeks < 4 -> 0.040; currentAgeInWeeks < 8 -> 0.070; currentAgeInWeeks < 17 -> 0.090; else -> 0.120 }
-            }
-        }
+        val dailyFeedPerHen = resolveDailyRation(batch, today, isChair, dayMillis)
 
         dailyConsumptionTotalKg.postValue(currentHens * dailyFeedPerHen)
         dailyConsumptionPerHenG.postValue(dailyFeedPerHen * 1000.0)
