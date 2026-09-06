@@ -98,7 +98,7 @@
     <string name="lighting_logic_desc">Pour une ponte optimale, vos poules ont besoin de 15 heures de lumière par jour.\n\n<b>Logique :</b>\n1. Allumez les lampes dès le coucher du soleil.\n2. L\'application calcule l\'heure d\'extinction pour atteindre les 15h (Lever du soleil + 15h).\n\n<i>Note : À Nouakchott, cette heure varie légèrement selon la saison.</i></string>
 
     <!-- Paramètres / Seuils d'alerte -->
-    <string name="thresholds_summary">Stock alvéoles critique : %1$d\nStock aliment : critique &lt; %2$dj, alerte &lt; %3$dj\nCanicule : %4$d°C\nPhotopériode : %5$dh après le lever du soleil\nRappels vaccins : tous les %6$d mois\nDéparasitage interne : tous les %7$d mois\nDéparasitage externe : tous les %8$d mois</string>
+    <string name="thresholds_summary">Stock alvéoles critique : %1$d\nStock aliment : critique &lt; %2$dj, alerte &lt; %3$dj\nCanicule : %4$d°C\nPhotopériode : %5$dh après le lever du soleil\nRappels vaccins : tous les %6$d mois\nDéparasitage interne : tous les %7$d mois\nDéparasitage externe : tous les %8$d mois\nCorrection météo : %9$+.1f°C</string>
 
     <string name="nav_delete_account">Supprimer mon compte</string>
     <string name="delete_account_url" translatable="false">https://hadietou.github.io/poulailler-privacy/delete-account.html</string>

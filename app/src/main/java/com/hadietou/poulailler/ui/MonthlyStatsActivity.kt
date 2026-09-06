@@ -13,6 +13,7 @@ import com.hadietou.poulailler.repository.FirebaseRepository
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
+import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -41,16 +42,27 @@ class MonthlyStatsActivity : AppCompatActivity() {
         binding.toolbar.setNavigationOnClickListener { finish() }
         
         val title = when (statsType) {
-            "COLLECTION" -> "Collecte d'œufs (Mois)"
-            "SALES" -> "Ventes d'œufs (Tablettes / Mois)"
+            "COLLECTION" -> "Suivi de la production d'œufs"
+            "SALES" -> "Suivi des ventes"
             "REVENUE" -> "Recette (Mois)"
             "BROKEN" -> "Œufs cassés (Mois)"
             "MORTALITY" -> "Mortalité (Mois)"
-            "EXPENSES" -> "Dépenses (Mois)"
+            "EXPENSES" -> "Suivi des dépenses"
             else -> "Statistiques Mensuelles"
         }
         binding.tvChartTitle.text = title
         supportActionBar?.title = ""
+
+        val summaryLabel = when (statsType) {
+            "COLLECTION" -> "Production Mensuelle d'œufs"
+            "BROKEN" -> "Œufs cassés ce mois"
+            "SALES" -> "Ventes ce mois"
+            "REVENUE" -> "Recette ce mois"
+            "MORTALITY" -> "Mortalité ce mois"
+            "EXPENSES" -> "Dépenses ce mois"
+            else -> "Total mensuel"
+        }
+        binding.tvStatsSummaryLabel.text = summaryLabel.uppercase(Locale.getDefault())
     }
 
     private fun loadData() {
@@ -85,15 +97,29 @@ class MonthlyStatsActivity : AppCompatActivity() {
                     val totalBroken = filteredEntries.sumOf { it.brokenEggsCount }
                     val totalAvailable = totalGeneral - totalSold - totalBroken
 
-                    binding.tvStatsSummary.text = "Total mensuel : $totalMensuel"
-                    
-                    binding.tvTotalGeneral.visibility = View.VISIBLE
-                    binding.tvTotalGeneral.text = "Total général : $totalGeneral"
-                    
-                    binding.tvTotalAvailable.visibility = View.VISIBLE
+                    val totalMensuelTablettes = totalMensuel / 30
+                    val totalGeneralTablettes = totalGeneral / 30
+                    val numberFormat = NumberFormat.getInstance(Locale.getDefault())
+
+                    binding.tvStatsSummary.text = totalMensuelTablettes.toString()
+                    binding.tvStatsSummaryUnit.visibility = View.VISIBLE
+                    binding.tvStatsSummarySubtitle.visibility = View.VISIBLE
+                    binding.tvStatsSummarySubtitle.text = "≈ ${numberFormat.format(totalMensuel)} œufs"
+
+                    binding.cardTotalGeneral.visibility = View.VISIBLE
+                    binding.tvTotalGeneral.text = totalGeneralTablettes.toString()
+                    binding.tvTotalGeneralSubtitle.text = "≈ ${numberFormat.format(totalGeneral)} œufs"
+
+                    binding.cardTotalAvailable.visibility = View.VISIBLE
                     val availableTablettes = totalAvailable / 30
                     val remainingEggs = totalAvailable % 30
-                    binding.tvTotalAvailable.text = "Total d'œufs disponible : $totalAvailable ($availableTablettes Tab et $remainingEggs)"
+                    binding.tvTotalAvailable.text = availableTablettes.toString()
+                    binding.tvTotalAvailableSubtitle.text = "${numberFormat.format(totalAvailable)} œufs (dont $remainingEggs hors plateau)"
+
+                    val totalBrokenMensuel = currentMonthEntries.sumOf { it.brokenEggsCount }
+                    binding.cardBrokenEggs.visibility = View.VISIBLE
+                    binding.tvBrokenMonthly.text = numberFormat.format(totalBrokenMensuel)
+                    binding.tvBrokenGeneral.text = numberFormat.format(totalBroken)
 
                     val historicalData = aggregateByMonth(filteredEntries.map { it.date to (it.eggsCount.toDouble() / 30.0) })
                     setupHistoricalBarChart(historicalData, "Tablettes collectées / mois")
@@ -106,9 +132,9 @@ class MonthlyStatsActivity : AppCompatActivity() {
                     val dailyData = aggregateDaily(filteredCurrent.map { it.date to it.brokenEggsCount.toDouble() })
                     setupLineChart(dailyData, "Cassés")
                     val totalMensuel = filteredCurrent.sumOf { it.brokenEggsCount }
-                    binding.tvStatsSummary.text = "Total mensuel : $totalMensuel"
-                    binding.tvTotalGeneral.visibility = View.GONE
-                    binding.tvTotalAvailable.visibility = View.GONE
+                    binding.tvStatsSummary.text = NumberFormat.getInstance(Locale.getDefault()).format(totalMensuel)
+                    binding.cardTotalGeneral.visibility = View.GONE
+                    binding.cardTotalAvailable.visibility = View.GONE
 
                     val historicalData = aggregateByMonth(filteredAll.map { it.date to it.brokenEggsCount.toDouble() })
                     setupHistoricalBarChart(historicalData, "Œufs cassés / mois")
@@ -122,14 +148,53 @@ class MonthlyStatsActivity : AppCompatActivity() {
             repository.getSalesFlow().collectLatest { sales ->
                 val filteredAll = sales.filter { batchId == null || it.batchId == batchId }
                 val filteredCurrent = filteredAll.filter { isCurrentMonth(it.date) }
-                
+
                 val dailyData = aggregateDaily(filteredCurrent.map { it.date to (it.quantity.toDouble() / 30.0) })
                 setupLineChart(dailyData, "Tablettes vendues")
-                binding.tvTotalGeneral.visibility = View.GONE
-                binding.tvTotalAvailable.visibility = View.GONE
+                binding.cardTotalGeneral.visibility = View.GONE
+                binding.cardTotalAvailable.visibility = View.GONE
 
                 val historicalData = aggregateByMonth(filteredAll.map { it.date to (it.quantity.toDouble() / 30.0) })
                 setupHistoricalBarChart(historicalData, "Tablettes vendues / mois")
+
+                // Case "Vente Total" : total toutes périodes + détail par prix de vente
+                // (car toutes les tablettes ne sont pas vendues au même prix)
+                val numberFormat = NumberFormat.getInstance(Locale.getDefault())
+                binding.cardSalesTotal.visibility = View.VISIBLE
+
+                val totalQuantityAll = filteredAll.sumOf { it.quantity }
+                val totalRevenueAll = filteredAll.sumOf { it.totalPrice }
+                binding.tvSalesTotalValue.text = (totalQuantityAll / 30).toString()
+                binding.tvSalesTotalSubtitle.text = "≈ ${numberFormat.format(totalRevenueAll.toInt())} MRU de recette totale"
+                binding.tvSalesPriceBreakdown.text = buildPriceBreakdown(filteredAll, numberFormat)
+
+                // Même détail, mais uniquement pour les ventes du mois en cours
+                if (filteredCurrent.isEmpty()) {
+                    binding.dividerStatsSummary.visibility = View.GONE
+                    binding.tvStatsSummaryBreakdownLabel.visibility = View.GONE
+                    binding.tvStatsSummaryBreakdown.visibility = View.GONE
+                } else {
+                    binding.dividerStatsSummary.visibility = View.VISIBLE
+                    binding.tvStatsSummaryBreakdownLabel.visibility = View.VISIBLE
+                    binding.tvStatsSummaryBreakdownLabel.text = "DÉTAIL PAR PRIX DE VENTE"
+                    binding.tvStatsSummaryBreakdown.visibility = View.VISIBLE
+                    binding.tvStatsSummaryBreakdown.text = buildPriceBreakdown(filteredCurrent, numberFormat)
+                }
+            }
+        }
+    }
+
+    /** Regroupe les ventes par prix de plateau et retourne un résumé "X plateaux à Y MRU/plateau" par ligne. */
+    private fun buildPriceBreakdown(sales: List<com.hadietou.poulailler.data.EggSale>, numberFormat: NumberFormat): String {
+        val breakdown = sales
+            .groupBy { Math.round(it.pricePerUnit * 30).toInt() }
+            .map { (trayPrice, list) -> trayPrice to (list.sumOf { it.quantity } / 30) }
+            .sortedByDescending { it.second }
+        return if (breakdown.isEmpty()) {
+            "Aucune vente enregistrée"
+        } else {
+            breakdown.joinToString("\n") { (trayPrice, tablettes) ->
+                "$tablettes plateaux à ${numberFormat.format(trayPrice)} MRU/plateau"
             }
         }
     }
@@ -142,8 +207,8 @@ class MonthlyStatsActivity : AppCompatActivity() {
                 
                 val dailyData = aggregateDaily(filteredCurrent.map { it.date to it.totalPrice })
                 setupLineChart(dailyData, "Recette")
-                binding.tvTotalGeneral.visibility = View.GONE
-                binding.tvTotalAvailable.visibility = View.GONE
+                binding.cardTotalGeneral.visibility = View.GONE
+                binding.cardTotalAvailable.visibility = View.GONE
 
                 val historicalData = aggregateByMonth(filteredAll.map { it.date to it.totalPrice })
                 setupHistoricalBarChart(historicalData, "Recette / mois")
@@ -159,8 +224,8 @@ class MonthlyStatsActivity : AppCompatActivity() {
                 
                 val dailyData = aggregateDaily(filteredCurrent.map { it.date to it.count.toDouble() })
                 setupLineChart(dailyData, "Morts")
-                binding.tvTotalGeneral.visibility = View.GONE
-                binding.tvTotalAvailable.visibility = View.GONE
+                binding.cardTotalGeneral.visibility = View.GONE
+                binding.cardTotalAvailable.visibility = View.GONE
 
                 val historicalData = aggregateByMonth(filteredAll.map { it.date to it.count.toDouble() })
                 setupHistoricalBarChart(historicalData, "Mortalité / mois")
@@ -186,13 +251,50 @@ class MonthlyStatsActivity : AppCompatActivity() {
                     binding.monthlyBarChart.visibility = View.VISIBLE
                     setupBarChart(categoryData)
                 }
-                binding.tvTotalGeneral.visibility = View.GONE
-                binding.tvTotalAvailable.visibility = View.GONE
+                binding.cardTotalGeneral.visibility = View.GONE
+                binding.cardTotalAvailable.visibility = View.GONE
 
                 val historicalExpData = aggregateByMonth(filteredAllExp.map { it.date to it.amount })
                 val historicalSalesData = aggregateByMonth(filteredAllSales.map { it.date to it.totalPrice })
-                
+
                 setupHistoricalComparisonChart(historicalExpData, historicalSalesData)
+
+                // Détail par catégorie des dépenses du mois, dans la case résumé dynamique
+                val numberFormat = NumberFormat.getInstance(Locale.getDefault())
+                if (filteredCurrent.isEmpty()) {
+                    binding.dividerStatsSummary.visibility = View.GONE
+                    binding.tvStatsSummaryBreakdownLabel.visibility = View.GONE
+                    binding.tvStatsSummaryBreakdown.visibility = View.GONE
+                } else {
+                    binding.dividerStatsSummary.visibility = View.VISIBLE
+                    binding.tvStatsSummaryBreakdownLabel.visibility = View.VISIBLE
+                    binding.tvStatsSummaryBreakdownLabel.text = "DÉTAIL PAR CATÉGORIE"
+                    binding.tvStatsSummaryBreakdown.visibility = View.VISIBLE
+                    binding.tvStatsSummaryBreakdown.text = buildExpenseBreakdown(filteredCurrent, numberFormat)
+                }
+
+                // Case "Dépenses Total" : total toutes périodes + détail par catégorie
+                binding.cardExpensesTotal.visibility = View.VISIBLE
+                val totalExpensesAll = filteredAllExp.sumOf { it.amount }
+                binding.tvExpensesTotalValue.text = "≈ ${numberFormat.format(totalExpensesAll.toInt())} MRU"
+                binding.tvExpensesTotalBreakdown.text = buildExpenseBreakdown(filteredAllExp, numberFormat)
+            }
+        }
+    }
+
+    /** Regroupe les dépenses par catégorie et retourne un résumé "Catégorie : X MRU (Y%)" par ligne. */
+    private fun buildExpenseBreakdown(expenses: List<com.hadietou.poulailler.data.Expense>, numberFormat: NumberFormat): String {
+        val total = expenses.sumOf { it.amount }
+        val breakdown = expenses
+            .groupBy { it.category }
+            .map { (category, list) -> category to list.sumOf { it.amount } }
+            .sortedByDescending { it.second }
+        return if (breakdown.isEmpty()) {
+            "Aucune dépense enregistrée"
+        } else {
+            breakdown.joinToString("\n") { (category, amount) ->
+                val percent = if (total > 0) (amount / total * 100).toInt() else 0
+                "$category : ${numberFormat.format(amount.toInt())} MRU ($percent%)"
             }
         }
     }
@@ -310,7 +412,7 @@ class MonthlyStatsActivity : AppCompatActivity() {
             else -> ""
         }
         val format = if (statsType == "SALES") "%.1f" else "%.0f"
-        binding.tvStatsSummary.text = "Total mensuel : ${String.format(Locale.getDefault(), format, total)}$unit"
+        binding.tvStatsSummary.text = "${String.format(Locale.getDefault(), format, total)}$unit"
     }
 
     private fun setupBarChart(data: List<Pair<String, Double>>) {

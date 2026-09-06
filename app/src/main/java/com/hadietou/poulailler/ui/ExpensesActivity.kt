@@ -66,7 +66,7 @@ class ExpensesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
         "Cheptel & Santé" to arrayOf("Vaccins", "Médicaments", "Vitamines", "Désinfectants", "Laye"),
         "Eau/Électricité" to arrayOf("Eau", "Électricité"),
         "Transport" to arrayOf("Livraison Aliment", "Livraison Œuf"),
-        "Consommables" to arrayOf("Alvéoles", "Autre")
+        "Consommables" to arrayOf("Alvéoles", "Glace industrielle", "Autre")
     )
 
     /**
