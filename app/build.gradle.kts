@@ -22,8 +22,8 @@ android {
         applicationId = "com.hadietou.poulailler"
         minSdk = 24
         targetSdk = 36
-        versionCode = 17
-        versionName = "22.07.2026"
+        versionCode = 18
+        versionName = "14.09.2026"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -34,6 +34,18 @@ android {
         buildConfigField("String", "BREVO_API_KEY", "\"$brevoApiKey\"")
     }
 
+    signingConfigs {
+        create("release") {
+            val releaseStoreFile = localProperties.getProperty("RELEASE_STORE_FILE")
+            if (releaseStoreFile != null) {
+                storeFile = file(releaseStoreFile)
+                storePassword = localProperties.getProperty("RELEASE_STORE_PASSWORD")
+                keyAlias = localProperties.getProperty("RELEASE_KEY_ALIAS")
+                keyPassword = localProperties.getProperty("RELEASE_KEY_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true
@@ -42,6 +54,12 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            // Ne s'applique que si local.properties fournit les identifiants (voir README /
+            // message d'accompagnement) : permet aux builds debug/CI sans clé de release de
+            // continuer à fonctionner sans configuration de signature.
+            if (localProperties.getProperty("RELEASE_STORE_FILE") != null) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
     }
 
