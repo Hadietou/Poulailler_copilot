@@ -16,6 +16,7 @@ import androidx.appcompat.app.ActionBarDrawerToggle
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.GravityCompat
+import androidx.core.view.drawToBitmap
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.hadietou.poulailler.R
@@ -32,6 +33,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.text.NumberFormat
 import java.util.*
+import com.hadietou.poulailler.util.ActionMenuItem
+import com.hadietou.poulailler.util.ActionMenuPopup
+import com.hadietou.poulailler.util.DrawerSubmenuController
 import com.hadietou.poulailler.util.NavMenuStyler
 import com.hadietou.poulailler.util.NetworkStatusMonitor
 import com.hadietou.poulailler.network.WeatherUtils
@@ -46,8 +50,7 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
     private var isBlocked = false
     private lateinit var reminderAdapter: HealthReminderAdapter
     
-    private var isEggMenuExpanded = false
-    private var isHealthMenuExpanded = false
+    private val drawerSubmenus = DrawerSubmenuController()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -157,11 +160,8 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
             binding.navigationView,
             this,
             defaultIconTintRes = R.color.text_secondary,
-            parents = listOf(
-                R.id.nav_egg_management to isEggMenuExpanded,
-                R.id.nav_health_management to isHealthMenuExpanded
-            ),
-            children = listOf(R.id.nav_collect, R.id.nav_sales, R.id.nav_vaccines, R.id.nav_mortality)
+            parents = drawerSubmenus.parentsForStyler(),
+            children = DrawerSubmenuController.CHILD_ITEM_IDS
         )
     }
 
@@ -180,7 +180,7 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
 
         binding.toolbar.findViewById<View>(R.id.ivHeaderReport)?.setOnClickListener {
             val prodChart = if (binding.productionChart.visibility == View.VISIBLE) binding.productionChart.chartBitmap else null
-            val expChart = if (binding.expensesBarChart.visibility == View.VISIBLE) binding.expensesBarChart.chartBitmap else null
+            val expChart = if (binding.expensesBarChart.visibility == View.VISIBLE) binding.expensesBarChart.drawToBitmap() else null
             ReportUtils.generateAndShareReport(this, viewModel, prodChart, expChart)
         }
     }
@@ -210,43 +210,32 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
         binding.cardNetProfit.setOnClickListener { navigateTo(SalesActivity::class.java) }
     }
 
-    /** Affiche un menu popup dont chaque entrée déclenche l'action associée. */
-    private fun showActionMenu(anchor: View, items: List<Pair<String, () -> Unit>>) {
-        val popup = android.widget.PopupMenu(this, anchor)
-        items.forEachIndexed { index, (label, _) -> popup.menu.add(0, index, index, label) }
-        popup.setOnMenuItemClickListener { item ->
-            items.getOrNull(item.itemId)?.second?.invoke()
-            true
-        }
-        popup.show()
-    }
-
-    private fun showEggProductionMenu(anchor: View) = showActionMenu(anchor, listOf(
-        "+ Saisir la ponte" to { navigateTo(AgentActivity::class.java) },
-        "Suivi de la production" to { navigateToStats("COLLECTION") },
-        "Suivi des œufs cassés" to { navigateToStats("BROKEN") }
+    private fun showEggProductionMenu(anchor: View) = ActionMenuPopup.show(anchor, listOf(
+        ActionMenuItem(R.drawable.ic_egg, "+ Saisir la ponte") { navigateTo(AgentActivity::class.java) },
+        ActionMenuItem(R.drawable.ic_chart_line, "Suivi de la production") { navigateToStats("COLLECTION") },
+        ActionMenuItem(R.drawable.ic_chart_line, "Suivi des œufs cassés") { navigateToStats("BROKEN") }
     ))
 
-    private fun showSalesMenu(anchor: View) = showActionMenu(anchor, listOf(
-        "Saisie des ventes" to { navigateTo(SalesActivity::class.java) },
-        "Suivi des ventes" to { navigateToStats("SALES") },
-        "Suivi de la recette" to { navigateToStats("REVENUE") }
+    private fun showSalesMenu(anchor: View) = ActionMenuPopup.show(anchor, listOf(
+        ActionMenuItem(R.drawable.ic_sell, "Saisie des ventes") { navigateTo(SalesActivity::class.java) },
+        ActionMenuItem(R.drawable.ic_chart_line, "Suivi des ventes") { navigateToStats("SALES") },
+        ActionMenuItem(R.drawable.ic_finance, "Suivi de la recette") { navigateToStats("REVENUE") }
     ))
 
-    private fun showExpensesMenu(anchor: View) = showActionMenu(anchor, listOf(
-        "+ Ajouter une dépense" to { navigateTo(ExpensesActivity::class.java) },
-        "Suivi des dépenses" to { navigateToStats("EXPENSES") }
+    private fun showExpensesMenu(anchor: View) = ActionMenuPopup.show(anchor, listOf(
+        ActionMenuItem(R.drawable.ic_finance, "+ Ajouter une dépense") { navigateTo(ExpensesActivity::class.java) },
+        ActionMenuItem(R.drawable.ic_chart_line, "Suivi des dépenses") { navigateToStats("EXPENSES") }
     ))
 
-    private fun showFeedMenu(anchor: View) = showActionMenu(anchor, listOf(
-        "Saisie des dépenses" to { navigateTo(ExpensesActivity::class.java) },
-        "Suivi de la consommation" to { navigateTo(FeedConsumptionActivity::class.java) }
+    private fun showFeedMenu(anchor: View) = ActionMenuPopup.show(anchor, listOf(
+        ActionMenuItem(R.drawable.ic_finance, "Saisie des dépenses") { navigateTo(ExpensesActivity::class.java) },
+        ActionMenuItem(R.drawable.ic_feed, "Suivi de la consommation") { navigateTo(FeedConsumptionActivity::class.java) }
     ))
 
-    private fun showHealthMenu(anchor: View) = showActionMenu(anchor, listOf(
-        "+ Enregistrer une mortalité" to { navigateTo(MortalityActivity::class.java) },
-        "Vaccins & rappels" to { navigateTo(VaccineActivity::class.java) },
-        "Suivi de la mortalité" to { navigateToStats("MORTALITY") }
+    private fun showHealthMenu(anchor: View) = ActionMenuPopup.show(anchor, listOf(
+        ActionMenuItem(R.drawable.ic_mortality, "+ Enregistrer une mortalité") { navigateTo(MortalityActivity::class.java) },
+        ActionMenuItem(R.drawable.ic_vaccine, "Vaccins & rappels") { navigateTo(VaccineActivity::class.java) },
+        ActionMenuItem(R.drawable.ic_chart_line, "Suivi de la mortalité") { navigateToStats("MORTALITY") }
     ))
 
     private fun navigateToStats(type: String) {
@@ -316,10 +305,8 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
         val menu = binding.navigationView.menu
         
         menu.findItem(R.id.nav_egg_management)?.isVisible = !isChair
-        menu.setGroupVisible(R.id.group_egg_submenu, !isChair && isEggMenuExpanded)
-        
         menu.findItem(R.id.nav_health_management)?.isVisible = true
-        menu.setGroupVisible(R.id.group_health_submenu, isHealthMenuExpanded)
+        drawerSubmenus.applyGroupVisibility(menu, eggVisible = !isChair)
     }
 
     private fun observeViewModel() {
@@ -550,26 +537,16 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
     }
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
+        if (drawerSubmenus.handleParentClick(item.itemId)) {
+            rebuildDrawerMenu()
+            return true
+        }
         when (item.itemId) {
             R.id.nav_dashboard -> {}
             R.id.nav_batches -> navigateTo(BatchActivity::class.java)
             R.id.nav_users -> navigateTo(ResponsableActivity::class.java)
             R.id.nav_expenses -> navigateTo(ExpensesActivity::class.java)
             R.id.nav_settings -> navigateTo(FarmInfoActivity::class.java)
-
-            R.id.nav_egg_management -> {
-                isEggMenuExpanded = !isEggMenuExpanded
-                if (isEggMenuExpanded) isHealthMenuExpanded = false
-                rebuildDrawerMenu()
-                return true
-            }
-
-            R.id.nav_health_management -> {
-                isHealthMenuExpanded = !isHealthMenuExpanded
-                if (isHealthMenuExpanded) isEggMenuExpanded = false
-                rebuildDrawerMenu()
-                return true
-            }
 
             R.id.nav_collect -> navigateTo(AgentActivity::class.java)
             R.id.nav_sales -> navigateTo(SalesActivity::class.java)

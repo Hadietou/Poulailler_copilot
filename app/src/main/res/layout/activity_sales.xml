@@ -5,7 +5,7 @@
     android:id="@+id/drawerLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/black">
+    >
 
     <androidx.coordinatorlayout.widget.CoordinatorLayout
         android:layout_width="match_parent"
@@ -14,7 +14,7 @@
         <com.google.android.material.appbar.AppBarLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="@color/black">
+            >
             <com.google.android.material.appbar.MaterialToolbar
                 android:id="@+id/toolbar"
                 android:layout_width="match_parent"
@@ -22,7 +22,21 @@
                 app:title="Vente des Oeufs"
                 app:titleTextColor="@color/white"
                 app:navigationIcon="@android:drawable/ic_menu_sort_by_size"
-                app:navigationIconTint="@color/white" />
+                app:navigationIconTint="@color/white">
+
+                <ImageView
+                    android:id="@+id/ivBackToDashboard"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:layout_gravity="end|center_vertical"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:clickable="true"
+                    android:contentDescription="@string/dashboard_title"
+                    android:focusable="true"
+                    android:padding="12dp"
+                    android:src="@drawable/ic_back"
+                    app:tint="@color/white" />
+            </com.google.android.material.appbar.MaterialToolbar>
         </com.google.android.material.appbar.AppBarLayout>
 
         <androidx.core.widget.NestedScrollView
@@ -64,9 +78,9 @@
                     android:hint="Rechercher par acheteur..."
                     android:textColorHint="#888888"
                     android:textColor="@color/white"
-                    android:background="@android:drawable/edit_text"
+                    android:background="@drawable/bg_search_field"
                     android:backgroundTint="#333333"
-                    android:drawableStart="@android:drawable/ic_menu_search"
+                    android:drawableStart="@drawable/ic_search"
                     android:drawablePadding="8dp"
                     android:drawableTint="#888888"
                     android:padding="10dp"
@@ -115,7 +129,7 @@
             android:layout_height="wrap_content"
             android:layout_gravity="bottom|end"
             android:layout_margin="24dp"
-            android:src="@android:drawable/ic_input_add"
+            android:src="@drawable/ic_add"
             app:backgroundTint="@color/primary"
             app:tint="@color/white"
             android:contentDescription="Ajouter une vente" />

@@ -116,7 +116,7 @@
                             </LinearLayout>
                             <View android:layout_width="1dp" android:layout_height="30dp" android:background="#4DFFFFFF" />
                             <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1.2" android:gravity="center">
-                                <ImageView android:layout_width="20dp" android:layout_height="20dp" android:src="@android:drawable/ic_menu_my_calendar" app:tint="@color/white" />
+                                <ImageView android:layout_width="20dp" android:layout_height="20dp" android:src="@drawable/ic_calendar" app:tint="@color/white" />
                                 <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="10dp" android:orientation="vertical">
                                     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Âge actuel" android:textColor="#B2FFB2" android:textSize="9sp" android:textAllCaps="true" android:textStyle="bold" />
                                     <TextView android:id="@+id/tvDashboardAge" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="--" android:textColor="@color/white" android:textSize="14sp" android:textStyle="bold" />
@@ -191,24 +191,11 @@
                                 app:cardCornerRadius="12dp"
                                 app:cardElevation="0dp">
                                 <LinearLayout android:layout_width="wrap_content" android:layout_height="36dp" android:paddingHorizontal="10dp" android:gravity="center_vertical">
-                                    <ImageView android:layout_width="14dp" android:layout_height="14dp" android:src="@android:drawable/btn_star_big_on" app:tint="#FFD700" />
+                                    <ImageView android:layout_width="14dp" android:layout_height="14dp" android:src="@drawable/ic_star" app:tint="#FFD700" />
                                     <TextView android:id="@+id/tvLightingTime" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="6dp" android:textColor="@color/white" android:textSize="11sp" android:textStyle="bold" tools:text="Lumière : 21:30" />
                                 </LinearLayout>
                             </com.google.android.material.card.MaterialCardView>
 
-                            <!-- Vaccin (Position 4) -->
-                            <com.google.android.material.card.MaterialCardView
-                                android:id="@+id/cardSanitaryAlert"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                app:cardBackgroundColor="#1AFFFFFF"
-                                app:cardCornerRadius="12dp"
-                                app:cardElevation="0dp">
-                                <LinearLayout android:layout_width="wrap_content" android:layout_height="36dp" android:paddingHorizontal="10dp" android:gravity="center_vertical">
-                                    <ImageView android:layout_width="14dp" android:layout_height="14dp" android:src="@android:drawable/ic_dialog_info" app:tint="#FFA0A0" />
-                                    <TextView android:id="@+id/tvNextVaccine" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="6dp" android:textColor="@color/white" android:textSize="11sp" android:textStyle="bold" tools:text="Vaccin J10" />
-                                </LinearLayout>
-                            </com.google.android.material.card.MaterialCardView>
                         </LinearLayout>
                     </HorizontalScrollView>
                 </LinearLayout>
@@ -552,7 +539,7 @@
                                     <View android:layout_width="1dp" android:layout_height="match_parent" android:background="@color/background" />
 
                                     <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="12dp" android:orientation="vertical">
-                                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="RAPPELS" android:textColor="@color/text_secondary" android:textSize="9sp" android:textStyle="bold" android:letterSpacing="0.06" />
+                                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="TRAITEMENT" android:textColor="@color/text_secondary" android:textSize="9sp" android:textStyle="bold" android:letterSpacing="0.06" />
                                         <TextView android:id="@+id/tvDashHealthReminders" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="2dp" android:textColor="@color/text_secondary" android:textSize="15sp" android:textStyle="bold" android:maxLines="1" tools:text="2 en attente" />
                                     </LinearLayout>
                                 </LinearLayout>
@@ -592,8 +579,9 @@
 
                             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Répartition des dépenses par catégorie" android:textColor="@color/text_secondary" android:textSize="11sp" android:textStyle="bold" android:layout_marginBottom="8dp" />
 
-                            <com.github.mikephil.charting.charts.BarChart
-                                android:id="@+id/expensesBarChart" android:layout_width="match_parent" android:layout_height="200dp" />
+                            <LinearLayout
+                                android:id="@+id/expensesBarChart" android:layout_width="match_parent" android:layout_height="wrap_content"
+                                android:orientation="vertical" />
                         </LinearLayout>
                     </com.google.android.material.card.MaterialCardView>
 

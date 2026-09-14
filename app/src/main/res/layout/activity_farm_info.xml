@@ -4,8 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/drawerLayout"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@color/black">
+    android:layout_height="match_parent">
 
     <androidx.coordinatorlayout.widget.CoordinatorLayout
         android:layout_width="match_parent"
@@ -13,8 +12,7 @@
 
         <com.google.android.material.appbar.AppBarLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="@color/black">
+            android:layout_height="wrap_content">
             <com.google.android.material.appbar.MaterialToolbar
                 android:id="@+id/toolbar"
                 android:layout_width="match_parent"
@@ -22,7 +20,21 @@
                 app:title="Ma Ferme"
                 app:titleTextColor="@color/white"
                 app:navigationIcon="@android:drawable/ic_menu_sort_by_size"
-                app:navigationIconTint="@color/white" />
+                app:navigationIconTint="@color/white">
+
+                <ImageView
+                    android:id="@+id/ivBackToDashboard"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:layout_gravity="end|center_vertical"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:clickable="true"
+                    android:contentDescription="@string/dashboard_title"
+                    android:focusable="true"
+                    android:padding="12dp"
+                    android:src="@drawable/ic_back"
+                    app:tint="@color/white" />
+            </com.google.android.material.appbar.MaterialToolbar>
         </com.google.android.material.appbar.AppBarLayout>
 
         <ScrollView
@@ -42,7 +54,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="16dp"
-                    app:cardBackgroundColor="#111111"
+                    app:cardBackgroundColor="@color/surface"
                     app:cardCornerRadius="16dp"
                     app:strokeColor="#FFD700"
                     app:strokeWidth="1dp"
@@ -65,7 +77,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:text="Définissez la ration journalière par sujet (en grammes) pour ajuster le calcul du stock."
-                            android:textColor="#B0B0B0"
+                            android:textColor="@color/text_secondary"
                             android:textSize="12sp"
                             android:layout_marginBottom="12dp"/>
 
@@ -88,7 +100,7 @@
                                     android:layout_width="match_parent"
                                     android:layout_height="wrap_content"
                                     android:inputType="numberDecimal"
-                                    android:textColor="@color/white"
+                                    android:textColor="@color/text_primary"
                                     android:textSize="16sp"/>
                             </com.google.android.material.textfield.TextInputLayout>
 
@@ -116,7 +128,7 @@
                     <com.google.android.material.card.MaterialCardView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        app:cardBackgroundColor="#1A1A1A"
+                        app:cardBackgroundColor="@color/surface"
                         app:cardCornerRadius="12dp"
                         app:strokeColor="#1E90FF"
                         app:strokeWidth="1dp">
@@ -145,21 +157,21 @@
                                 <ImageView
                                     android:layout_width="24dp"
                                     android:layout_height="24dp"
-                                    android:src="@android:drawable/ic_menu_my_calendar"
+                                    android:src="@drawable/ic_calendar"
                                     app:tint="#1E90FF"
                                     android:contentDescription="Icône ferme" />
                                 <TextView
                                     android:id="@+id/tvDisplayFarmName"
                                     android:layout_width="match_parent"
                                     android:layout_height="wrap_content"
-                                    android:textColor="@color/white"
+                                    android:textColor="@color/text_primary"
                                     android:textSize="16sp"
                                     android:layout_marginStart="12dp"
                                     android:textStyle="bold"
                                     android:text="Nom de la ferme"/>
                             </LinearLayout>
 
-                            <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#333333" android:layout_marginVertical="8dp"/>
+                            <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/off_white" android:layout_marginVertical="8dp"/>
 
                             <!-- Hens Count & Breed (Hiding these in layout as they move to Batch) -->
                             <GridLayout
@@ -169,16 +181,16 @@
                                 android:columnCount="2"
                                 android:visibility="gone">
                                 <LinearLayout android:orientation="vertical" android:layout_columnWeight="1" android:layout_width="0dp" android:layout_height="wrap_content">
-                                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Effectif initial" android:textColor="#B0B0B0" android:textSize="12sp"/>
-                                    <TextView android:id="@+id/tvDisplayHensCount" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="@color/white" android:textSize="16sp" android:textStyle="bold"/>
+                                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Effectif initial" android:textColor="@color/text_secondary" android:textSize="12sp"/>
+                                    <TextView android:id="@+id/tvDisplayHensCount" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="@color/text_primary" android:textSize="16sp" android:textStyle="bold"/>
                                 </LinearLayout>
                                 <LinearLayout android:orientation="vertical" android:layout_columnWeight="1" android:layout_width="0dp" android:layout_height="wrap_content">
-                                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Race" android:textColor="#B0B0B0" android:textSize="12sp"/>
-                                    <TextView android:id="@+id/tvDisplayBreed" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="@color/white" android:textSize="16sp" android:textStyle="bold"/>
+                                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Race" android:textColor="@color/text_secondary" android:textSize="12sp"/>
+                                    <TextView android:id="@+id/tvDisplayBreed" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="@color/text_primary" android:textSize="16sp" android:textStyle="bold"/>
                                 </LinearLayout>
                             </GridLayout>
 
-                            <View android:id="@+id/divider1" android:layout_width="match_parent" android:layout_height="1dp" android:background="#333333" android:layout_marginVertical="8dp" android:visibility="gone"/>
+                            <View android:id="@+id/divider1" android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/off_white" android:layout_marginVertical="8dp" android:visibility="gone"/>
 
                             <!-- Dates (Hiding these in layout as they move to Batch) -->
                             <GridLayout
@@ -188,29 +200,29 @@
                                 android:columnCount="2"
                                 android:visibility="gone">
                                 <LinearLayout android:orientation="vertical" android:layout_columnWeight="1" android:layout_width="0dp" android:layout_height="wrap_content">
-                                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Arrivée" android:textColor="#B0B0B0" android:textSize="12sp"/>
-                                    <TextView android:id="@+id/tvDisplayArrival" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="@color/white" android:textSize="14sp"/>
+                                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Arrivée" android:textColor="@color/text_secondary" android:textSize="12sp"/>
+                                    <TextView android:id="@+id/tvDisplayArrival" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="@color/text_primary" android:textSize="14sp"/>
                                 </LinearLayout>
                                 <LinearLayout android:orientation="vertical" android:layout_columnWeight="1" android:layout_width="0dp" android:layout_height="wrap_content">
-                                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Naissance" android:textColor="#B0B0B0" android:textSize="12sp"/>
-                                    <TextView android:id="@+id/tvDisplayBirth" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="@color/white" android:textSize="14sp"/>
+                                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Naissance" android:textColor="@color/text_secondary" android:textSize="12sp"/>
+                                    <TextView android:id="@+id/tvDisplayBirth" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="@color/text_primary" android:textSize="14sp"/>
                                 </LinearLayout>
                             </GridLayout>
 
-                            <View android:id="@+id/divider2" android:layout_width="match_parent" android:layout_height="1dp" android:background="#333333" android:layout_marginVertical="8dp" android:visibility="gone"/>
+                            <View android:id="@+id/divider2" android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/off_white" android:layout_marginVertical="8dp" android:visibility="gone"/>
 
                             <!-- Currency Display -->
                             <LinearLayout android:orientation="vertical" android:layout_width="match_parent" android:layout_height="wrap_content">
-                                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Monnaie utilisée" android:textColor="#B0B0B0" android:textSize="12sp"/>
-                                <TextView android:id="@+id/tvDisplayCurrency" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="@color/white" android:textSize="16sp" android:textStyle="bold" android:text="MRU"/>
+                                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Monnaie utilisée" android:textColor="@color/text_secondary" android:textSize="12sp"/>
+                                <TextView android:id="@+id/tvDisplayCurrency" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="@color/text_primary" android:textSize="16sp" android:textStyle="bold" android:text="MRU"/>
                             </LinearLayout>
 
-                            <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#333333" android:layout_marginVertical="8dp"/>
+                            <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/off_white" android:layout_marginVertical="8dp"/>
 
                             <!-- Locality Display -->
                             <LinearLayout android:orientation="vertical" android:layout_width="match_parent" android:layout_height="wrap_content">
-                                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Localité (pour la météo)" android:textColor="#B0B0B0" android:textSize="12sp"/>
-                                <TextView android:id="@+id/tvDisplayLocality" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="@color/white" android:textSize="16sp" android:textStyle="bold" android:text="Non définie"/>
+                                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Localité (pour la météo)" android:textColor="@color/text_secondary" android:textSize="12sp"/>
+                                <TextView android:id="@+id/tvDisplayLocality" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="@color/text_primary" android:textSize="16sp" android:textStyle="bold" android:text="Non définie"/>
                             </LinearLayout>
                         </LinearLayout>
                     </com.google.android.material.card.MaterialCardView>
@@ -220,7 +232,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="12dp"
-                        app:cardBackgroundColor="#1A1A1A"
+                        app:cardBackgroundColor="@color/surface"
                         app:cardCornerRadius="12dp"
                         app:strokeColor="#1E90FF"
                         app:strokeWidth="1dp">
@@ -244,7 +256,7 @@
                                 android:id="@+id/tvDisplayThresholds"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:textColor="@color/white"
+                                android:textColor="@color/text_primary"
                                 android:textSize="14sp"
                                 android:lineSpacingExtra="4dp"
                                 tools:text="Stock alvéoles critique : 50\nStock aliment : critique &lt; 5j, alerte &lt; 10j\nCanicule : 35°C\nPhotopériode : 15h après le lever du soleil\nRappels vaccins : tous les 2 mois\nDéparasitage interne : tous les 3 mois\nDéparasitage externe : tous les 2 mois" />
@@ -276,7 +288,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Configuration de la ferme"
-                        android:textColor="@color/white"
+                        android:textColor="@color/text_primary"
                         android:textSize="18sp"
                         android:textStyle="bold"
                         android:layout_marginBottom="24dp"/>
@@ -293,7 +305,7 @@
                             android:id="@+id/etFarmName"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:textColor="@color/white" />
+                            android:textColor="@color/text_primary" />
                     </com.google.android.material.textfield.TextInputLayout>
 
                     <com.google.android.material.textfield.TextInputLayout
@@ -311,7 +323,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:inputType="number"
-                            android:textColor="@color/white" />
+                            android:textColor="@color/text_primary" />
                     </com.google.android.material.textfield.TextInputLayout>
 
                     <com.google.android.material.textfield.TextInputLayout
@@ -328,7 +340,7 @@
                             android:id="@+id/etHenBreed"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:textColor="@color/white" />
+                            android:textColor="@color/text_primary" />
                     </com.google.android.material.textfield.TextInputLayout>
 
                     <com.google.android.material.textfield.TextInputLayout
@@ -347,7 +359,7 @@
                             android:layout_height="wrap_content"
                             android:focusable="false"
                             android:clickable="true"
-                            android:textColor="@color/white" />
+                            android:textColor="@color/text_primary" />
                     </com.google.android.material.textfield.TextInputLayout>
 
                     <com.google.android.material.textfield.TextInputLayout
@@ -366,7 +378,7 @@
                             android:layout_height="wrap_content"
                             android:focusable="false"
                             android:clickable="true"
-                            android:textColor="@color/white" />
+                            android:textColor="@color/text_primary" />
                     </com.google.android.material.textfield.TextInputLayout>
 
                     <LinearLayout
@@ -387,7 +399,7 @@
                                 android:id="@+id/etLocality"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:textColor="@color/white" />
+                                android:textColor="@color/text_primary" />
                         </com.google.android.material.textfield.TextInputLayout>
 
                         <com.google.android.material.button.MaterialButton
@@ -396,7 +408,7 @@
                             android:layout_height="wrap_content"
                             android:layout_marginStart="8dp"
                             android:text="CARTE"
-                            app:icon="@android:drawable/ic_dialog_map"
+                            app:icon="@drawable/ic_location"
                             app:cornerRadius="8dp"
                             android:backgroundTint="#1E90FF" />
                     </LinearLayout>
@@ -406,7 +418,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="Aucune position précise définie (météo par défaut : Nouakchott)"
-                        android:textColor="#B0B0B0"
+                        android:textColor="@color/text_secondary"
                         android:textSize="12sp"
                         android:layout_marginTop="4dp"
                         android:layout_marginBottom="24dp"/>
@@ -425,14 +437,14 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:inputType="none"
-                            android:textColor="@color/white" />
+                            android:textColor="@color/text_primary" />
                     </com.google.android.material.textfield.TextInputLayout>
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Seuils d'alerte"
-                        android:textColor="@color/white"
+                        android:textColor="@color/text_primary"
                         android:textSize="18sp"
                         android:textStyle="bold"
                         android:layout_marginBottom="12dp"/>
@@ -446,7 +458,7 @@
                             app:hintTextColor="@color/white" app:boxStrokeColor="@color/white">
                             <com.google.android.material.textfield.TextInputEditText
                                 android:id="@+id/etEggTraysCritical" android:layout_width="match_parent" android:layout_height="wrap_content"
-                                android:inputType="number" android:textColor="@color/white" />
+                                android:inputType="number" android:textColor="@color/text_primary" />
                         </com.google.android.material.textfield.TextInputLayout>
                         <com.google.android.material.textfield.TextInputLayout
                             android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"
@@ -456,7 +468,7 @@
                             app:hintTextColor="@color/white" app:boxStrokeColor="@color/white">
                             <com.google.android.material.textfield.TextInputEditText
                                 android:id="@+id/etHeatAlertTemp" android:layout_width="match_parent" android:layout_height="wrap_content"
-                                android:inputType="number" android:textColor="@color/white" />
+                                android:inputType="number" android:textColor="@color/text_primary" />
                         </com.google.android.material.textfield.TextInputLayout>
                     </LinearLayout>
 
@@ -468,13 +480,13 @@
                         app:hintTextColor="@color/white" app:boxStrokeColor="@color/white">
                         <com.google.android.material.textfield.TextInputEditText
                             android:id="@+id/etWeatherTempOffset" android:layout_width="match_parent" android:layout_height="wrap_content"
-                            android:inputType="numberSigned|numberDecimal" android:textColor="@color/white" />
+                            android:inputType="numberSigned|numberDecimal" android:textColor="@color/text_primary" />
                     </com.google.android.material.textfield.TextInputLayout>
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="À ajuster si la météo affichée diffère du relevé de terrain (ex : +2 si la prévision est systématiquement trop basse)."
-                        android:textColor="#B0B0B0"
+                        android:textColor="@color/text_secondary"
                         android:textSize="12sp"
                         android:layout_marginBottom="12dp" />
 
@@ -487,7 +499,7 @@
                             app:hintTextColor="@color/white" app:boxStrokeColor="@color/white">
                             <com.google.android.material.textfield.TextInputEditText
                                 android:id="@+id/etFeedStockCriticalDays" android:layout_width="match_parent" android:layout_height="wrap_content"
-                                android:inputType="number" android:textColor="@color/white" />
+                                android:inputType="number" android:textColor="@color/text_primary" />
                         </com.google.android.material.textfield.TextInputLayout>
                         <com.google.android.material.textfield.TextInputLayout
                             android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"
@@ -497,7 +509,7 @@
                             app:hintTextColor="@color/white" app:boxStrokeColor="@color/white">
                             <com.google.android.material.textfield.TextInputEditText
                                 android:id="@+id/etFeedStockWarningDays" android:layout_width="match_parent" android:layout_height="wrap_content"
-                                android:inputType="number" android:textColor="@color/white" />
+                                android:inputType="number" android:textColor="@color/text_primary" />
                         </com.google.android.material.textfield.TextInputLayout>
                     </LinearLayout>
 
@@ -510,7 +522,7 @@
                             app:hintTextColor="@color/white" app:boxStrokeColor="@color/white">
                             <com.google.android.material.textfield.TextInputEditText
                                 android:id="@+id/etLightingHours" android:layout_width="match_parent" android:layout_height="wrap_content"
-                                android:inputType="number" android:textColor="@color/white" />
+                                android:inputType="number" android:textColor="@color/text_primary" />
                         </com.google.android.material.textfield.TextInputLayout>
                         <com.google.android.material.textfield.TextInputLayout
                             android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"
@@ -520,7 +532,7 @@
                             app:hintTextColor="@color/white" app:boxStrokeColor="@color/white">
                             <com.google.android.material.textfield.TextInputEditText
                                 android:id="@+id/etVaccineInterval" android:layout_width="match_parent" android:layout_height="wrap_content"
-                                android:inputType="number" android:textColor="@color/white" />
+                                android:inputType="number" android:textColor="@color/text_primary" />
                         </com.google.android.material.textfield.TextInputLayout>
                     </LinearLayout>
 
@@ -533,7 +545,7 @@
                             app:hintTextColor="@color/white" app:boxStrokeColor="@color/white">
                             <com.google.android.material.textfield.TextInputEditText
                                 android:id="@+id/etDewormingInternalInterval" android:layout_width="match_parent" android:layout_height="wrap_content"
-                                android:inputType="number" android:textColor="@color/white" />
+                                android:inputType="number" android:textColor="@color/text_primary" />
                         </com.google.android.material.textfield.TextInputLayout>
                         <com.google.android.material.textfield.TextInputLayout
                             android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"
@@ -543,7 +555,7 @@
                             app:hintTextColor="@color/white" app:boxStrokeColor="@color/white">
                             <com.google.android.material.textfield.TextInputEditText
                                 android:id="@+id/etDewormingExternalInterval" android:layout_width="match_parent" android:layout_height="wrap_content"
-                                android:inputType="number" android:textColor="@color/white" />
+                                android:inputType="number" android:textColor="@color/text_primary" />
                         </com.google.android.material.textfield.TextInputLayout>
                     </LinearLayout>
 
@@ -562,7 +574,7 @@
                         android:text="ANNULER"
                         android:layout_marginTop="8dp"
                         style="@style/Widget.MaterialComponents.Button.TextButton"
-                        android:textColor="@color/white"
+                        android:textColor="@color/text_primary"
                         android:visibility="gone"/>
                 </LinearLayout>
             </LinearLayout>

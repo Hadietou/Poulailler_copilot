@@ -35,6 +35,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.*
+import com.hadietou.poulailler.util.DrawerSubmenuController
 import com.hadietou.poulailler.util.NavMenuStyler
 import com.hadietou.poulailler.util.NetworkStatusMonitor
 
@@ -56,8 +57,7 @@ class ExpensesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
     private var selectedCategoryFilter: String? = null
     private var searchQuery: String = ""
     
-    private var isEggMenuExpanded = false
-    private var isHealthMenuExpanded = false
+    private val drawerSubmenus = DrawerSubmenuController()
 
     private val expenseCategories = arrayOf("Aliment", "Cheptel & Santé", "Transport", "Eau/Électricité", "Équipement", "Main d'œuvre", "Consommables", "Autre")
 
@@ -176,6 +176,10 @@ class ExpensesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
 
         binding.navigationView.setNavigationItemSelectedListener(this)
 
+        binding.toolbar.findViewById<View>(R.id.ivBackToDashboard)?.setOnClickListener {
+            onBackPressed()
+        }
+
         rebuildDrawerMenu()
         updateNavHeader()
     }
@@ -193,8 +197,7 @@ class ExpensesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
         menu.findItem(R.id.nav_users)?.isVisible = userRole == "RESPONSABLE"
         menu.findItem(R.id.nav_expenses)?.isVisible = userRole == "RESPONSABLE"
         menu.findItem(R.id.nav_batches)?.isVisible = userRole == "RESPONSABLE"
-        menu.setGroupVisible(R.id.group_egg_submenu, isEggMenuExpanded)
-        menu.setGroupVisible(R.id.group_health_submenu, isHealthMenuExpanded)
+        drawerSubmenus.applyGroupVisibility(menu)
         refreshDrawerMenuStyle()
     }
 
@@ -203,11 +206,8 @@ class ExpensesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
             binding.navigationView,
             this,
             defaultIconTintRes = R.color.text_secondary,
-            parents = listOf(
-                R.id.nav_egg_management to isEggMenuExpanded,
-                R.id.nav_health_management to isHealthMenuExpanded
-            ),
-            children = listOf(R.id.nav_collect, R.id.nav_sales, R.id.nav_vaccines, R.id.nav_mortality)
+            parents = drawerSubmenus.parentsForStyler(),
+            children = DrawerSubmenuController.CHILD_ITEM_IDS
         )
     }
 
@@ -511,6 +511,10 @@ class ExpensesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
             showBlockingDialog()
             return false
         }
+        if (drawerSubmenus.handleParentClick(item.itemId)) {
+            rebuildDrawerMenu()
+            return true
+        }
 
         when (item.itemId) {
             R.id.nav_dashboard -> {
@@ -532,21 +536,6 @@ class ExpensesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
                 intent.putExtra("userIdString", userId)
                 startActivity(intent)
             }
-            
-            R.id.nav_egg_management -> {
-                isEggMenuExpanded = !isEggMenuExpanded
-                if (isEggMenuExpanded) isHealthMenuExpanded = false
-                rebuildDrawerMenu()
-                return true
-            }
-
-            R.id.nav_health_management -> {
-                isHealthMenuExpanded = !isHealthMenuExpanded
-                if (isHealthMenuExpanded) isEggMenuExpanded = false
-                rebuildDrawerMenu()
-                return true
-            }
-
             R.id.nav_collect -> {
                 val intent = Intent(this, AgentActivity::class.java)
                 intent.putExtra("userIdString", userId)

@@ -24,6 +24,7 @@ import com.hadietou.poulailler.data.AppDatabase
 import com.hadietou.poulailler.data.FarmInfo
 import com.hadietou.poulailler.data.VaccineEntry
 import com.hadietou.poulailler.data.HealthReminder
+import com.hadietou.poulailler.data.HealthReminderLog
 import com.hadietou.poulailler.databinding.ActivityVaccineBinding
 import com.hadietou.poulailler.databinding.DialogAddVaccineBinding
 import com.hadietou.poulailler.databinding.ItemVaccineBinding
@@ -37,6 +38,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.*
+import com.hadietou.poulailler.util.DrawerSubmenuController
 import com.hadietou.poulailler.util.NavMenuStyler
 import com.hadietou.poulailler.util.NetworkStatusMonitor
 
@@ -51,14 +53,14 @@ class VaccineActivity : AppCompatActivity(), NavigationView.OnNavigationItemSele
     private val firebaseRepo = FirebaseRepository()
     private lateinit var adapter: VaccineAdapter
     private lateinit var reminderAdapter: HealthReminderAdapter
+    private lateinit var reminderLogAdapter: HealthReminderLogAdapter
 
     private var allVaccines: List<VaccineEntry> = emptyList()
     private var allHealthReminders: List<HealthReminder> = emptyList()
     private var isShowingAll = false
     private var isBlocked = false
 
-    private var isEggMenuExpanded = false
-    private var isHealthMenuExpanded = true 
+    private val drawerSubmenus = DrawerSubmenuController(DrawerSubmenuController.Submenu.HEALTH)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -73,9 +75,10 @@ class VaccineActivity : AppCompatActivity(), NavigationView.OnNavigationItemSele
         setupNavigation()
         setupRecyclerView()
         setupHealthReminders()
-        setupCalendar()
+        setupHealthReminderHistory()
         observeVaccines()
         observeHealthReminders()
+        observeHealthReminderLogs()
         loadEnhancedSanitaryGuide()
         checkAccessStatus()
         fetchWeatherForecast()
@@ -94,33 +97,6 @@ class VaccineActivity : AppCompatActivity(), NavigationView.OnNavigationItemSele
             binding.root.post {
                 binding.nestedScrollView.smoothScrollTo(0, binding.cardLightingLogic.top)
             }
-        }
-    }
-
-    private fun setupCalendar() {
-        binding.calendarView.setOnDateChangeListener { _, year, month, dayOfMonth ->
-            val cal = Calendar.getInstance()
-            cal.set(year, month, dayOfMonth)
-            showRemindersForDay(cal)
-        }
-    }
-
-    private fun showRemindersForDay(cal: Calendar) {
-        val startOfDay = cal.apply { set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0) }.timeInMillis
-        val endOfDay = startOfDay + 24 * 60 * 60 * 1000 - 1
-
-        val dayReminders = allHealthReminders.filter { it.dueDate in startOfDay..endOfDay }
-        val dayVaccines = allVaccines.filter { it.date in startOfDay..endOfDay }
-
-        if (dayReminders.isEmpty() && dayVaccines.isEmpty()) {
-            binding.tvSelectedDayReminders.visibility = View.GONE
-        } else {
-            val sb = StringBuilder("<b>Alertes et soins pour ce jour :</b><br/>")
-            dayReminders.forEach { sb.append("• [Rappel] ${it.title}<br/>") }
-            dayVaccines.forEach { sb.append("• [Soin] ${it.name}<br/>") }
-            
-            binding.tvSelectedDayReminders.text = Html.fromHtml(sb.toString(), Html.FROM_HTML_MODE_LEGACY)
-            binding.tvSelectedDayReminders.visibility = View.VISIBLE
         }
     }
 
@@ -188,6 +164,10 @@ class VaccineActivity : AppCompatActivity(), NavigationView.OnNavigationItemSele
 
         binding.navigationView.setNavigationItemSelectedListener(this)
 
+        binding.toolbar.findViewById<View>(R.id.ivBackToDashboard)?.setOnClickListener {
+            onBackPressed()
+        }
+
         rebuildDrawerMenu()
         updateNavHeader()
     }
@@ -205,8 +185,7 @@ class VaccineActivity : AppCompatActivity(), NavigationView.OnNavigationItemSele
         menu.findItem(R.id.nav_users)?.isVisible = userRole == "RESPONSABLE"
         menu.findItem(R.id.nav_expenses)?.isVisible = userRole == "RESPONSABLE"
         menu.findItem(R.id.nav_batches)?.isVisible = userRole == "RESPONSABLE"
-        menu.setGroupVisible(R.id.group_egg_submenu, isEggMenuExpanded)
-        menu.setGroupVisible(R.id.group_health_submenu, isHealthMenuExpanded)
+        drawerSubmenus.applyGroupVisibility(menu)
         refreshDrawerMenuStyle()
     }
 
@@ -215,11 +194,8 @@ class VaccineActivity : AppCompatActivity(), NavigationView.OnNavigationItemSele
             binding.navigationView,
             this,
             defaultIconTintRes = R.color.text_secondary,
-            parents = listOf(
-                R.id.nav_egg_management to isEggMenuExpanded,
-                R.id.nav_health_management to isHealthMenuExpanded
-            ),
-            children = listOf(R.id.nav_collect, R.id.nav_sales, R.id.nav_vaccines, R.id.nav_mortality)
+            parents = drawerSubmenus.parentsForStyler(),
+            children = DrawerSubmenuController.CHILD_ITEM_IDS
         )
     }
 
@@ -238,7 +214,7 @@ class VaccineActivity : AppCompatActivity(), NavigationView.OnNavigationItemSele
         reminderAdapter = HealthReminderAdapter { reminder ->
             lifecycleScope.launch {
                 try {
-                    firebaseRepo.updateHealthReminder(reminder.copy(isDone = true))
+                    firebaseRepo.markHealthReminderDone(reminder)
                 } catch (e: Exception) {
                     Toast.makeText(this@VaccineActivity, e.message ?: "Erreur", Toast.LENGTH_SHORT).show()
                 }
@@ -246,6 +222,25 @@ class VaccineActivity : AppCompatActivity(), NavigationView.OnNavigationItemSele
         }
         binding.rvHealthReminders.layoutManager = LinearLayoutManager(this)
         binding.rvHealthReminders.adapter = reminderAdapter
+    }
+
+    private fun setupHealthReminderHistory() {
+        reminderLogAdapter = HealthReminderLogAdapter()
+        binding.rvHealthReminderHistory.layoutManager = LinearLayoutManager(this)
+        binding.rvHealthReminderHistory.adapter = reminderLogAdapter
+    }
+
+    private fun observeHealthReminderLogs() {
+        lifecycleScope.launch {
+            firebaseRepo.getHealthReminderLogsFlow().collectLatest { list ->
+                val filtered = if (selectedBatchId != null) list.filter { it.batchId == selectedBatchId } else list
+                withContext(Dispatchers.Main) {
+                    binding.rvHealthReminderHistory.visibility = if (filtered.isEmpty()) View.GONE else View.VISIBLE
+                    binding.tvNoReminderHistory.visibility = if (filtered.isEmpty()) View.VISIBLE else View.GONE
+                    reminderLogAdapter.submitList(filtered)
+                }
+            }
+        }
     }
 
     private fun observeVaccines() {
@@ -510,6 +505,10 @@ class VaccineActivity : AppCompatActivity(), NavigationView.OnNavigationItemSele
             showBlockingDialog()
             return false
         }
+        if (drawerSubmenus.handleParentClick(item.itemId)) {
+            rebuildDrawerMenu()
+            return true
+        }
 
         when (item.itemId) {
             R.id.nav_dashboard -> {
@@ -531,21 +530,6 @@ class VaccineActivity : AppCompatActivity(), NavigationView.OnNavigationItemSele
                 intent.putExtra("userIdString", userId)
                 startActivity(intent)
             }
-            
-            R.id.nav_egg_management -> {
-                isEggMenuExpanded = !isEggMenuExpanded
-                if (isEggMenuExpanded) isHealthMenuExpanded = false
-                rebuildDrawerMenu()
-                return true
-            }
-
-            R.id.nav_health_management -> {
-                isHealthMenuExpanded = !isHealthMenuExpanded
-                if (isHealthMenuExpanded) isEggMenuExpanded = false
-                rebuildDrawerMenu()
-                return true
-            }
-
             R.id.nav_collect -> {
                 val intent = Intent(this, AgentActivity::class.java)
                 intent.putExtra("userIdString", userId)
