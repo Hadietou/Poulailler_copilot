@@ -497,12 +497,40 @@ class FirebaseRepository {
                             description = doc.getString("description"),
                             dueDate = doc.getLong("dueDate") ?: 0L,
                             isDone = doc.getBoolean("isDone") ?: false,
+                            doneDate = doc.getLong("doneDate"),
                             batchId = doc.getString("batchId"),
                             recurring = doc.getBoolean("recurring") ?: false,
                             frequencyMonths = doc.getLong("frequencyMonths")?.toInt(),
                             firestoreId = doc.id
                         )
                     }?.sortedBy { it.dueDate } ?: emptyList()
+                    trySend(list)
+                }
+            awaitClose { sub.remove() }
+        }
+    }
+
+    /**
+     * Historique permanent des rappels de santé marqués FAIT (voir [HealthReminderLog]).
+     */
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    fun getHealthReminderLogsFlow(): Flow<List<HealthReminderLog>> = farmIdFlow.flatMapLatest { fId ->
+        val id = fId ?: getFarmId()
+        if (id == null) flowOf(emptyList())
+        else callbackFlow {
+            val sub = db.collection("health_reminder_logs").whereEqualTo("farmId", id)
+                .addSnapshotListener { s, e ->
+                    val list = s?.documents?.mapNotNull { doc ->
+                        HealthReminderLog(
+                            title = doc.getString("title") ?: "",
+                            type = doc.getString("type") ?: "VACCIN",
+                            description = doc.getString("description"),
+                            dueDate = doc.getLong("dueDate") ?: 0L,
+                            doneDate = doc.getLong("doneDate") ?: 0L,
+                            batchId = doc.getString("batchId"),
+                            firestoreId = doc.id
+                        )
+                    }?.sortedByDescending { it.doneDate } ?: emptyList()
                     trySend(list)
                 }
             awaitClose { sub.remove() }
@@ -735,6 +763,7 @@ class FirebaseRepository {
             "description" to r.description,
             "dueDate" to r.dueDate,
             "isDone" to r.isDone,
+            "doneDate" to r.doneDate,
             "batchId" to r.batchId,
             "recurring" to r.recurring,
             "frequencyMonths" to r.frequencyMonths,
@@ -747,9 +776,45 @@ class FirebaseRepository {
         r.firestoreId?.let {
             db.collection("health_reminders").document(it).update(hashMapOf(
                 "dueDate" to r.dueDate,
-                "isDone" to r.isDone
+                "isDone" to r.isDone,
+                "doneDate" to r.doneDate
             ) as Map<String, Any>).await()
         }
+    }
+
+    suspend fun deleteHealthReminder(id: String) {
+        checkAndThrowIfBlocked()
+        db.collection("health_reminders").document(id).delete().await()
+    }
+
+    /**
+     * Marque un rappel de santé comme FAIT : met à jour son état courant et,
+     * surtout, conserve une trace permanente dans l'historique ([HealthReminderLog]),
+     * seul endroit où retrouver la liste et les dates des rappels déjà effectués
+     * (le document [HealthReminder] lui-même est réinitialisé au cycle suivant
+     * pour les rappels récurrents).
+     */
+    suspend fun markHealthReminderDone(r: HealthReminder) {
+        checkAndThrowIfBlocked()
+        val fId = requireFarmId()
+        val now = System.currentTimeMillis()
+
+        r.firestoreId?.let {
+            db.collection("health_reminders").document(it).update(hashMapOf(
+                "isDone" to true,
+                "doneDate" to now
+            ) as Map<String, Any>).await()
+        }
+
+        db.collection("health_reminder_logs").add(hashMapOf(
+            "title" to r.title,
+            "type" to r.type,
+            "description" to r.description,
+            "dueDate" to r.dueDate,
+            "doneDate" to now,
+            "batchId" to r.batchId,
+            "farmId" to fId
+        )).await()
     }
 
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)

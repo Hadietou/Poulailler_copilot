@@ -61,7 +61,6 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     // Health KPIs
     val survivalRate = MutableLiveData<Double>(100.0)
     val healthExpenses = MutableLiveData<Double>(0.0)
-    val nextVaccine = MutableLiveData<VaccineEntry?>()
     val monthlyMortalityCount = MutableLiveData<Int>(0)
     val activeHealthReminders = MutableLiveData<List<HealthReminder>>(emptyList())
     
@@ -188,6 +187,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
                 firebaseRepo.getHealthRemindersFlow().collectLatest { list ->
                     allReminders.value = list
                     updateActiveReminders()
+                    checkAndGenerateReminders()
                 }
             } catch (e: Exception) { Log.e("DashboardVM", "Error in remindersFlow", e) }
         }
@@ -219,10 +219,33 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     fun markReminderDone(reminder: HealthReminder) {
         viewModelScope.launch {
             try {
-                firebaseRepo.updateHealthReminder(reminder.copy(isDone = true))
+                firebaseRepo.markHealthReminderDone(reminder)
             } catch (e: Exception) {
                 Log.e("DashboardVM", "Error marking reminder done", e)
             }
+        }
+    }
+
+    /**
+     * Nettoie les doublons de rappels de santé accumulés par l'ancienne race condition
+     * (voir le commentaire dans [checkAndGenerateReminders]) : pour chaque titre en
+     * double sur ce lot, ne conserve qu'un seul rappel — celui encore actif s'il y en a
+     * un (le plus ancien), sinon le plus récent déjà fait — et supprime les autres.
+     */
+    private suspend fun dedupeHealthReminders(batchId: String) {
+        val all = allReminders.value?.filter { it.batchId == batchId } ?: return
+        val duplicateGroups = all.groupBy { it.title }.values.filter { it.size > 1 }
+        for (group in duplicateGroups) {
+            val toKeep = group.filter { !it.isDone }.minByOrNull { it.dueDate }
+                ?: group.maxByOrNull { it.doneDate ?: it.dueDate }
+            group.filter { it.firestoreId != null && it.firestoreId != toKeep?.firestoreId }
+                .forEach { duplicate ->
+                    try {
+                        firebaseRepo.deleteHealthReminder(duplicate.firestoreId!!)
+                    } catch (e: Exception) {
+                        Log.e("DashboardVM", "Error deleting duplicate reminder", e)
+                    }
+                }
         }
     }
 
@@ -232,10 +255,19 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         val batchId = batch.firestoreId ?: return
         val arrivalDate = batch.arrivalDate
         if (arrivalDate == 0L) return
+        // Cette fonction est appelée à la fois quand les lots ET quand les rappels se
+        // chargent (voir les deux collectLatest ci-dessus) : au tout premier chargement,
+        // l'un des deux peut arriver avant l'autre. Sans cette garde, "allReminders.value"
+        // vaut encore null au moment où les lots arrivent en premier, "existing" est donc
+        // toujours introuvable plus bas, et un nouveau rappel en double est créé à CHAQUE
+        // démarrage de l'app — c'est ce qui a produit des dizaines de doublons "Newcastle
+        // (ND)" en base au fil du temps.
+        if (allReminders.value == null) return
 
         isGeneratingReminders = true
         viewModelScope.launch {
             try {
+                dedupeHealthReminders(batchId)
                 val now = System.currentTimeMillis()
                 val info = farmInfo.value
                 val vaccineInterval = info?.vaccineIntervalMonths ?: FarmInfo.DEFAULT_VACCINE_INTERVAL_MONTHS
@@ -259,9 +291,9 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
                         cal.add(Calendar.MONTH, interval)
                     }
                     
-                    var dueDate = cal.timeInMillis
+                    val dueDate = cal.timeInMillis
                     val existing = allReminders.value?.find { it.title == title && it.batchId == batchId }
-                    
+
                     if (existing == null) {
                         firebaseRepo.addHealthReminder(HealthReminder(
                             type = if (title.contains("Newcastle") || title.contains("Bronchite")) "VACCIN" else "DEPARASITAGE",
@@ -272,14 +304,15 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
                             recurring = true,
                             frequencyMonths = interval
                         ))
-                    } else if (existing.isDone && existing.dueDate < now - TimeUnit.DAYS.toMillis(1)) {
-                        // S'il est marqué comme fait mais que la date due est dépassée de plus d'un jour,
-                        // on le réinitialise pour la PROCHAINE occurrence.
-                        while (dueDate <= existing.dueDate) {
-                            cal.add(Calendar.MONTH, interval)
-                            dueDate = cal.timeInMillis
-                        }
-                        firebaseRepo.updateHealthReminder(existing.copy(dueDate = dueDate, isDone = false))
+                    } else if (existing.isDone && dueDate > existing.dueDate) {
+                        // Le cycle ci-dessus (recalculé à partir de la date d'arrivée) a avancé
+                        // au-delà de la date à laquelle ce rappel avait été marqué FAIT : une
+                        // nouvelle échéance est réellement arrivée, on réactive le rappel pour
+                        // elle. Sans cette comparaison (l'ancien code comparait "dueDate" à
+                        // lui-même après l'avoir déjà dépassé), le rappel se réactivait
+                        // immédiatement après avoir cliqué sur FAIT au lieu d'attendre le
+                        // prochain cycle.
+                        firebaseRepo.updateHealthReminder(existing.copy(dueDate = dueDate, isDone = false, doneDate = null))
                     }
                 }
             } catch (e: Exception) {
@@ -345,12 +378,6 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         val mortalities = allMort.filter { it.batchId == batchId }
         val sales = allS.filter { it.batchId == batchId }
         val expenses = allExp.filter { it.batchId == batchId }
-        val vaccines = allV.filter { it.batchId == batchId }
-
-        // Find Next Vaccine
-        val now = System.currentTimeMillis()
-        val next = vaccines.filter { it.date >= now }.minByOrNull { it.date }
-        nextVaccine.postValue(next)
 
         // Financials
         val expTotal = expenses.sumOf { it.amount }

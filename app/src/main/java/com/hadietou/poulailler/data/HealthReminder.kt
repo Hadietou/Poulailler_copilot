@@ -11,6 +11,7 @@ data class HealthReminder(
     val description: String? = null,
     val dueDate: Long,
     val isDone: Boolean = false,
+    val doneDate: Long? = null,
     val batchId: String? = null,
     val recurring: Boolean = false,
     val frequencyMonths: Int? = null,

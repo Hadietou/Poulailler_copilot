@@ -81,7 +81,6 @@
     <!-- Sanitary Calendar -->
     <string name="sanitary_calendar_title">Calendrier Sanitaire</string>
     <string name="next_vaccine_label">Prochain Traitement/Vaccin :</string>
-    <string name="no_vaccine_planned">Aucun traitement planifié</string>
     <string name="vaccine_date_format">Le %1$s</string>
 
     <!-- Health Reminders -->
