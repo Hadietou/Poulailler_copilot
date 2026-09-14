@@ -14,7 +14,7 @@
     <color name="emerald_container">#E8F5E9</color>
     <color name="earthy_orange">#D35400</color>
     <color name="earthy_container">#FFF3E0</color>
-    <color name="off_white">#F8F9FA</color>
+    <color name="off_white">#E4E2D8</color>
 
     <color name="accent_blue">#0061A4</color>
     <color name="accent_blue_container">#D1E4FF</color>
@@ -25,7 +25,7 @@
 
     <!-- Couleurs Système et Compatibilité -->
     <color name="background">@color/off_white</color>
-    <color name="surface">#FFFFFF</color>
+    <color name="surface">#F3F1EA</color>
     <color name="text_primary">#1C1B1F</color>
     <color name="text_secondary">#49454F</color>
     <color name="error">#B3261E</color>
