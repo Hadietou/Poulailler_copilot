@@ -16,7 +16,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Signaler une Mortalité"
-            android:textColor="@color/primary_variant"
+            android:textColor="@color/white"
             android:textSize="22sp"
             android:textStyle="bold"/>
     </LinearLayout>
@@ -33,17 +33,17 @@
             android:hint="Date de l'événement"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
             android:layout_marginBottom="12dp"
-            app:hintTextColor="#CCFFFFFF"
-            app:boxStrokeColor="@color/white"
-            app:startIconDrawable="@android:drawable/ic_menu_my_calendar"
-            app:startIconTint="@color/white">
+            app:hintTextColor="@color/text_secondary"
+            app:boxStrokeColor="@color/primary"
+            app:startIconDrawable="@drawable/ic_calendar"
+            app:startIconTint="@color/primary">
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/etMortalityDate"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:focusable="false"
                 android:clickable="true"
-                android:textColor="@color/white" />
+                android:textColor="@color/text_primary" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
@@ -52,16 +52,16 @@
             android:hint="Nombre de poules mortes"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
             android:layout_marginBottom="12dp"
-            app:hintTextColor="#CCFFFFFF"
-            app:boxStrokeColor="@color/white"
-            app:startIconDrawable="@android:drawable/ic_delete"
-            app:startIconTint="@color/white">
+            app:hintTextColor="@color/text_secondary"
+            app:boxStrokeColor="@color/primary"
+            app:startIconDrawable="@drawable/ic_delete"
+            app:startIconTint="@color/primary">
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/etMortalityInput"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:inputType="number"
-                android:textColor="@color/white" />
+                android:textColor="@color/text_primary" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <LinearLayout
@@ -78,16 +78,16 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:hint="Cause de la mortalité"
-                app:hintTextColor="#CCFFFFFF"
-                app:boxStrokeColor="@color/white"
-                app:startIconDrawable="@android:drawable/ic_dialog_info"
-                app:startIconTint="@color/white">
+                app:hintTextColor="@color/text_secondary"
+                app:boxStrokeColor="@color/primary"
+                app:startIconDrawable="@drawable/ic_info"
+                app:startIconTint="@color/primary">
                 <AutoCompleteTextView
                     android:id="@+id/actvMortalityCause"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:inputType="none"
-                    android:textColor="@color/white" />
+                    android:textColor="@color/text_primary" />
             </com.google.android.material.textfield.TextInputLayout>
 
             <ImageButton
@@ -96,8 +96,8 @@
                 android:layout_height="48dp"
                 android:layout_marginStart="8dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
-                android:src="@android:drawable/ic_menu_help"
-                app:tint="@color/white"
+                android:src="@drawable/ic_help"
+                app:tint="@color/primary"
                 android:contentDescription="Aide au diagnostic" />
         </LinearLayout>
 
@@ -106,10 +106,10 @@
             android:layout_width="match_parent"
             android:layout_height="60dp"
             android:text="ENREGISTRER LA PERTE"
-            android:backgroundTint="@color/white"
-            android:textColor="@color/primary_variant"
+            android:backgroundTint="@color/primary"
+            android:textColor="@color/white"
             app:cornerRadius="8dp"
-            app:icon="@android:drawable/ic_menu_save"
-            app:iconTint="@color/primary_variant"/>
+            app:icon="@drawable/ic_check"
+            app:iconTint="@color/white"/>
     </LinearLayout>
 </LinearLayout>

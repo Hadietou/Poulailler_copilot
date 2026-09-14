@@ -4,9 +4,9 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginVertical="6dp"
-    app:cardBackgroundColor="#1E1E1E"
+    app:cardBackgroundColor="@color/surface"
     app:cardCornerRadius="12dp"
-    app:strokeColor="#333333"
+    app:strokeColor="@color/off_white"
     app:strokeWidth="1dp"
     app:cardElevation="2dp">
 
@@ -20,14 +20,14 @@
         <com.google.android.material.card.MaterialCardView
             android:layout_width="48dp"
             android:layout_height="48dp"
-            app:cardBackgroundColor="#2A2A2A"
+            app:cardBackgroundColor="@color/off_white"
             app:cardCornerRadius="24dp"
             app:cardElevation="0dp">
             <ImageView
                 android:layout_width="24dp"
                 android:layout_height="24dp"
                 android:layout_gravity="center"
-                android:src="@android:drawable/ic_menu_myplaces"
+                android:src="@drawable/ic_users"
                 app:tint="#1E90FF"
                 android:contentDescription="Agent" />
         </com.google.android.material.card.MaterialCardView>
@@ -44,7 +44,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Nom de l'agent"
-                android:textColor="@color/white"
+                android:textColor="@color/text_primary"
                 android:textSize="16sp"
                 android:textStyle="bold" />
 
@@ -53,7 +53,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Rôle: AGENT"
-                android:textColor="#B0B0B0"
+                android:textColor="@color/text_secondary"
                 android:textSize="12sp"
                 android:layout_marginTop="2dp" />
         </LinearLayout>

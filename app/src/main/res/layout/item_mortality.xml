@@ -4,9 +4,9 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginBottom="8dp"
-    app:cardBackgroundColor="#1A1A1A"
+    app:cardBackgroundColor="@color/surface"
     app:cardCornerRadius="8dp"
-    app:strokeColor="#333333"
+    app:strokeColor="@color/off_white"
     app:strokeWidth="1dp">
 
     <LinearLayout
@@ -26,7 +26,7 @@
                 android:id="@+id/tvDate"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textColor="#B0B0B0"
+                android:textColor="@color/text_secondary"
                 android:textSize="12sp"
                 android:text="Date"/>
 
@@ -34,7 +34,7 @@
                 android:id="@+id/tvCount"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textColor="@color/white"
+                android:textColor="@color/text_primary"
                 android:textSize="18sp"
                 android:textStyle="bold"
                 android:text="0 Poules"/>
@@ -53,7 +53,7 @@
         <ImageView
             android:layout_width="24dp"
             android:layout_height="24dp"
-            android:src="@android:drawable/ic_delete"
+            android:src="@drawable/ic_delete"
             app:tint="#F44336"
             android:contentDescription="Icône perte" />
 

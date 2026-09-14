@@ -4,19 +4,19 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/black">
+    >
 
     <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/black">
+        >
         <com.google.android.material.appbar.MaterialToolbar
             android:id="@+id/toolbar"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
             app:title="Localité de la ferme"
             app:titleTextColor="@color/white"
-            app:navigationIcon="@android:drawable/ic_menu_close_clear_cancel"
+            app:navigationIcon="@drawable/ic_close"
             app:navigationIconTint="@color/white" />
     </com.google.android.material.appbar.AppBarLayout>
 
@@ -77,7 +77,7 @@
                 android:layout_height="36dp"
                 android:layout_gravity="center"
                 android:layout_marginBottom="36dp"
-                android:src="@android:drawable/ic_menu_mylocation"
+                android:src="@drawable/ic_location"
                 app:tint="#FF3B30"
                 android:contentDescription="Position sélectionnée" />
         </FrameLayout>

@@ -4,9 +4,9 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginBottom="8dp"
-    app:cardBackgroundColor="#1A1A1A"
+    app:cardBackgroundColor="@color/surface"
     app:cardCornerRadius="8dp"
-    app:strokeColor="#333333"
+    app:strokeColor="@color/off_white"
     app:strokeWidth="1dp">
 
     <LinearLayout
@@ -44,7 +44,7 @@
                 android:id="@+id/tvDescription"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textColor="#B0B0B0"
+                android:textColor="@color/text_secondary"
                 android:textSize="12sp"
                 android:text="Description..."/>
 
@@ -52,7 +52,7 @@
                 android:id="@+id/tvDate"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textColor="#777777"
+                android:textColor="@color/text_secondary"
                 android:textSize="11sp"
                 android:text="01/01/2024"/>
         </LinearLayout>

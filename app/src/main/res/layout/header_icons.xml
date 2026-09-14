@@ -17,7 +17,7 @@
             android:contentDescription="@string/desc_report_pdf"
             android:focusable="true"
             android:padding="12dp"
-            android:src="@android:drawable/ic_menu_save"
+            android:src="@drawable/ic_report"
             app:tint="@color/white" />
 
         <ImageView
@@ -29,7 +29,7 @@
             android:contentDescription="@string/dashboard_title"
             android:focusable="true"
             android:padding="12dp"
-            android:src="@android:drawable/ic_menu_today"
+            android:src="@drawable/ic_dashboard"
             app:tint="@color/white" />
 
         <ImageView
@@ -41,7 +41,7 @@
             android:contentDescription="@string/default_username"
             android:focusable="true"
             android:padding="12dp"
-            android:src="@android:drawable/ic_menu_myplaces"
+            android:src="@drawable/ic_profile"
             app:tint="@color/white" />
     </LinearLayout>
 </merge>

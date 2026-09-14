@@ -16,7 +16,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Nouveau Soin / Vaccin"
-            android:textColor="@color/primary_variant"
+            android:textColor="@color/white"
             android:textSize="22sp"
             android:textStyle="bold"/>
     </LinearLayout>
@@ -33,15 +33,15 @@
             android:hint="Nom du vaccin / médicament"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
             android:layout_marginBottom="12dp"
-            app:hintTextColor="#CCFFFFFF"
-            app:boxStrokeColor="@color/white"
-            app:startIconDrawable="@android:drawable/ic_menu_add"
-            app:startIconTint="@color/white">
+            app:hintTextColor="@color/text_secondary"
+            app:boxStrokeColor="@color/primary"
+            app:startIconDrawable="@drawable/ic_add"
+            app:startIconTint="@color/primary">
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/etVaccineName"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:textColor="@color/white" />
+                android:textColor="@color/text_primary" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.button.MaterialButton
@@ -50,10 +50,10 @@
             android:layout_height="56dp"
             android:text="Date: Aujourd'hui"
             style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-            android:textColor="@color/white"
-            app:strokeColor="@color/white"
-            app:icon="@android:drawable/ic_menu_my_calendar"
-            app:iconTint="@color/white"
+            android:textColor="@color/text_primary"
+            app:strokeColor="@color/primary"
+            app:icon="@drawable/ic_calendar"
+            app:iconTint="@color/primary"
             android:layout_marginBottom="12dp"/>
 
         <com.google.android.material.textfield.TextInputLayout
@@ -62,13 +62,13 @@
             android:hint="Remarques (Lot, dose, etc.)"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
             android:layout_marginBottom="24dp"
-            app:hintTextColor="#CCFFFFFF"
-            app:boxStrokeColor="@color/white">
+            app:hintTextColor="@color/text_secondary"
+            app:boxStrokeColor="@color/primary">
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/etRemarks"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:textColor="@color/white" />
+                android:textColor="@color/text_primary" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.button.MaterialButton
@@ -76,10 +76,10 @@
             android:layout_width="match_parent"
             android:layout_height="60dp"
             android:text="ENREGISTRER LE SOIN"
-            android:backgroundTint="@color/white"
-            android:textColor="@color/primary_variant"
+            android:backgroundTint="@color/primary"
+            android:textColor="@color/white"
             app:cornerRadius="8dp"
-            app:icon="@android:drawable/ic_menu_save"
-            app:iconTint="@color/primary_variant"/>
+            app:icon="@drawable/ic_check"
+            app:iconTint="@color/white"/>
     </LinearLayout>
 </LinearLayout>

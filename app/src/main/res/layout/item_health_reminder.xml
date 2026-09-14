@@ -22,7 +22,7 @@
             android:id="@+id/ivReminderIcon"
             android:layout_width="32dp"
             android:layout_height="32dp"
-            android:src="@android:drawable/ic_dialog_info"
+            android:src="@drawable/ic_info"
             app:tint="@color/error" />
 
         <LinearLayout

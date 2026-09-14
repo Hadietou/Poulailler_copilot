@@ -87,7 +87,7 @@
                         style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                         app:strokeColor="@color/primary"
                         android:textColor="@color/primary"
-                        app:icon="@android:drawable/ic_input_add"/>
+                        app:icon="@drawable/ic_add"/>
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnChoiceAgent"
@@ -99,7 +99,7 @@
                         style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                         app:strokeColor="@color/accent_blue"
                         android:textColor="@color/accent_blue"
-                        app:icon="@android:drawable/ic_menu_share"/>
+                        app:icon="@drawable/ic_share"/>
                 </LinearLayout>
 
                 <com.google.android.material.textfield.TextInputLayout

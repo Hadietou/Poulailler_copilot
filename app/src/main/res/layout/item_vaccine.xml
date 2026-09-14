@@ -27,7 +27,7 @@
                 android:layout_width="18dp"
                 android:layout_height="18dp"
                 android:layout_gravity="center"
-                android:src="@android:drawable/ic_menu_add"
+                android:src="@drawable/ic_add"
                 app:tint="@color/white"
                 android:contentDescription="Icône soin" />
         </com.google.android.material.card.MaterialCardView>

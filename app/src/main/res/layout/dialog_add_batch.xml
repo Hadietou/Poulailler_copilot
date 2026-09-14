@@ -20,7 +20,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Nouveau Lot"
-                android:textColor="@color/primary_variant"
+                android:textColor="@color/white"
                 android:textSize="22sp"
                 android:textStyle="bold" />
         </LinearLayout>
@@ -36,30 +36,30 @@
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="12dp"
                 android:hint="Type de lot"
-                app:hintTextColor="#CCFFFFFF"
-                app:boxStrokeColor="@color/white"
+                app:hintTextColor="@color/text_secondary"
+                app:boxStrokeColor="@color/primary"
                 style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu">
                 <AutoCompleteTextView
                     android:id="@+id/actvBatchType"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:inputType="none"
-                    android:textColor="@color/white" />
+                    android:textColor="@color/text_primary" />
             </com.google.android.material.textfield.TextInputLayout>
 
             <com.google.android.material.textfield.TextInputLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:hint="Nom du lot (ex: Janvier 2024)"
-                app:hintTextColor="#CCFFFFFF"
-                app:boxStrokeColor="@color/white"
+                app:hintTextColor="@color/text_secondary"
+                app:boxStrokeColor="@color/primary"
                 style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/etBatchName"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:inputType="textCapWords"
-                    android:textColor="@color/white" />
+                    android:textColor="@color/text_primary" />
             </com.google.android.material.textfield.TextInputLayout>
 
             <com.google.android.material.textfield.TextInputLayout
@@ -67,15 +67,15 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
                 android:hint="Nombre de sujets initial"
-                app:hintTextColor="#CCFFFFFF"
-                app:boxStrokeColor="@color/white"
+                app:hintTextColor="@color/text_secondary"
+                app:boxStrokeColor="@color/primary"
                 style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/etHensCount"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:inputType="number"
-                    android:textColor="@color/white" />
+                    android:textColor="@color/text_primary" />
             </com.google.android.material.textfield.TextInputLayout>
 
             <com.google.android.material.textfield.TextInputLayout
@@ -83,15 +83,15 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
                 android:hint="Souche des sujets"
-                app:hintTextColor="#CCFFFFFF"
-                app:boxStrokeColor="@color/white"
+                app:hintTextColor="@color/text_secondary"
+                app:boxStrokeColor="@color/primary"
                 style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu">
                 <AutoCompleteTextView
                     android:id="@+id/actvHenBreed"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:inputType="none"
-                    android:textColor="@color/white" />
+                    android:textColor="@color/text_primary" />
             </com.google.android.material.textfield.TextInputLayout>
 
             <com.google.android.material.textfield.TextInputLayout
@@ -99,15 +99,15 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
                 android:hint="Nom prenom du fournisseur"
-                app:hintTextColor="#CCFFFFFF"
-                app:boxStrokeColor="@color/white"
+                app:hintTextColor="@color/text_secondary"
+                app:boxStrokeColor="@color/primary"
                 style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/etProviderName"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:inputType="textCapWords"
-                    android:textColor="@color/white" />
+                    android:textColor="@color/text_primary" />
             </com.google.android.material.textfield.TextInputLayout>
 
             <com.google.android.material.textfield.TextInputLayout
@@ -115,15 +115,15 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
                 android:hint="Téléphone du fournisseur"
-                app:hintTextColor="#CCFFFFFF"
-                app:boxStrokeColor="@color/white"
+                app:hintTextColor="@color/text_secondary"
+                app:boxStrokeColor="@color/primary"
                 style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/etProviderPhone"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:inputType="phone"
-                    android:textColor="@color/white" />
+                    android:textColor="@color/text_primary" />
             </com.google.android.material.textfield.TextInputLayout>
 
             <com.google.android.material.textfield.TextInputLayout
@@ -131,8 +131,8 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
                 android:hint="Date d'arrivée"
-                app:hintTextColor="#CCFFFFFF"
-                app:boxStrokeColor="@color/white"
+                app:hintTextColor="@color/text_secondary"
+                app:boxStrokeColor="@color/primary"
                 style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/etArrivalDate"
@@ -140,7 +140,7 @@
                     android:layout_height="wrap_content"
                     android:focusable="false"
                     android:clickable="true"
-                    android:textColor="@color/white" />
+                    android:textColor="@color/text_primary" />
             </com.google.android.material.textfield.TextInputLayout>
 
             <com.google.android.material.textfield.TextInputLayout
@@ -148,8 +148,8 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
                 android:hint="Age (Date de naissance poussins)"
-                app:hintTextColor="#CCFFFFFF"
-                app:boxStrokeColor="@color/white"
+                app:hintTextColor="@color/text_secondary"
+                app:boxStrokeColor="@color/primary"
                 style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/etBirthDate"
@@ -157,7 +157,7 @@
                     android:layout_height="wrap_content"
                     android:focusable="false"
                     android:clickable="true"
-                    android:textColor="@color/white" />
+                    android:textColor="@color/text_primary" />
             </com.google.android.material.textfield.TextInputLayout>
 
             <com.google.android.material.button.MaterialButton
@@ -166,8 +166,8 @@
                 android:layout_height="56dp"
                 android:layout_marginTop="32dp"
                 android:text="CRÉER LE LOT"
-                android:backgroundTint="@color/white"
-                android:textColor="@color/primary_variant"
+                android:backgroundTint="@color/primary"
+                android:textColor="@color/white"
                 app:cornerRadius="16dp" />
         </LinearLayout>
     </LinearLayout>

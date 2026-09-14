@@ -4,9 +4,9 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginBottom="8dp"
-    app:cardBackgroundColor="#1A1A1A"
+    app:cardBackgroundColor="@color/surface"
     app:cardCornerRadius="8dp"
-    app:strokeColor="#333333"
+    app:strokeColor="@color/off_white"
     app:strokeWidth="1dp">
 
     <LinearLayout
@@ -20,7 +20,7 @@
             android:id="@+id/ivPaidStatus"
             android:layout_width="32dp"
             android:layout_height="32dp"
-            android:src="@android:drawable/ic_menu_agenda"
+            android:src="@drawable/ic_batches"
             app:tint="#4CAF50"
             android:clickable="true"
             android:focusable="true"
@@ -38,7 +38,7 @@
                 android:id="@+id/tvClient"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textColor="@color/white"
+                android:textColor="@color/text_primary"
                 android:textSize="14sp"
                 android:textStyle="bold"
                 android:text="Client"/>
@@ -47,7 +47,7 @@
                 android:id="@+id/tvDetails"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textColor="#B0B0B0"
+                android:textColor="@color/text_secondary"
                 android:textSize="12sp"
                 android:text="0 œufs x 0.00 $"/>
 
@@ -55,7 +55,7 @@
                 android:id="@+id/tvDate"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textColor="#777777"
+                android:textColor="@color/text_secondary"
                 android:textSize="11sp"
                 android:text="Date"/>
         </LinearLayout>

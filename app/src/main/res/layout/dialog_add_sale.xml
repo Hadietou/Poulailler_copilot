@@ -16,7 +16,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Nouvelle Vente"
-            android:textColor="@color/primary_variant"
+            android:textColor="@color/white"
             android:textSize="22sp"
             android:textStyle="bold"/>
     </LinearLayout>
@@ -33,17 +33,17 @@
             android:hint="Date de la vente"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
             android:layout_marginBottom="12dp"
-            app:hintTextColor="#CCFFFFFF"
-            app:boxStrokeColor="@color/white"
-            app:startIconDrawable="@android:drawable/ic_menu_my_calendar"
-            app:startIconTint="@color/white">
+            app:hintTextColor="@color/text_secondary"
+            app:boxStrokeColor="@color/primary"
+            app:startIconDrawable="@drawable/ic_calendar"
+            app:startIconTint="@color/primary">
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/etSaleDate"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:focusable="false"
                 android:clickable="true"
-                android:textColor="@color/white" />
+                android:textColor="@color/text_primary" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
@@ -52,16 +52,16 @@
             android:hint="Nombre de tablettes vendues"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
             android:layout_marginBottom="12dp"
-            app:hintTextColor="#CCFFFFFF"
-            app:boxStrokeColor="@color/white"
-            app:startIconDrawable="@android:drawable/ic_input_add"
-            app:startIconTint="@color/white">
+            app:hintTextColor="@color/text_secondary"
+            app:boxStrokeColor="@color/primary"
+            app:startIconDrawable="@drawable/ic_add"
+            app:startIconTint="@color/primary">
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/etQuantity"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:inputType="number"
-                android:textColor="@color/white" />
+                android:textColor="@color/text_primary" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
@@ -71,16 +71,16 @@
             android:hint="Prix par tablette"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
             android:layout_marginBottom="12dp"
-            app:hintTextColor="#CCFFFFFF"
-            app:boxStrokeColor="@color/white"
-            app:startIconDrawable="@android:drawable/ic_menu_agenda"
-            app:startIconTint="@color/white">
+            app:hintTextColor="@color/text_secondary"
+            app:boxStrokeColor="@color/primary"
+            app:startIconDrawable="@drawable/ic_batches"
+            app:startIconTint="@color/primary">
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/etUnitPrice"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:inputType="numberDecimal"
-                android:textColor="@color/white" />
+                android:textColor="@color/text_primary" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
@@ -89,16 +89,16 @@
             android:hint="Nom du client (Optionnel)"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
             android:layout_marginBottom="12dp"
-            app:hintTextColor="#CCFFFFFF"
-            app:boxStrokeColor="@color/white"
-            app:startIconDrawable="@android:drawable/ic_menu_search"
-            app:startIconTint="@color/white">
+            app:hintTextColor="@color/text_secondary"
+            app:boxStrokeColor="@color/primary"
+            app:startIconDrawable="@drawable/ic_search"
+            app:startIconTint="@color/primary">
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/etBuyer"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:inputType="textPersonName"
-                android:textColor="@color/white" />
+                android:textColor="@color/text_primary" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
@@ -107,16 +107,16 @@
             android:hint="Numéro de téléphone"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
             android:layout_marginBottom="24dp"
-            app:hintTextColor="#CCFFFFFF"
-            app:boxStrokeColor="@color/white"
-            app:startIconDrawable="@android:drawable/ic_menu_call"
-            app:startIconTint="@color/white">
+            app:hintTextColor="@color/text_secondary"
+            app:boxStrokeColor="@color/primary"
+            app:startIconDrawable="@drawable/ic_phone"
+            app:startIconTint="@color/primary">
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/etPhoneNumber"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:inputType="phone"
-                android:textColor="@color/white" />
+                android:textColor="@color/text_primary" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.button.MaterialButton
@@ -124,10 +124,10 @@
             android:layout_width="match_parent"
             android:layout_height="60dp"
             android:text="VALIDER LA VENTE"
-            android:backgroundTint="@color/white"
-            android:textColor="@color/primary_variant"
+            android:backgroundTint="@color/primary"
+            android:textColor="@color/white"
             app:cornerRadius="8dp"
-            app:icon="@android:drawable/ic_menu_save"
-            app:iconTint="@color/primary_variant"/>
+            app:icon="@drawable/ic_check"
+            app:iconTint="@color/white"/>
     </LinearLayout>
 </LinearLayout>
