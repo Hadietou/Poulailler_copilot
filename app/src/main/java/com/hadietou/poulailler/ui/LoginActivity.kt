@@ -34,10 +34,20 @@ class LoginActivity : AppCompatActivity() {
 
         setupUI()
         setupDropdowns()
-        
+
         handleIntentData(intent)
-        
+
         binding.tvAppVersionLogin.text = "v${BuildConfig.VERSION_NAME}"
+
+        vm.checkExistingSession { success, msgOrRole, userId ->
+            if (success) {
+                goToDashboard(msgOrRole, userId)
+            } else if (msgOrRole == "COMPTE_DESACTIVE" || msgOrRole == "VALIDATION_REQUIS_EXPIRRE") {
+                val errorMsg = if (msgOrRole == "COMPTE_DESACTIVE") "Votre compte a été désactivé."
+                    else "Validation requise. Le délai de 20 jours est dépassé. Contactez hadietou@gmail.com"
+                Toast.makeText(this, errorMsg, Toast.LENGTH_LONG).show()
+            }
+        }
     }
 
     override fun onNewIntent(intent: Intent) {
