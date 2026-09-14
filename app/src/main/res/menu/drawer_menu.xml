@@ -4,23 +4,23 @@
     <group android:checkableBehavior="single">
         <item
             android:id="@+id/nav_dashboard"
-            android:icon="@android:drawable/ic_menu_today"
+            android:icon="@drawable/ic_dashboard"
             android:title="Tableau de Bord" />
 
         <item
             android:id="@+id/nav_batches"
-            android:icon="@android:drawable/ic_menu_agenda"
+            android:icon="@drawable/ic_batches"
             android:title="Gestion des Lots" />
 
         <item
             android:id="@+id/nav_expenses"
-            android:icon="@android:drawable/ic_menu_save"
+            android:icon="@drawable/ic_finance"
             android:title="Dépenses / Stock" />
 
         <!-- Menu Parent Oeufs (déplie un sous-menu, non "sélectionnable") -->
         <item
             android:id="@+id/nav_egg_management"
-            android:icon="@android:drawable/ic_menu_add"
+            android:icon="@drawable/ic_egg"
             android:checkable="false"
             android:title="Collecte et vente Oeufs" />
     </group>
@@ -31,11 +31,11 @@
         android:visible="false">
         <item
             android:id="@+id/nav_collect"
-            android:icon="@android:drawable/ic_input_add"
+            android:icon="@drawable/ic_collect"
             android:title="Collecte d'oeufs" />
         <item
             android:id="@+id/nav_sales"
-            android:icon="@android:drawable/ic_menu_send"
+            android:icon="@drawable/ic_sell"
             android:title="Vente d'oeuf" />
     </group>
 
@@ -43,7 +43,7 @@
         <!-- Menu Parent Santé (déplie un sous-menu, non "sélectionnable") -->
         <item
             android:id="@+id/nav_health_management"
-            android:icon="@android:drawable/ic_menu_add"
+            android:icon="@drawable/ic_heart"
             android:checkable="false"
             android:title="Santé et Mortalité" />
     </group>
@@ -54,36 +54,45 @@
         android:visible="false">
         <item
             android:id="@+id/nav_vaccines"
-            android:icon="@android:drawable/ic_menu_info_details"
+            android:icon="@drawable/ic_vaccine"
             android:title="Suivi Sanitaire" />
         <item
             android:id="@+id/nav_mortality"
-            android:icon="@android:drawable/ic_delete"
+            android:icon="@drawable/ic_mortality"
             android:title="Suivi Mortalité" />
     </group>
 
     <group android:checkableBehavior="single">
         <item
             android:id="@+id/nav_settings"
-            android:icon="@android:drawable/ic_menu_preferences"
+            android:icon="@drawable/ic_settings"
             android:title="Paramètres" />
+
+        <!-- Menu Parent Compte (déplie un sous-menu, même mécanisme que Oeufs/Santé
+             ci-dessus, pour un seul système visuel de sous-menu dans tout le tiroir). -->
+        <item
+            android:id="@+id/nav_account_section"
+            android:icon="@drawable/ic_users"
+            android:checkable="false"
+            android:title="Compte" />
     </group>
 
-    <item android:title="Compte">
-        <menu>
-            <item
-                android:id="@+id/nav_users"
-                android:icon="@android:drawable/ic_menu_myplaces"
-                android:title="Gestion des comptes" />
-            <item
-                android:id="@+id/nav_delete_account"
-                android:icon="@android:drawable/ic_menu_delete"
-                android:title="Supprimer mon compte" />
-            <item
-                android:id="@+id/nav_logout"
-                android:icon="@android:drawable/ic_lock_power_off"
-                android:title="Déconnexion" />
-        </menu>
-    </item>
+    <!-- Groupe de sous-menus Compte -->
+    <group
+        android:id="@+id/group_account_submenu"
+        android:visible="false">
+        <item
+            android:id="@+id/nav_users"
+            android:icon="@drawable/ic_users"
+            android:title="Gestion des comptes" />
+        <item
+            android:id="@+id/nav_delete_account"
+            android:icon="@drawable/ic_delete_account"
+            android:title="Supprimer mon compte" />
+        <item
+            android:id="@+id/nav_logout"
+            android:icon="@drawable/ic_logout"
+            android:title="Déconnexion" />
+    </group>
 
 </menu>

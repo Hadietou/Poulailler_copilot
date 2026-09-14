@@ -16,7 +16,7 @@ import com.hadietou.poulailler.R
  * Habille le menu latéral (NavigationView) pour distinguer clairement :
  * - les items simples (destinations directes)
  * - les items "parents" qui déplient un sous-menu (titre en gras + chevron)
- * - les items de sous-menu (indentés, marqueur discret, couleur plus douce)
+ * - les items de sous-menu (indentés, icône et couleur plus douces)
  *
  * Remplace l'ancien rendu où un parent déplié prenait l'apparence "sélectionné"
  * du thème (pastille colorée), ce qui prêtait à confusion avec une vraie navigation.
@@ -38,9 +38,9 @@ object NavMenuStyler {
             .show()
     }
 
-    private const val CHEVRON_COLLAPSED = "  ›"   // ›
-    private const val CHEVRON_EXPANDED = "  ⌄"    // ⌄
-    private const val CHILD_MARKER = "  •  "       // léger retrait + puce
+    private const val CHEVRON_COLLAPSED = "   ▸"   // triangle plein, plus visible qu'une flèche fine
+    private const val CHEVRON_EXPANDED = "   ▾"
+    private const val CHILD_MARKER = "        "    // indentation alignée sur l'icône du parent (24dp)
 
     /**
      * Style initial complet du menu : à appeler une fois à la mise en place du drawer.
@@ -102,6 +102,12 @@ object NavMenuStyler {
             builder.length,
             Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
         )
+        builder.setSpan(
+            RelativeSizeSpan(1.15f),
+            chevronStart,
+            builder.length,
+            Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+        )
         item.title = builder
 
         item.icon?.mutate()?.setTint(ContextCompat.getColor(context, R.color.primary))
@@ -113,14 +119,7 @@ object NavMenuStyler {
         val baseTitle = item.title?.toString()?.removePrefix(CHILD_MARKER)?.trim() ?: return
 
         val builder = SpannableStringBuilder()
-        val markerStart = builder.length
         builder.append(CHILD_MARKER)
-        builder.setSpan(
-            ForegroundColorSpan(ContextCompat.getColor(context, R.color.emerald_soft)),
-            markerStart,
-            builder.length,
-            Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
-        )
 
         val titleStart = builder.length
         builder.append(baseTitle)
