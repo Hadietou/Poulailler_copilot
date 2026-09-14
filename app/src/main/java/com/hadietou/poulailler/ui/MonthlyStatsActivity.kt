@@ -104,17 +104,16 @@ class MonthlyStatsActivity : AppCompatActivity() {
                     binding.tvStatsSummary.text = totalMensuelTablettes.toString()
                     binding.tvStatsSummaryUnit.visibility = View.VISIBLE
                     binding.tvStatsSummarySubtitle.visibility = View.VISIBLE
-                    binding.tvStatsSummarySubtitle.text = "≈ ${numberFormat.format(totalMensuel)} œufs"
+                    binding.tvStatsSummarySubtitle.text = "≈ ${formatEggsAsTrays(totalMensuel, numberFormat)}"
 
                     binding.cardTotalGeneral.visibility = View.VISIBLE
                     binding.tvTotalGeneral.text = totalGeneralTablettes.toString()
-                    binding.tvTotalGeneralSubtitle.text = "≈ ${numberFormat.format(totalGeneral)} œufs"
+                    binding.tvTotalGeneralSubtitle.text = "≈ ${formatEggsAsTrays(totalGeneral, numberFormat)}"
 
                     binding.cardTotalAvailable.visibility = View.VISIBLE
                     val availableTablettes = totalAvailable / 30
-                    val remainingEggs = totalAvailable % 30
                     binding.tvTotalAvailable.text = availableTablettes.toString()
-                    binding.tvTotalAvailableSubtitle.text = "${numberFormat.format(totalAvailable)} œufs (dont $remainingEggs hors plateau)"
+                    binding.tvTotalAvailableSubtitle.text = formatEggsAsTrays(totalAvailable, numberFormat)
 
                     val totalBrokenMensuel = currentMonthEntries.sumOf { it.brokenEggsCount }
                     binding.cardBrokenEggs.visibility = View.VISIBLE
@@ -182,6 +181,14 @@ class MonthlyStatsActivity : AppCompatActivity() {
                 }
             }
         }
+    }
+
+    /** Formate un nombre d'œufs en plateaux complets (30 œufs) + le reste, ex. "41 plateaux + 12 œufs". */
+    private fun formatEggsAsTrays(totalEggs: Int, numberFormat: NumberFormat): String {
+        val trays = totalEggs / 30
+        val remainder = totalEggs % 30
+        val traysText = "${numberFormat.format(trays)} plateaux"
+        return if (remainder == 0) traysText else "$traysText + $remainder œufs"
     }
 
     /** Regroupe les ventes par prix de plateau et retourne un résumé "X plateaux à Y MRU/plateau" par ligne. */
