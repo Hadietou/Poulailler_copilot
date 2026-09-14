@@ -1,14 +1,16 @@
 package com.hadietou.poulailler.ui
 
 import android.content.Context
+import android.content.res.ColorStateList
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import android.widget.LinearLayout
+import android.widget.TextView
 import androidx.core.content.ContextCompat
-import com.github.mikephil.charting.charts.BarChart
 import com.github.mikephil.charting.charts.LineChart
 import com.github.mikephil.charting.components.XAxis
 import com.github.mikephil.charting.components.YAxis
-import com.github.mikephil.charting.data.BarData
-import com.github.mikephil.charting.data.BarDataSet
-import com.github.mikephil.charting.data.BarEntry
 import com.github.mikephil.charting.data.Entry
 import com.github.mikephil.charting.data.LineData
 import com.github.mikephil.charting.data.LineDataSet
@@ -128,77 +130,66 @@ object DashboardChartRenderer {
         }
     }
 
-    fun renderExpenses(chart: BarChart, context: Context, expenses: List<CategoryExpense>) {
-        if (expenses.isEmpty()) {
-            chart.clear()
-            return
-        }
+    /** Couleurs cycliques attribuées aux catégories, dans l'ordre décroissant de dépense. */
+    private val CATEGORY_COLORS = listOf(
+        R.color.earthy_orange, R.color.accent_blue, R.color.emerald_soft,
+        R.color.accent_amber, R.color.accent_rose, R.color.primary
+    )
 
-        fun color(resId: Int) = ContextCompat.getColor(context, resId)
+    /** Au-delà de ce nombre, les catégories restantes sont regroupées sur une seule ligne. */
+    private const val MAX_VISIBLE_CATEGORIES = 6
 
-        val sortedExpenses = expenses.sortedByDescending { it.totalAmount }
-        val totalExp = sortedExpenses.sumOf { it.totalAmount }
+    /**
+     * Classement des catégories de dépenses sous forme de barres proportionnelles (largeur
+     * relative au max, pas un axe partagé) : contrairement à un histogramme classique, une
+     * catégorie qui pèse 5% du total reste lisible à côté d'une qui en pèse 60%, sans les
+     * problèmes d'un axe linéaire écrasé par la plus grosse valeur ni de libellés tournés qui
+     * se chevauchent quand il y a beaucoup de catégories.
+     */
+    fun renderExpenses(container: ViewGroup, context: Context, expenses: List<CategoryExpense>) {
+        container.removeAllViews()
+        if (expenses.isEmpty()) return
 
-        val entries = sortedExpenses.mapIndexed { index, catExp ->
-            BarEntry(index.toFloat(), catExp.totalAmount.toFloat())
-        }
+        val sorted = expenses.sortedByDescending { it.totalAmount }
+        val totalExp = sorted.sumOf { it.totalAmount }
+        val maxAmount = sorted.first().totalAmount
+        val inflater = LayoutInflater.from(context)
 
-        val colorsList = listOf(
-            color(R.color.earthy_orange),
-            color(R.color.accent_blue),
-            color(R.color.emerald_soft),
-            color(R.color.accent_amber),
-            color(R.color.accent_rose),
-            color(R.color.primary)
-        )
+        fun addRow(label: String, amount: Double, @androidx.annotation.ColorInt color: Int) {
+            val row = inflater.inflate(R.layout.item_category_expense_bar, container, false)
+            val percentage = if (totalExp > 0) (amount / totalExp * 100) else 0.0
+            val amountK = (amount / 1000).toInt()
 
-        val textColor = color(R.color.text_primary)
-
-        val dataSet = BarDataSet(entries, "")
-        dataSet.setColors(colorsList)
-        dataSet.valueTextSize = 10f
-        dataSet.valueTextColor = textColor
-        dataSet.valueFormatter = object : ValueFormatter() {
-            override fun getFormattedValue(value: Float): String {
-                val amountK = (value / 1000f).toInt()
-                val percentage = if (totalExp > 0) (value.toDouble() / totalExp * 100).toInt() else 0
-                return String.format(Locale.getDefault(), "%d%% | %dk", percentage, amountK)
-            }
-        }
-
-        chart.apply {
-            data = BarData(dataSet)
-            data.barWidth = 0.5f
-            description.isEnabled = false
-
-            xAxis.apply {
-                this.textColor = textColor
-                position = XAxis.XAxisPosition.BOTTOM
-                granularity = 1f
-                setDrawGridLines(false)
-                labelRotationAngle = -45f
-                setLabelCount(sortedExpenses.size)
-                valueFormatter = object : ValueFormatter() {
-                    override fun getFormattedValue(value: Float): String {
-                        val index = value.toInt()
-                        return if (index in sortedExpenses.indices) sortedExpenses[index].category else ""
-                    }
-                }
+            row.findViewById<TextView>(R.id.tvCategoryName).text = label
+            row.findViewById<TextView>(R.id.tvCategoryValue).apply {
+                text = String.format(Locale.getDefault(), "%d%% · %dk", percentage.toInt(), amountK)
+                setTextColor(color)
             }
 
-            axisLeft.apply {
-                this.textColor = textColor
-                setDrawGridLines(true)
-                valueFormatter = object : ValueFormatter() {
-                    override fun getFormattedValue(value: Float): String = value.toInt().toString()
-                }
-            }
-            axisRight.isEnabled = false
-            legend.isEnabled = false
+            // Largeur proportionnelle via un poids de LinearLayout (fill + espaceur) : évite
+            // tout calcul de pixels dépendant du layout pass, contrairement à une largeur fixe.
+            val fraction = if (maxAmount > 0) (amount / maxAmount).toFloat().coerceIn(0.03f, 1f) else 0f
+            val fill = row.findViewById<View>(R.id.viewBarFill)
+            fill.backgroundTintList = ColorStateList.valueOf(color)
+            (fill.layoutParams as LinearLayout.LayoutParams).weight = fraction
+            val spacer = row.findViewById<View>(R.id.viewBarSpacer)
+            (spacer.layoutParams as LinearLayout.LayoutParams).weight = 1f - fraction
 
-            setExtraOffsets(5f, 5f, 5f, 15f)
-            animateY(1000)
-            invalidate()
+            container.addView(row)
+        }
+
+        val visible = sorted.take(MAX_VISIBLE_CATEGORIES)
+        visible.forEachIndexed { index, catExp ->
+            addRow(catExp.category, catExp.totalAmount, ContextCompat.getColor(context, CATEGORY_COLORS[index % CATEGORY_COLORS.size]))
+        }
+
+        val rest = sorted.drop(MAX_VISIBLE_CATEGORIES)
+        if (rest.isNotEmpty()) {
+            addRow(
+                "+ ${rest.size} autre" + if (rest.size > 1) "s" else "",
+                rest.sumOf { it.totalAmount },
+                ContextCompat.getColor(context, R.color.text_secondary)
+            )
         }
     }
 }
