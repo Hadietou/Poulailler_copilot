@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.hadietou.poulailler.repository.FirebaseRepository
+import com.hadietou.poulailler.util.PasswordHasher
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.launch
@@ -15,6 +16,27 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
     private val auth = FirebaseAuth.getInstance()
     private val db = FirebaseFirestore.getInstance()
     private val firebaseRepo = FirebaseRepository()
+
+    /**
+     * Reprend automatiquement une session Firebase déjà active (ex: après une simple
+     * mise à jour/réinstallation de l'app) au lieu de forcer une reconnexion manuelle.
+     * Ne fait rien si l'utilisateur s'est explicitement déconnecté (currentUser == null).
+     */
+    fun checkExistingSession(onResult: (Boolean, String, String) -> Unit) {
+        val user = auth.currentUser
+        if (user == null) {
+            onResult(false, "", "")
+            return
+        }
+        viewModelScope.launch {
+            try {
+                handleSuccessfulAuth(user.uid, user.email ?: "", onResult)
+            } catch (e: Exception) {
+                Log.e("LoginVM", "checkExistingSession error", e)
+                onResult(false, "", "")
+            }
+        }
+    }
 
     fun login(emailInput: String, password: String, onResult: (Boolean, String, String) -> Unit) {
         val email = emailInput.trim().lowercase()
@@ -79,7 +101,14 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
             
             if (doc.exists() && doc.getBoolean("isPreCreated") == true) {
                 val storedPass = doc.getString("password")
-                if (storedPass == password) {
+                // Le mot de passe stocké est haché (PasswordHasher) depuis ce correctif ;
+                // looksHashed() permet de rester compatible avec d'anciens documents encore
+                // en clair (créés avant), sans casser leur première connexion.
+                val matches = storedPass != null && (
+                    if (PasswordHasher.looksHashed(storedPass)) PasswordHasher.verify(password, storedPass)
+                    else storedPass == password
+                )
+                if (matches) {
                     val createRes = auth.createUserWithEmailAndPassword(email, password).await()
                     val newUid = createRes.user?.uid
                     

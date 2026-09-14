@@ -5,6 +5,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
 import com.hadietou.poulailler.repository.FirebaseRepository
+import com.hadietou.poulailler.util.PasswordHasher
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.collectLatest
@@ -96,20 +97,24 @@ class ResponsableViewModel(application: Application) : AndroidViewModel(applicat
                 val login = "${cleanAgentName}@${currentFarmName}.com"
                 
                 val password = (100000..999999).random().toString()
-                
+
                 val fId = firebaseRepo.getFarmId() ?: throw Exception("ID de ferme non trouvé")
-                
+
                 val agentData = hashMapOf(
                     "username" to agentName,
                     "email" to login,
-                    "password" to password,
+                    // Jamais en clair dans Firestore : seul le haché est stocké, le mot de
+                    // passe en clair n'est renvoyé qu'une fois via onComplete() pour être
+                    // communiqué à l'agent (cf. PasswordHasher, vérifié dans
+                    // LoginViewModel.checkPreCreatedAgent lors de la première connexion).
+                    "password" to PasswordHasher.hash(password),
                     "role" to "AGENT",
                     "farmId" to fId,
                     "active" to true,
                     "isPreCreated" to true,
                     "createdAt" to System.currentTimeMillis()
                 )
-                
+
                 db.collection("users").document(login).set(agentData).await()
                 onComplete(login, password)
                 
