@@ -13,3 +13,10 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# Ne jamais committer de clés privées
+/yes
+/yes.pub
+*.pem
+id_rsa
+id_ed25519
