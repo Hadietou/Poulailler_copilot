@@ -429,13 +429,15 @@ class FirebaseRepository {
                 .addSnapshotListener { s, e ->
                     val list = s?.documents?.mapNotNull { doc ->
                         Mortality(
-                            id = 0L, 
-                            count = doc.getLong("count")?.toInt() ?: 0, 
-                            date = doc.getLong("date") ?: 0L, 
-                            firestoreId = doc.id, 
-                            farmId = id, 
+                            id = 0L,
+                            count = doc.getLong("count")?.toInt() ?: 0,
+                            date = doc.getLong("date") ?: 0L,
+                            firestoreId = doc.id,
+                            farmId = id,
                             batchId = doc.getString("batchId"),
-                            cause = doc.getString("cause")
+                            cause = doc.getString("cause"),
+                            zone = doc.getString("zone"),
+                            confirmedCause = doc.getString("confirmedCause")
                         )
                     }?.sortedByDescending { it.date } ?: emptyList()
                     trySend(list)
@@ -648,15 +650,16 @@ class FirebaseRepository {
         db.collection("egg_entries").document(id).delete().await()
     }
 
-    suspend fun addMortality(c: Int, d: Long, batchId: String?, cause: String? = null) {
+    suspend fun addMortality(c: Int, d: Long, batchId: String?, cause: String? = null, zone: String? = null) {
         checkAndThrowIfBlocked()
         val fId = requireFarmId()
         db.collection("mortality").add(hashMapOf(
-            "count" to c, 
-            "date" to d, 
-            "farmId" to fId, 
+            "count" to c,
+            "date" to d,
+            "farmId" to fId,
             "batchId" to batchId,
-            "cause" to cause
+            "cause" to cause,
+            "zone" to zone
         )).await()
     }
 
@@ -666,7 +669,9 @@ class FirebaseRepository {
             db.collection("mortality").document(it).update(hashMapOf(
                 "count" to m.count,
                 "date" to m.date,
-                "cause" to m.cause
+                "cause" to m.cause,
+                "zone" to m.zone,
+                "confirmedCause" to m.confirmedCause
             ) as Map<String, Any>).await()
         }
     }

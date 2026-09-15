@@ -11,5 +11,7 @@ data class Mortality(
     val firestoreId: String? = null,
     val farmId: String? = null,
     val batchId: String? = null,
-    val cause: String? = null
+    val cause: String? = null, // cause présumée, saisie au moment du signalement
+    val zone: String? = null, // zone/bâtiment concerné, optionnel
+    val confirmedCause: String? = null // renseignée plus tard (autopsie, vétérinaire), optionnelle
 )

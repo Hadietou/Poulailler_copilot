@@ -69,7 +69,7 @@
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="center_vertical"
-            android:layout_marginBottom="24dp">
+            android:layout_marginBottom="12dp">
 
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/tilMortalityCause"
@@ -100,6 +100,41 @@
                 app:tint="@color/primary"
                 android:contentDescription="Aide au diagnostic" />
         </LinearLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Zone / bâtiment (optionnel)"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            android:layout_marginBottom="12dp"
+            app:hintTextColor="@color/text_secondary"
+            app:boxStrokeColor="@color/primary"
+            app:startIconDrawable="@drawable/ic_location"
+            app:startIconTint="@color/primary">
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etMortalityZone"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@color/text_primary" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/tilMortalityConfirmedCause"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Cause confirmée (optionnel, après diagnostic)"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            android:layout_marginBottom="24dp"
+            app:hintTextColor="@color/text_secondary"
+            app:boxStrokeColor="@color/primary"
+            app:startIconDrawable="@drawable/ic_check"
+            app:startIconTint="@color/primary">
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etMortalityConfirmedCause"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@color/text_primary" />
+        </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnSaveMortality"

@@ -207,8 +207,8 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
         binding.cardDashFeed.setOnClickListener { showFeedMenu(it) }
         binding.cardDashHealth.setOnClickListener { showHealthMenu(it) }
         binding.layoutDashHealthMortalityRate.setOnClickListener { navigateToStats("MORTALITY") }
-        binding.layoutDashHealthWeather.setOnClickListener { navigateTo(VaccineActivity::class.java) }
-        binding.layoutDashHealthTreatment.setOnClickListener { navigateTo(VaccineActivity::class.java) }
+        binding.layoutDashHealthWeather.setOnClickListener { navigateTo(HealthDashboardActivity::class.java) }
+        binding.layoutDashHealthTreatment.setOnClickListener { navigateTo(HealthDashboardActivity::class.java) }
 
         binding.cardNetProfit.setOnClickListener { navigateTo(SalesActivity::class.java) }
     }
@@ -553,7 +553,7 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
 
             R.id.nav_collect -> navigateTo(AgentActivity::class.java)
             R.id.nav_sales -> navigateTo(SalesActivity::class.java)
-            R.id.nav_vaccines -> navigateTo(VaccineActivity::class.java)
+            R.id.nav_vaccines -> navigateTo(HealthDashboardActivity::class.java)
             R.id.nav_mortality -> navigateTo(MortalityActivity::class.java)
 
             R.id.nav_delete_account -> {

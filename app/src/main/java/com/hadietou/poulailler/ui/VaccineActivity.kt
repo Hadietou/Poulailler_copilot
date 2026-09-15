@@ -530,7 +530,13 @@ class VaccineActivity : AppCompatActivity(), NavigationView.OnNavigationItemSele
                 intent.putExtra("selectedBatchId", selectedBatchId)
                 startActivity(intent)
             }
-            R.id.nav_vaccines -> {}
+            R.id.nav_vaccines -> {
+                val intent = Intent(this, HealthDashboardActivity::class.java)
+                intent.putExtra("role", userRole)
+                intent.putExtra("userIdString", userId)
+                intent.putExtra("selectedBatchId", selectedBatchId)
+                startActivity(intent)
+            }
             R.id.nav_expenses -> {
                 val intent = Intent(this, ExpensesActivity::class.java)
                 intent.putExtra("role", userRole)

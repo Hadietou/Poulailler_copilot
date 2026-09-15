@@ -235,7 +235,7 @@ class ResponsableActivity : AppCompatActivity(), NavigationView.OnNavigationItem
                 startActivity(intent)
             }
             R.id.nav_vaccines -> {
-                val intent = Intent(this, VaccineActivity::class.java)
+                val intent = Intent(this, HealthDashboardActivity::class.java)
                 intent.putExtra("role", userRole)
                 intent.putExtra("userIdString", userId)
                 startActivity(intent)

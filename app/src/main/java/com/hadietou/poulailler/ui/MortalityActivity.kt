@@ -252,6 +252,7 @@ class MortalityActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
             val countStr = dialogBinding.etMortalityInput.text.toString()
             val count = countStr.toIntOrNull() ?: 0
             val cause = dialogBinding.actvMortalityCause.text.toString()
+            val zone = dialogBinding.etMortalityZone.text.toString().trim().ifEmpty { null }
 
             if (count <= 0) {
                 Toast.makeText(this, "Veuillez saisir un nombre valide", Toast.LENGTH_SHORT).show()
@@ -265,7 +266,7 @@ class MortalityActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
 
             lifecycleScope.launch(Dispatchers.IO) {
                 try {
-                    firebaseRepo.addMortality(count, selectedDateMs, selectedBatchId, cause)
+                    firebaseRepo.addMortality(count, selectedDateMs, selectedBatchId, cause, zone)
                     withContext(Dispatchers.Main) {
                         Toast.makeText(this@MortalityActivity, "Mortalité enregistrée", Toast.LENGTH_SHORT).show()
                         dialog.dismiss()
@@ -353,6 +354,8 @@ class MortalityActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
         val causeAdapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, mortalityCauses)
         dialogBinding.actvMortalityCause.setAdapter(causeAdapter)
         dialogBinding.actvMortalityCause.setText(mortality.cause, false)
+        dialogBinding.etMortalityZone.setText(mortality.zone)
+        dialogBinding.etMortalityConfirmedCause.setText(mortality.confirmedCause)
 
         dialogBinding.btnHelpSymptoms.setOnClickListener {
             showSmartDiagnosisDialog { selectedCause ->
@@ -384,7 +387,9 @@ class MortalityActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
                         val updated = mortality.copy(
                             count = count,
                             date = editDateMs,
-                            cause = cause
+                            cause = cause,
+                            zone = dialogBinding.etMortalityZone.text.toString().trim().ifEmpty { null },
+                            confirmedCause = dialogBinding.etMortalityConfirmedCause.text.toString().trim().ifEmpty { null }
                         )
                         firebaseRepo.updateMortality(updated)
                         withContext(Dispatchers.Main) {
@@ -577,7 +582,7 @@ class MortalityActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
                 startActivity(intent)
             }
             R.id.nav_vaccines -> {
-                val intent = Intent(this, VaccineActivity::class.java)
+                val intent = Intent(this, HealthDashboardActivity::class.java)
                 intent.putExtra("role", userRole)
                 intent.putExtra("userIdString", userId)
                 intent.putExtra("selectedBatchId", selectedBatchId)
@@ -670,6 +675,12 @@ class MortalityActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
                     binding.tvCause.visibility = View.VISIBLE
                 } else {
                     binding.tvCause.visibility = View.GONE
+                }
+                if (!item.zone.isNullOrEmpty()) {
+                    binding.tvZone.text = "📍 ${item.zone}"
+                    binding.tvZone.visibility = View.VISIBLE
+                } else {
+                    binding.tvZone.visibility = View.GONE
                 }
             }
         }
