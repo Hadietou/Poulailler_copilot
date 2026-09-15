@@ -25,6 +25,9 @@ data class FarmInfo(
     val feedStockWarningDays: Int = DEFAULT_FEED_STOCK_WARNING_DAYS,
     // Température (°C) à partir de laquelle une alerte canicule est envoyée.
     val heatAlertTempCelsius: Int = DEFAULT_HEAT_ALERT_TEMP,
+    // Multiplicateur de la moyenne mobile 7 jours à partir duquel le tableau de bord sanitaire
+    // déclenche l'alerte "mortalité anormalement élevée" (voir HealthAlertEngine).
+    val mortalitySpikeMultiplier: Double = DEFAULT_MORTALITY_SPIKE_MULTIPLIER,
     // Correction manuelle (°C) appliquée aux températures prévues par l'API, pour compenser
     // l'écart constaté entre la prévision (modèle large échelle, température sous abri) et le
     // relevé de terrain, en l'absence de capteur sur place. Peut être positive ou négative.
@@ -41,6 +44,7 @@ data class FarmInfo(
         const val DEFAULT_FEED_STOCK_CRITICAL_DAYS = 5
         const val DEFAULT_FEED_STOCK_WARNING_DAYS = 10
         const val DEFAULT_HEAT_ALERT_TEMP = 35
+        const val DEFAULT_MORTALITY_SPIKE_MULTIPLIER = 2.0
         const val DEFAULT_WEATHER_TEMP_OFFSET = 0.0
         const val DEFAULT_LIGHTING_HOURS = 15
         const val DEFAULT_VACCINE_INTERVAL_MONTHS = 2

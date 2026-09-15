@@ -509,6 +509,16 @@
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnExportHealthReport"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:layout_marginTop="20dp"
+                    android:text="📄 Exporter le rapport sanitaire (PDF)"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:textColor="@color/primary"
+                    app:strokeColor="@color/primary" />
+
                 <View android:layout_width="match_parent" android:layout_height="40dp" />
             </LinearLayout>
         </androidx.core.widget.NestedScrollView>

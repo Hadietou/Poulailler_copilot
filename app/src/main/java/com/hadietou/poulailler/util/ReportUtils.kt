@@ -5,6 +5,11 @@ import android.content.Intent
 import android.graphics.*
 import android.graphics.pdf.PdfDocument
 import androidx.core.content.FileProvider
+import com.hadietou.poulailler.data.BiosecurityTask
+import com.hadietou.poulailler.data.DiseaseCase
+import com.hadietou.poulailler.data.Mortality
+import com.hadietou.poulailler.data.Treatment
+import com.hadietou.poulailler.data.VetVisit
 import com.hadietou.poulailler.ui.DashboardViewModel
 import java.io.File
 import java.io.FileOutputStream
@@ -165,6 +170,171 @@ object ReportUtils {
         } finally {
             pdfDocument.close()
         }
+    }
+
+    /**
+     * Rapport sanitaire dédié (Phase 4) : mortalité, traitements/délais d'attente, cas de
+     * symptômes/maladies, visites vétérinaires et état de la biosécurité. Distinct du rapport
+     * de performance globale ci-dessus, qui ne couvrait que vaccins + mortalité.
+     */
+    fun generateAndShareHealthReport(
+        context: Context,
+        farmName: String,
+        batchName: String,
+        batchType: String,
+        cumulativeMortalityRate: Double,
+        monthlyMortalityCount: Int,
+        mortalities: List<Mortality>,
+        treatments: List<Treatment>,
+        diseaseCases: List<DiseaseCase>,
+        vetVisits: List<VetVisit>,
+        biosecurityTasks: List<BiosecurityTask>
+    ) {
+        val pdfDocument = PdfDocument()
+        var pageNumber = 1
+        var pageInfo = PdfDocument.PageInfo.Builder(595, 842, pageNumber).create()
+        var page = pdfDocument.startPage(pageInfo)
+        var canvas = page.canvas
+
+        val titlePaint = Paint().apply { textSize = 20f; isFakeBoldText = true; color = Color.BLACK }
+        val textPaint = Paint().apply { textSize = 11f; color = Color.DKGRAY }
+        val headerPaint = Paint().apply { textSize = 13f; isFakeBoldText = true; color = Color.BLACK }
+        val subHeaderPaint = Paint().apply { textSize = 11f; isFakeBoldText = true; color = Color.BLACK }
+        val alertPaint = Paint().apply { textSize = 11f; color = Color.RED; isFakeBoldText = true }
+
+        var y = 50f
+        val x = 40f
+        val margin = 40f
+        val dateSdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+        val now = System.currentTimeMillis()
+
+        fun ensureSpace(needed: Float) {
+            if (y + needed > 800f) {
+                pdfDocument.finishPage(page)
+                pageNumber++
+                pageInfo = PdfDocument.PageInfo.Builder(595, 842, pageNumber).create()
+                page = pdfDocument.startPage(pageInfo)
+                canvas = page.canvas
+                y = 50f
+            }
+        }
+
+        canvas.drawText("RAPPORT SANITAIRE - KOURKOUROU", x, y, titlePaint)
+        y += 25f
+        canvas.drawText("Généré le : ${SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(Date())}", x, y, textPaint)
+        y += 35f
+        canvas.drawText("FERME : ${farmName.uppercase()}", x, y, headerPaint)
+        y += 18f
+        canvas.drawText("LOT : $batchName ($batchType)", x, y, textPaint)
+        y += 30f
+
+        // 1. Mortalité
+        drawSectionHeader(canvas, "MORTALITÉ", x, y, headerPaint)
+        y += 25f
+        canvas.drawText("Taux cumulé : ${"%.1f".format(cumulativeMortalityRate)}%", x, y, textPaint)
+        canvas.drawText("Ce mois : $monthlyMortalityCount", x + 200f, y, textPaint)
+        y += 22f
+        mortalities.take(8).forEach { m ->
+            ensureSpace(15f)
+            val cause = listOfNotNull(m.cause, m.confirmedCause?.let { "confirmé : $it" }).joinToString(" / ").ifEmpty { null }
+            canvas.drawText("- ${dateSdf.format(Date(m.date))} : ${m.count} sujets${cause?.let { " ($it)" } ?: ""}${m.zone?.let { " — Zone : $it" } ?: ""}", x + 10, y, textPaint)
+            y += 15f
+        }
+        if (mortalities.isEmpty()) { canvas.drawText("- Aucune mortalité enregistrée", x + 10, y, textPaint); y += 15f }
+        y += 15f
+
+        // 2. Traitements
+        ensureSpace(40f)
+        drawSectionHeader(canvas, "TRAITEMENTS", x, y, headerPaint)
+        y += 25f
+        val activeWithdrawals = treatments.filter {
+            (it.eggWithdrawalUntil?.let { u -> u > now } == true) || (it.slaughterWithdrawalUntil?.let { u -> u > now } == true)
+        }
+        if (activeWithdrawals.isNotEmpty()) {
+            canvas.drawText("⚠ DÉLAIS D'ATTENTE EN COURS :", x, y, alertPaint)
+            y += 15f
+            activeWithdrawals.forEach { t ->
+                ensureSpace(15f)
+                t.eggWithdrawalUntil?.let { u -> if (u > now) { canvas.drawText("- ${t.medicationName} : œufs jusqu'au ${dateSdf.format(Date(u))}", x + 10, y, textPaint); y += 15f } }
+                t.slaughterWithdrawalUntil?.let { u -> if (u > now) { canvas.drawText("- ${t.medicationName} : abattage jusqu'au ${dateSdf.format(Date(u))}", x + 10, y, textPaint); y += 15f } }
+            }
+            y += 8f
+        }
+        treatments.take(6).forEach { t ->
+            ensureSpace(15f)
+            canvas.drawText("- ${dateSdf.format(Date(t.startDate))} : ${t.medicationName}${t.reason?.let { " — $it" } ?: ""} (${treatmentStatusLabel(t.status)})", x + 10, y, textPaint)
+            y += 15f
+        }
+        if (treatments.isEmpty()) { canvas.drawText("- Aucun traitement enregistré", x + 10, y, textPaint); y += 15f }
+        y += 15f
+
+        // 3. Symptômes & maladies
+        ensureSpace(40f)
+        drawSectionHeader(canvas, "SYMPTÔMES & MALADIES", x, y, headerPaint)
+        y += 25f
+        diseaseCases.take(6).forEach { c ->
+            ensureSpace(15f)
+            val label = c.suspectedDisease ?: c.symptoms.firstOrNull() ?: "Cas sanitaire"
+            canvas.drawText("- ${dateSdf.format(Date(c.dateReported))} : $label — ${c.symptoms.joinToString(", ")} (${statusLabel(c.status)})", x + 10, y, textPaint)
+            y += 15f
+        }
+        if (diseaseCases.isEmpty()) { canvas.drawText("- Aucun cas signalé", x + 10, y, textPaint); y += 15f }
+        y += 15f
+
+        // 4. Visites vétérinaires
+        ensureSpace(40f)
+        drawSectionHeader(canvas, "VISITES VÉTÉRINAIRES", x, y, headerPaint)
+        y += 25f
+        vetVisits.take(5).forEach { v ->
+            ensureSpace(15f)
+            canvas.drawText("- ${dateSdf.format(Date(v.date))} : ${v.vetName}${v.diagnosis?.let { " — Diagnostic : $it" } ?: ""}", x + 10, y, textPaint)
+            y += 15f
+        }
+        if (vetVisits.isEmpty()) { canvas.drawText("- Aucune visite enregistrée", x + 10, y, textPaint); y += 15f }
+        y += 15f
+
+        // 5. Biosécurité
+        ensureSpace(40f)
+        drawSectionHeader(canvas, "BIOSÉCURITÉ", x, y, headerPaint)
+        y += 25f
+        val overdueTasks = biosecurityTasks.filter { it.isOverdue }
+        if (overdueTasks.isEmpty()) {
+            canvas.drawText("- Toutes les tâches à jour", x + 10, y, textPaint)
+            y += 15f
+        } else {
+            canvas.drawText("⚠ TÂCHES EN RETARD :", x, y, alertPaint)
+            y += 15f
+            overdueTasks.forEach { t ->
+                ensureSpace(15f)
+                canvas.drawText("- ${t.task}", x + 10, y, textPaint)
+                y += 15f
+            }
+        }
+
+        pdfDocument.finishPage(page)
+
+        val fileName = "Rapport_Sanitaire_${batchName.replace(" ", "_")}_${SimpleDateFormat("yyyyMMdd", Locale.getDefault()).format(Date())}.pdf"
+        val file = File(context.cacheDir, fileName)
+        try {
+            pdfDocument.writeTo(FileOutputStream(file))
+            shareFile(context, file)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        } finally {
+            pdfDocument.close()
+        }
+    }
+
+    private fun statusLabel(status: String): String = when (status) {
+        "DIAGNOSTIC_CONFIRME" -> "diagnostic confirmé"
+        "MALADIE_SUSPECTEE" -> "maladie suspectée"
+        else -> "symptôme observé"
+    }
+
+    private fun treatmentStatusLabel(status: String): String = when (status) {
+        "PREVU" -> "prévu"
+        "TERMINE" -> "terminé"
+        else -> "en cours"
     }
 
     private fun drawSectionHeader(canvas: Canvas, title: String, x: Float, y: Float, paint: Paint) {

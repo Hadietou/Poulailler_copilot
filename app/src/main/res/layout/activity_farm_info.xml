@@ -461,6 +461,24 @@
 
                     <com.google.android.material.textfield.TextInputLayout
                         android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:hint="Seuil alerte mortalité (x moyenne 7 jours)"
+                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                        android:layout_marginBottom="4dp"
+                        app:hintTextColor="@color/white" app:boxStrokeColor="@color/white">
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etMortalitySpikeMultiplier" android:layout_width="match_parent" android:layout_height="wrap_content"
+                            android:inputType="numberDecimal" android:textColor="@color/text_primary" />
+                    </com.google.android.material.textfield.TextInputLayout>
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Le tableau de bord sanitaire alerte quand la mortalité du jour dépasse ce multiple de la moyenne des 7 jours précédents (ex : 2 = deux fois plus que d'habitude)."
+                        android:textColor="@color/text_secondary"
+                        android:textSize="12sp"
+                        android:layout_marginBottom="12dp" />
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:layout_width="match_parent" android:layout_height="wrap_content"
                         android:hint="Correction météo locale (°C)"
                         style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                         android:layout_marginBottom="4dp"

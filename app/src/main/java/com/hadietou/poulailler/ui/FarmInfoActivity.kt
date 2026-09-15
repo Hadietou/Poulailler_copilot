@@ -294,6 +294,7 @@ class FarmInfoActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
         binding.etFeedStockCriticalDays.setText(info.feedStockCriticalDays.toString())
         binding.etFeedStockWarningDays.setText(info.feedStockWarningDays.toString())
         binding.etHeatAlertTemp.setText(info.heatAlertTempCelsius.toString())
+        binding.etMortalitySpikeMultiplier.setText(info.mortalitySpikeMultiplier.toString())
         binding.etWeatherTempOffset.setText(info.weatherTempOffsetCelsius.toString())
         binding.etLightingHours.setText(info.lightingHoursAfterSunrise.toString())
         binding.etVaccineInterval.setText(info.vaccineIntervalMonths.toString())
@@ -396,6 +397,8 @@ class FarmInfoActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
                         ?: FarmInfo.DEFAULT_FEED_STOCK_WARNING_DAYS,
                     heatAlertTempCelsius = binding.etHeatAlertTemp.text.toString().toIntOrNull()
                         ?: FarmInfo.DEFAULT_HEAT_ALERT_TEMP,
+                    mortalitySpikeMultiplier = binding.etMortalitySpikeMultiplier.text.toString().toDoubleOrNull()
+                        ?.takeIf { it > 0 } ?: FarmInfo.DEFAULT_MORTALITY_SPIKE_MULTIPLIER,
                     weatherTempOffsetCelsius = binding.etWeatherTempOffset.text.toString().toDoubleOrNull()
                         ?: FarmInfo.DEFAULT_WEATHER_TEMP_OFFSET,
                     lightingHoursAfterSunrise = binding.etLightingHours.text.toString().toIntOrNull()

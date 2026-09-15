@@ -173,6 +173,24 @@ class HealthDashboardActivity : AppCompatActivity(), NavigationView.OnNavigation
         binding.rowBiosecurity.setOnClickListener {
             startActivity(Intent(this, BiosecurityActivity::class.java))
         }
+        binding.btnExportHealthReport.setOnClickListener { exportHealthReport() }
+    }
+
+    private fun exportHealthReport() {
+        val batch = latestBatch
+        com.hadietou.poulailler.util.ReportUtils.generateAndShareHealthReport(
+            context = this,
+            farmName = viewModel.farmInfo.value?.farmName ?: "Ma Ferme",
+            batchName = batch?.name ?: "N/A",
+            batchType = batch?.typeLot ?: "N/A",
+            cumulativeMortalityRate = viewModel.cumulativeMortalityRate.value ?: 0.0,
+            monthlyMortalityCount = viewModel.monthlyMortalityCount.value ?: 0,
+            mortalities = viewModel.allMortalities.value.orEmpty(),
+            treatments = allTreatments,
+            diseaseCases = allDiseaseCases,
+            vetVisits = allVetVisits,
+            biosecurityTasks = allBiosecurityTasks
+        )
     }
 
     private fun observeObservations() {
@@ -335,7 +353,8 @@ class HealthDashboardActivity : AppCompatActivity(), NavigationView.OnNavigation
     private fun refreshAlerts() {
         val mortalities = viewModel.allMortalities.value.orEmpty()
         val reminders = viewModel.activeHealthReminders.value.orEmpty()
-        val alerts = HealthAlertEngine.computeAll(mortalities, reminders, allTreatments, allDiseaseCases, allObservations, allBiosecurityTasks)
+        val spikeMultiplier = viewModel.farmInfo.value?.mortalitySpikeMultiplier ?: com.hadietou.poulailler.data.FarmInfo.DEFAULT_MORTALITY_SPIKE_MULTIPLIER
+        val alerts = HealthAlertEngine.computeAll(mortalities, reminders, allTreatments, allDiseaseCases, allObservations, allBiosecurityTasks, spikeMultiplier)
 
         binding.containerAlerts.removeAllViews()
         if (alerts.isEmpty()) {

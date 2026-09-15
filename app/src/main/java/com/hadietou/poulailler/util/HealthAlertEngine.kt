@@ -43,7 +43,11 @@ object HealthAlertEngine {
         entries.groupBy { startOfDay(it.date) }.mapValues { (_, v) -> v.sumOf { it.count } }
 
     /** 🔴 Mortalité du jour au moins 2x la moyenne des 7 jours précédents. */
-    fun checkMortalitySpike(entries: List<Mortality>, now: Long = System.currentTimeMillis()): HealthAlert? {
+    fun checkMortalitySpike(
+        entries: List<Mortality>,
+        now: Long = System.currentTimeMillis(),
+        spikeMultiplier: Double = 2.0
+    ): HealthAlert? {
         val totals = dailyTotals(entries)
         val todayStart = startOfDay(now)
         val todayCount = totals[todayStart] ?: return null
@@ -54,7 +58,7 @@ object HealthAlertEngine {
         val avg = previous7.average()
         if (avg <= 0.0) return null
 
-        return if (todayCount >= avg * 2) HealthAlert(
+        return if (todayCount >= avg * spikeMultiplier) HealthAlert(
             AlertLevel.CRITIQUE,
             "Mortalité anormalement élevée",
             "$todayCount morts aujourd'hui contre ${"%.1f".format(avg)}/jour en moyenne cette semaine — vérifier température, eau et signes de maladie."
@@ -185,10 +189,11 @@ object HealthAlertEngine {
         diseaseCases: List<DiseaseCase> = emptyList(),
         observations: List<HealthObservation> = emptyList(),
         biosecurityTasks: List<BiosecurityTask> = emptyList(),
+        mortalitySpikeMultiplier: Double = 2.0,
         now: Long = System.currentTimeMillis()
     ): List<HealthAlert> {
         val alerts = mutableListOf<HealthAlert>()
-        checkMortalitySpike(mortalities, now)?.let { alerts += it }
+        checkMortalitySpike(mortalities, now, mortalitySpikeMultiplier)?.let { alerts += it }
         checkMortalityTrend(mortalities, now)?.let { alerts += it }
         alerts += checkReminders(reminders, now)
         alerts += checkActiveWithdrawals(treatments, now)
