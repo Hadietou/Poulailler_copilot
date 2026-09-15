@@ -10,6 +10,7 @@ import android.view.LayoutInflater
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ArrayAdapter
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -254,7 +255,7 @@ class VaccineActivity : AppCompatActivity(), NavigationView.OnNavigationItemSele
 
     private fun refreshNextVaccineStat() {
         val now = System.currentTimeMillis()
-        val next = allVaccines.filter { it.date >= now }.minByOrNull { it.date }
+        val next = allVaccines.filter { it.status == "PLANIFIE" && it.date >= now }.minByOrNull { it.date }
         if (next != null) {
             val sdf = SimpleDateFormat("dd/MM", Locale.getDefault())
             binding.tvStatNextVaccine.text = next.name
@@ -322,15 +323,46 @@ class VaccineActivity : AppCompatActivity(), NavigationView.OnNavigationItemSele
         }
     }
 
+    private val vaccineRoutes = listOf(
+        "Eau de boisson", "Injection sous-cutanée", "Injection intramusculaire",
+        "Oculaire / nasale", "Aspersion (spray)", "Alimentaire", "Autre"
+    )
+
+    private val vaccineStatusLabels = linkedMapOf(
+        "REALISE" to "✅ Réalisé",
+        "PLANIFIE" to "🗓️ Planifié",
+        "REPORTE" to "⏸️ Reporté",
+        "ANNULE" to "❌ Annulé"
+    )
+
+    private fun statusFromLabel(label: String): String =
+        vaccineStatusLabels.entries.find { it.value == label }?.key ?: "REALISE"
+
+    private fun setupAdvancedToggle(dialogBinding: DialogAddVaccineBinding) {
+        dialogBinding.btnToggleAdvanced.setOnClickListener {
+            val isVisible = dialogBinding.layoutAdvancedFields.visibility == View.VISIBLE
+            dialogBinding.layoutAdvancedFields.visibility = if (isVisible) View.GONE else View.VISIBLE
+            dialogBinding.btnToggleAdvanced.text = if (isVisible) "▸ Détails avancés (optionnel)" else "▾ Détails avancés (optionnel)"
+        }
+        val routeAdapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, vaccineRoutes)
+        dialogBinding.actvRoute.setAdapter(routeAdapter)
+        val statusAdapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, vaccineStatusLabels.values.toList())
+        dialogBinding.actvStatus.setAdapter(statusAdapter)
+    }
+
     private fun showAddVaccineDialog() {
         val dialogBinding = DialogAddVaccineBinding.inflate(LayoutInflater.from(this))
         val dialog = AlertDialog.Builder(this)
             .setView(dialogBinding.root)
             .create()
 
+        setupAdvancedToggle(dialogBinding)
+        dialogBinding.actvStatus.setText(vaccineStatusLabels.getValue("REALISE"), false)
+
         val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
         dialogBinding.btnSelectDate.text = "Date: ${sdf.format(Date())}"
         selectedDateMs = System.currentTimeMillis()
+        var expiryDateMs: Long? = null
 
         dialogBinding.btnSelectDate.setOnClickListener {
             DatePickerDialog(this, { _, year, month, dayOfMonth ->
@@ -341,9 +373,20 @@ class VaccineActivity : AppCompatActivity(), NavigationView.OnNavigationItemSele
             }, calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH), calendar.get(Calendar.DAY_OF_MONTH)).show()
         }
 
+        dialogBinding.btnSelectExpiryDate.setOnClickListener {
+            val cal = Calendar.getInstance()
+            DatePickerDialog(this, { _, year, month, dayOfMonth ->
+                val tempCal = Calendar.getInstance()
+                tempCal.set(year, month, dayOfMonth)
+                expiryDateMs = tempCal.timeInMillis
+                dialogBinding.btnSelectExpiryDate.text = "Péremption: ${sdf.format(tempCal.time)}"
+            }, cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH)).show()
+        }
+
         dialogBinding.btnSaveVaccine.setOnClickListener {
             val name = dialogBinding.etVaccineName.text?.toString() ?: ""
             val remarks = dialogBinding.etRemarks.text?.toString() ?: ""
+            val status = statusFromLabel(dialogBinding.actvStatus.text?.toString() ?: "")
 
             if (name.isEmpty()) {
                 Toast.makeText(this, "Veuillez saisir le nom du soin", Toast.LENGTH_SHORT).show()
@@ -356,21 +399,33 @@ class VaccineActivity : AppCompatActivity(), NavigationView.OnNavigationItemSele
                         name = name,
                         date = selectedDateMs,
                         remarks = remarks,
-                        batchId = selectedBatchId
+                        batchId = selectedBatchId,
+                        status = status,
+                        manufacturer = dialogBinding.etManufacturer.text?.toString()?.trim()?.ifEmpty { null },
+                        lotNumber = dialogBinding.etLotNumber.text?.toString()?.trim()?.ifEmpty { null },
+                        expiryDate = expiryDateMs,
+                        dose = dialogBinding.etDose.text?.toString()?.trim()?.ifEmpty { null },
+                        route = dialogBinding.actvRoute.text?.toString()?.trim()?.ifEmpty { null },
+                        targetCount = dialogBinding.etTargetCount.text?.toString()?.toIntOrNull(),
+                        administeredBy = dialogBinding.etAdministeredBy.text?.toString()?.trim()?.ifEmpty { null }
                     )
                     firebaseRepo.addVaccine(entry)
-                    
-                    // Ajouter un rappel Vitamine systématique après un soin/vaccin
-                    firebaseRepo.addHealthReminder(HealthReminder(
-                        type = "VITAMINE",
-                        title = "Vitamines Post-Soin ($name)",
-                        description = "Recommandé : Vitamine A-D-E ou B-complex pour booster l'immunité.",
-                        dueDate = System.currentTimeMillis(),
-                        batchId = selectedBatchId
-                    ))
+
+                    // Ajouter un rappel Vitamine systématique après un soin/vaccin déjà réalisé
+                    // (pas de sens pour un soin simplement planifié pour plus tard).
+                    if (status == "REALISE") {
+                        firebaseRepo.addHealthReminder(HealthReminder(
+                            type = "VITAMINE",
+                            title = "Vitamines Post-Soin ($name)",
+                            description = "Recommandé : Vitamine A-D-E ou B-complex pour booster l'immunité.",
+                            dueDate = System.currentTimeMillis(),
+                            batchId = selectedBatchId
+                        ))
+                    }
 
                     withContext(Dispatchers.Main) {
-                        Toast.makeText(this@VaccineActivity, "Soin enregistré + Rappel Vitamines ajouté", Toast.LENGTH_SHORT).show()
+                        val msg = if (status == "PLANIFIE") "Soin planifié" else "Soin enregistré + Rappel Vitamines ajouté"
+                        Toast.makeText(this@VaccineActivity, msg, Toast.LENGTH_SHORT).show()
                         dialog.dismiss()
                     }
                 } catch (e: Exception) {
@@ -390,12 +445,29 @@ class VaccineActivity : AppCompatActivity(), NavigationView.OnNavigationItemSele
             .setView(dialogBinding.root)
             .create()
 
+        setupAdvancedToggle(dialogBinding)
         dialogBinding.etVaccineName.setText(entry.name)
         dialogBinding.etRemarks.setText(entry.remarks ?: "")
-        
+        dialogBinding.actvStatus.setText(vaccineStatusLabels.getValue(entry.status), false)
+        dialogBinding.etManufacturer.setText(entry.manufacturer ?: "")
+        dialogBinding.etLotNumber.setText(entry.lotNumber ?: "")
+        dialogBinding.etDose.setText(entry.dose ?: "")
+        dialogBinding.actvRoute.setText(entry.route ?: "", false)
+        dialogBinding.etTargetCount.setText(entry.targetCount?.toString() ?: "")
+        dialogBinding.etAdministeredBy.setText(entry.administeredBy ?: "")
+        if (!entry.manufacturer.isNullOrEmpty() || !entry.lotNumber.isNullOrEmpty() || !entry.dose.isNullOrEmpty() ||
+            !entry.route.isNullOrEmpty() || entry.targetCount != null || !entry.administeredBy.isNullOrEmpty() || entry.expiryDate != null) {
+            dialogBinding.layoutAdvancedFields.visibility = View.VISIBLE
+            dialogBinding.btnToggleAdvanced.text = "▾ Détails avancés (optionnel)"
+        }
+
         val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
         dialogBinding.btnSelectDate.text = "Date: ${sdf.format(Date(entry.date))}"
         var editDateMs = entry.date
+        var editExpiryMs: Long? = entry.expiryDate
+        if (editExpiryMs != null) {
+            dialogBinding.btnSelectExpiryDate.text = "Péremption: ${sdf.format(Date(editExpiryMs))}"
+        }
 
         dialogBinding.btnSelectDate.setOnClickListener {
             val dCal = Calendar.getInstance().apply { timeInMillis = entry.date }
@@ -407,10 +479,21 @@ class VaccineActivity : AppCompatActivity(), NavigationView.OnNavigationItemSele
             }, dCal.get(Calendar.YEAR), dCal.get(Calendar.MONTH), dCal.get(Calendar.DAY_OF_MONTH)).show()
         }
 
+        dialogBinding.btnSelectExpiryDate.setOnClickListener {
+            val dCal = Calendar.getInstance().apply { editExpiryMs?.let { timeInMillis = it } }
+            DatePickerDialog(this, { _, year, month, dayOfMonth ->
+                val tempCal = Calendar.getInstance()
+                tempCal.set(year, month, dayOfMonth)
+                editExpiryMs = tempCal.timeInMillis
+                dialogBinding.btnSelectExpiryDate.text = "Péremption: ${sdf.format(tempCal.time)}"
+            }, dCal.get(Calendar.YEAR), dCal.get(Calendar.MONTH), dCal.get(Calendar.DAY_OF_MONTH)).show()
+        }
+
         dialogBinding.btnSaveVaccine.text = "MODIFIER"
         dialogBinding.btnSaveVaccine.setOnClickListener {
             val name = dialogBinding.etVaccineName.text?.toString() ?: ""
             val remarks = dialogBinding.etRemarks.text?.toString() ?: ""
+            val status = statusFromLabel(dialogBinding.actvStatus.text?.toString() ?: "")
 
             if (name.isEmpty()) {
                 Toast.makeText(this, "Nom obligatoire", Toast.LENGTH_SHORT).show()
@@ -422,7 +505,15 @@ class VaccineActivity : AppCompatActivity(), NavigationView.OnNavigationItemSele
                     val updatedEntry = entry.copy(
                         date = editDateMs,
                         name = name,
-                        remarks = remarks
+                        remarks = remarks,
+                        status = status,
+                        manufacturer = dialogBinding.etManufacturer.text?.toString()?.trim()?.ifEmpty { null },
+                        lotNumber = dialogBinding.etLotNumber.text?.toString()?.trim()?.ifEmpty { null },
+                        expiryDate = editExpiryMs,
+                        dose = dialogBinding.etDose.text?.toString()?.trim()?.ifEmpty { null },
+                        route = dialogBinding.actvRoute.text?.toString()?.trim()?.ifEmpty { null },
+                        targetCount = dialogBinding.etTargetCount.text?.toString()?.toIntOrNull(),
+                        administeredBy = dialogBinding.etAdministeredBy.text?.toString()?.trim()?.ifEmpty { null }
                     )
                     firebaseRepo.updateVaccine(updatedEntry)
                     withContext(Dispatchers.Main) {
@@ -619,10 +710,33 @@ class VaccineActivity : AppCompatActivity(), NavigationView.OnNavigationItemSele
 
         class ViewHolder(private val binding: ItemVaccineBinding) : RecyclerView.ViewHolder(binding.root) {
             fun bind(item: VaccineEntry) {
+                val context = binding.root.context
                 val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-                binding.tvDate.text = sdf.format(Date(item.date))
+                val datePrefix = if (item.status == "PLANIFIE") "Prévu le " else ""
+                binding.tvDate.text = "$datePrefix${sdf.format(Date(item.date))}"
                 binding.tvVaccineName.text = item.name
                 binding.tvRemarks.text = item.remarks ?: ""
+
+                val details = listOfNotNull(
+                    item.lotNumber?.let { "Lot $it" },
+                    item.dose,
+                    item.route
+                ).joinToString(" · ")
+                binding.tvVaccineDetails.text = details
+                binding.tvVaccineDetails.visibility = if (details.isEmpty()) View.GONE else View.VISIBLE
+
+                val (label, colorRes) = when (item.status) {
+                    "PLANIFIE" -> "PLANIFIÉ" to R.color.accent_blue
+                    "REPORTE" -> "REPORTÉ" to R.color.earthy_orange
+                    "ANNULE" -> "ANNULÉ" to R.color.error
+                    else -> "RÉALISÉ" to R.color.emerald_soft
+                }
+                binding.tvVaccineStatus.text = label
+                val color = context.getColor(colorRes)
+                binding.tvVaccineStatus.setTextColor(color)
+                (binding.tvVaccineStatus.background.mutate() as? android.graphics.drawable.GradientDrawable)?.setColor(
+                    android.graphics.Color.argb(30, android.graphics.Color.red(color), android.graphics.Color.green(color), android.graphics.Color.blue(color))
+                )
             }
         }
     }

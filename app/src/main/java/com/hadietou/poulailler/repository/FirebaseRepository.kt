@@ -486,7 +486,23 @@ class FirebaseRepository {
             val sub = db.collection("vaccines").whereEqualTo("farmId", id)
                 .addSnapshotListener { s, e ->
                     val list = s?.documents?.mapNotNull { doc ->
-                        VaccineEntry(0L, doc.getString("name") ?: "", doc.getLong("date") ?: 0L, doc.getString("remarks"), doc.id, id, doc.getString("batchId"))
+                        VaccineEntry(
+                            id = 0L,
+                            name = doc.getString("name") ?: "",
+                            date = doc.getLong("date") ?: 0L,
+                            remarks = doc.getString("remarks"),
+                            firestoreId = doc.id,
+                            farmId = id,
+                            batchId = doc.getString("batchId"),
+                            status = doc.getString("status") ?: "REALISE",
+                            manufacturer = doc.getString("manufacturer"),
+                            lotNumber = doc.getString("lotNumber"),
+                            expiryDate = doc.getLong("expiryDate"),
+                            dose = doc.getString("dose"),
+                            route = doc.getString("route"),
+                            targetCount = doc.getLong("targetCount")?.toInt(),
+                            administeredBy = doc.getString("administeredBy")
+                        )
                     }?.sortedByDescending { it.date } ?: emptyList()
                     trySend(list)
                 }
@@ -749,7 +765,15 @@ class FirebaseRepository {
             "date" to v.date,
             "remarks" to v.remarks,
             "farmId" to fId,
-            "batchId" to v.batchId
+            "batchId" to v.batchId,
+            "status" to v.status,
+            "manufacturer" to v.manufacturer,
+            "lotNumber" to v.lotNumber,
+            "expiryDate" to v.expiryDate,
+            "dose" to v.dose,
+            "route" to v.route,
+            "targetCount" to v.targetCount,
+            "administeredBy" to v.administeredBy
         )).await()
     }
 
@@ -759,7 +783,15 @@ class FirebaseRepository {
             db.collection("vaccines").document(it).update(hashMapOf(
                 "name" to v.name,
                 "date" to v.date,
-                "remarks" to v.remarks
+                "remarks" to v.remarks,
+                "status" to v.status,
+                "manufacturer" to v.manufacturer,
+                "lotNumber" to v.lotNumber,
+                "expiryDate" to v.expiryDate,
+                "dose" to v.dose,
+                "route" to v.route,
+                "targetCount" to v.targetCount,
+                "administeredBy" to v.administeredBy
             ) as Map<String, Any>).await()
         }
     }

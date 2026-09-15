@@ -7,9 +7,17 @@ import androidx.room.PrimaryKey
 data class VaccineEntry(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val name: String,
-    val date: Long,
+    val date: Long, // date prévue si status == PLANIFIE, date réalisée sinon
     val remarks: String? = null,
     val firestoreId: String? = null,
     val farmId: String? = null,
-    val batchId: String? = null
+    val batchId: String? = null,
+    val status: String = "REALISE", // PLANIFIE, REALISE, REPORTE, ANNULE
+    val manufacturer: String? = null,
+    val lotNumber: String? = null,
+    val expiryDate: Long? = null,
+    val dose: String? = null,
+    val route: String? = null,
+    val targetCount: Int? = null,
+    val administeredBy: String? = null
 )
