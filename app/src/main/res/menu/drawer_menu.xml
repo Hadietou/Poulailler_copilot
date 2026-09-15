@@ -64,6 +64,10 @@
             android:id="@+id/nav_treatments"
             android:icon="@drawable/ic_medication"
             android:title="Traitements" />
+        <item
+            android:id="@+id/nav_diseases"
+            android:icon="@drawable/ic_disease"
+            android:title="Symptômes &amp; maladies" />
     </group>
 
     <group android:checkableBehavior="single">

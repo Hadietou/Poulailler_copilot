@@ -380,6 +380,12 @@ class AgentActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
                 intent.putExtra("userIdString", userId)
                 startActivity(intent)
             }
+            R.id.nav_diseases -> {
+                val intent = Intent(this, DiseaseActivity::class.java)
+                intent.putExtra("role", userRole)
+                intent.putExtra("userIdString", userId)
+                startActivity(intent)
+            }
             R.id.nav_delete_account -> {
                 val url = getString(R.string.delete_account_url)
                 val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))

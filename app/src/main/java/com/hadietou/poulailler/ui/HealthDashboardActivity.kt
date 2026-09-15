@@ -49,6 +49,7 @@ class HealthDashboardActivity : AppCompatActivity(), NavigationView.OnNavigation
     private var userId: String? = null
     private var selectedBatchId: String? = null
     private var allTreatments: List<com.hadietou.poulailler.data.Treatment> = emptyList()
+    private var allDiseaseCases: List<com.hadietou.poulailler.data.DiseaseCase> = emptyList()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -64,6 +65,7 @@ class HealthDashboardActivity : AppCompatActivity(), NavigationView.OnNavigation
         setupClickListeners()
         observeViewModel()
         observeTreatments()
+        observeDiseaseCases()
         viewModel.loadData()
     }
 
@@ -137,6 +139,25 @@ class HealthDashboardActivity : AppCompatActivity(), NavigationView.OnNavigation
             intent.putExtra("userIdString", userId)
             intent.putExtra("selectedBatchId", selectedBatchId)
             startActivity(intent)
+        }
+        binding.cardOpenDiseases.setOnClickListener {
+            val intent = Intent(this, DiseaseActivity::class.java)
+            intent.putExtra("role", userRole)
+            intent.putExtra("userIdString", userId)
+            intent.putExtra("selectedBatchId", selectedBatchId)
+            startActivity(intent)
+        }
+    }
+
+    private fun observeDiseaseCases() {
+        lifecycleScope.launch {
+            firebaseRepo.getDiseaseCasesFlow().collectLatest { list ->
+                allDiseaseCases = if (selectedBatchId != null) list.filter { it.batchId == selectedBatchId } else list
+                val now = System.currentTimeMillis()
+                val recentCount = allDiseaseCases.count { now - it.dateReported <= 7 * 86_400_000L }
+                binding.tvDiseasesSubtitle.text = if (recentCount > 0) "$recentCount cas (7 derniers jours)" else "Aucun cas récent"
+                refreshAlerts()
+            }
         }
     }
 
@@ -238,7 +259,7 @@ class HealthDashboardActivity : AppCompatActivity(), NavigationView.OnNavigation
     private fun refreshAlerts() {
         val mortalities = viewModel.allMortalities.value.orEmpty()
         val reminders = viewModel.activeHealthReminders.value.orEmpty()
-        val alerts = HealthAlertEngine.computeAll(mortalities, reminders, allTreatments)
+        val alerts = HealthAlertEngine.computeAll(mortalities, reminders, allTreatments, allDiseaseCases)
 
         binding.containerAlerts.removeAllViews()
         if (alerts.isEmpty()) {
@@ -356,6 +377,13 @@ class HealthDashboardActivity : AppCompatActivity(), NavigationView.OnNavigation
             }
             R.id.nav_treatments -> {
                 val intent = Intent(this, TreatmentActivity::class.java)
+                intent.putExtra("role", userRole)
+                intent.putExtra("userIdString", userId)
+                intent.putExtra("selectedBatchId", selectedBatchId)
+                startActivity(intent)
+            }
+            R.id.nav_diseases -> {
+                val intent = Intent(this, DiseaseActivity::class.java)
                 intent.putExtra("role", userRole)
                 intent.putExtra("userIdString", userId)
                 intent.putExtra("selectedBatchId", selectedBatchId)

@@ -66,6 +66,9 @@
             android:name=".ui.TreatmentActivity"
             android:exported="false" />
         <activity
+            android:name=".ui.DiseaseActivity"
+            android:exported="false" />
+        <activity
             android:name=".ui.MortalityHistoryActivity"
             android:exported="false" />
         <activity

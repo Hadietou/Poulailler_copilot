@@ -880,6 +880,86 @@ class FirebaseRepository {
         db.collection("treatments").document(id).delete().await()
     }
 
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    fun getDiseaseCasesFlow(): Flow<List<DiseaseCase>> = farmIdFlow.flatMapLatest { fId ->
+        val id = fId ?: getFarmId()
+        if (id == null) flowOf(emptyList())
+        else callbackFlow {
+            val sub = db.collection("disease_cases").whereEqualTo("farmId", id)
+                .addSnapshotListener { s, e ->
+                    val list = s?.documents?.mapNotNull { doc ->
+                        @Suppress("UNCHECKED_CAST")
+                        DiseaseCase(
+                            id = 0L,
+                            suspectedDisease = doc.getString("suspectedDisease"),
+                            symptoms = (doc.get("symptoms") as? List<String>) ?: emptyList(),
+                            status = doc.getString("status") ?: "SYMPTOME_OBSERVE",
+                            severity = doc.getString("severity") ?: "MOYENNE",
+                            dateReported = doc.getLong("dateReported") ?: 0L,
+                            affectedCount = doc.getLong("affectedCount")?.toInt(),
+                            deathCount = doc.getLong("deathCount")?.toInt(),
+                            zone = doc.getString("zone"),
+                            observerNotes = doc.getString("observerNotes"),
+                            vetDiagnosis = doc.getString("vetDiagnosis"),
+                            actionsTaken = doc.getString("actionsTaken"),
+                            evolutionNotes = doc.getString("evolutionNotes"),
+                            firestoreId = doc.id,
+                            farmId = id,
+                            batchId = doc.getString("batchId")
+                        )
+                    }?.sortedByDescending { it.dateReported } ?: emptyList()
+                    trySend(list)
+                }
+            awaitClose { sub.remove() }
+        }
+    }
+
+    suspend fun addDiseaseCase(d: DiseaseCase) {
+        checkAndThrowIfBlocked()
+        val fId = requireFarmId()
+        db.collection("disease_cases").add(hashMapOf(
+            "suspectedDisease" to d.suspectedDisease,
+            "symptoms" to d.symptoms,
+            "status" to d.status,
+            "severity" to d.severity,
+            "dateReported" to d.dateReported,
+            "affectedCount" to d.affectedCount,
+            "deathCount" to d.deathCount,
+            "zone" to d.zone,
+            "observerNotes" to d.observerNotes,
+            "vetDiagnosis" to d.vetDiagnosis,
+            "actionsTaken" to d.actionsTaken,
+            "evolutionNotes" to d.evolutionNotes,
+            "farmId" to fId,
+            "batchId" to d.batchId
+        )).await()
+    }
+
+    suspend fun updateDiseaseCase(d: DiseaseCase) {
+        checkAndThrowIfBlocked()
+        d.firestoreId?.let {
+            db.collection("disease_cases").document(it).update(hashMapOf(
+                "suspectedDisease" to d.suspectedDisease,
+                "symptoms" to d.symptoms,
+                "status" to d.status,
+                "severity" to d.severity,
+                "dateReported" to d.dateReported,
+                "affectedCount" to d.affectedCount,
+                "deathCount" to d.deathCount,
+                "zone" to d.zone,
+                "observerNotes" to d.observerNotes,
+                "vetDiagnosis" to d.vetDiagnosis,
+                "actionsTaken" to d.actionsTaken,
+                "evolutionNotes" to d.evolutionNotes
+            ) as Map<String, Any>).await()
+        }
+    }
+
+    suspend fun deleteDiseaseCase(id: String) {
+        checkAndThrowIfBlocked()
+        db.collection("disease_cases").document(id).delete().await()
+    }
+
     suspend fun addHealthReminder(r: HealthReminder) {
         checkAndThrowIfBlocked()
         val fId = requireFarmId()

@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="8dp"
+    app:cardBackgroundColor="@color/surface"
+    app:cardCornerRadius="14dp"
+    app:cardElevation="0dp"
+    app:strokeColor="@color/accent_blue_container"
+    app:strokeWidth="1dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="14dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="top">
+            <TextView
+                android:id="@+id/tvDiseaseName"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:textColor="@color/text_primary"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                tools:text="Suspicion : Coryza infectieux"/>
+
+            <TextView
+                android:id="@+id/tvDiseaseSeverity"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:paddingHorizontal="8dp"
+                android:paddingVertical="3dp"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:background="@drawable/bg_bar_track"
+                tools:text="ÉLEVÉE"/>
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/tvDiseaseStatus"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:paddingHorizontal="8dp"
+            android:paddingVertical="3dp"
+            android:textSize="10sp"
+            android:textStyle="bold"
+            android:background="@drawable/bg_bar_track"
+            tools:text="🔎 SYMPTÔME OBSERVÉ"/>
+
+        <TextView
+            android:id="@+id/tvDiseaseSymptoms"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:textColor="@color/text_secondary"
+            android:textSize="12sp"
+            tools:text="Toux, Éternuements, Écoulements"/>
+
+        <TextView
+            android:id="@+id/tvDiseaseCounts"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:textColor="@color/text_secondary"
+            android:textSize="11sp"
+            android:visibility="gone"
+            tools:text="12 concernées · 2 mortes · Zone : Bâtiment B"
+            tools:visibility="visible"/>
+
+        <TextView
+            android:id="@+id/tvDiseaseDate"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:textColor="@color/text_secondary"
+            android:textSize="11sp"
+            tools:text="Signalé le 15/09/2026"/>
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

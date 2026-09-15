@@ -1,5 +1,6 @@
 package com.hadietou.poulailler.util
 
+import com.hadietou.poulailler.data.DiseaseCase
 import com.hadietou.poulailler.data.HealthReminder
 import com.hadietou.poulailler.data.Mortality
 import com.hadietou.poulailler.data.Treatment
@@ -119,11 +120,43 @@ object HealthAlertEngine {
         return alerts
     }
 
+    /**
+     * 🔴 Diagnostic vétérinaire confirmé non résolu, ou ≥2 symptômes signalés simultanément
+     * sur un même cas récent (7 derniers jours) — deux signaux de gravité, sans jamais poser
+     * de diagnostic à la place de l'éleveur/vétérinaire.
+     * 🟠 Maladie suspectée récente à surveiller.
+     */
+    fun checkDiseaseCases(cases: List<DiseaseCase>, now: Long = System.currentTimeMillis()): List<HealthAlert> {
+        val alerts = mutableListOf<HealthAlert>()
+        val recent = cases.filter { now - it.dateReported <= 7 * DAY_MS }
+        recent.forEach { case ->
+            when {
+                case.status == "DIAGNOSTIC_CONFIRME" -> alerts += HealthAlert(
+                    AlertLevel.CRITIQUE,
+                    "Diagnostic vétérinaire confirmé",
+                    "${case.vetDiagnosis ?: case.suspectedDisease ?: "Cas"} — vérifier que le traitement recommandé est bien suivi."
+                )
+                case.symptoms.size >= 2 && case.status != "DIAGNOSTIC_CONFIRME" -> alerts += HealthAlert(
+                    AlertLevel.CRITIQUE,
+                    "Plusieurs symptômes signalés ensemble",
+                    "${case.symptoms.joinToString(", ")} — contacter un vétérinaire si la situation ne s'améliore pas."
+                )
+                case.status == "MALADIE_SUSPECTEE" -> alerts += HealthAlert(
+                    AlertLevel.ATTENTION,
+                    "Maladie suspectée à surveiller",
+                    (case.suspectedDisease ?: "Cas signalé") + " — à confirmer par un vétérinaire si les symptômes persistent."
+                )
+            }
+        }
+        return alerts
+    }
+
     /** Calcule toutes les alertes actives, triées par sévérité (critique d'abord). */
     fun computeAll(
         mortalities: List<Mortality>,
         reminders: List<HealthReminder>,
         treatments: List<Treatment> = emptyList(),
+        diseaseCases: List<DiseaseCase> = emptyList(),
         now: Long = System.currentTimeMillis()
     ): List<HealthAlert> {
         val alerts = mutableListOf<HealthAlert>()
@@ -131,6 +164,7 @@ object HealthAlertEngine {
         checkMortalityTrend(mortalities, now)?.let { alerts += it }
         alerts += checkReminders(reminders, now)
         alerts += checkActiveWithdrawals(treatments, now)
+        alerts += checkDiseaseCases(diseaseCases, now)
         return alerts.sortedBy { if (it.level == AlertLevel.CRITIQUE) 0 else 1 }
     }
 }

@@ -556,6 +556,7 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
             R.id.nav_vaccines -> navigateTo(HealthDashboardActivity::class.java)
             R.id.nav_mortality -> navigateTo(MortalityActivity::class.java)
             R.id.nav_treatments -> navigateTo(TreatmentActivity::class.java)
+            R.id.nav_diseases -> navigateTo(DiseaseActivity::class.java)
 
             R.id.nav_delete_account -> {
                 val intent = Intent(Intent.ACTION_VIEW, Uri.parse(getString(R.string.delete_account_url)))
