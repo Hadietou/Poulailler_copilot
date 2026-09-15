@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/background">
+
+    <com.google.android.material.appbar.AppBarLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/primary"
+        app:elevation="0dp">
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            app:title="Observations quotidiennes"
+            app:titleTextColor="@color/white"
+            app:navigationIcon="@drawable/ic_back"
+            app:navigationIconTint="@color/white" />
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="20dp">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnQuickRas"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="72dp"
+                    android:layout_marginEnd="6dp"
+                    android:text="✅ RAS aujourd'hui"
+                    android:textColor="@color/white"
+                    android:backgroundTint="@color/emerald_soft"
+                    app:cornerRadius="16dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnReportAnomaly"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="72dp"
+                    android:layout_marginStart="6dp"
+                    android:text="⚠️ Signaler une anomalie"
+                    android:textColor="@color/white"
+                    android:backgroundTint="@color/earthy_orange"
+                    app:cornerRadius="16dp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginBottom="16dp">
+                <View
+                    android:layout_width="4dp"
+                    android:layout_height="24dp"
+                    android:background="@color/accent_blue" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="HISTORIQUE"
+                    android:textColor="@color/accent_blue"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:layout_marginStart="12dp"
+                    android:letterSpacing="0.1" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/tvNoObservations"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Aucune observation enregistrée pour l'instant."
+                android:textColor="@color/text_secondary"
+                android:textSize="13sp"
+                android:gravity="center"
+                android:padding="24dp"
+                android:visibility="gone" />
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvObservations"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:nestedScrollingEnabled="false"
+                tools:listitem="@layout/item_observation" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="40dp" />
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

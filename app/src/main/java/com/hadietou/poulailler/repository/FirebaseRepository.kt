@@ -960,6 +960,59 @@ class FirebaseRepository {
         db.collection("disease_cases").document(id).delete().await()
     }
 
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    fun getHealthObservationsFlow(): Flow<List<HealthObservation>> = farmIdFlow.flatMapLatest { fId ->
+        val id = fId ?: getFarmId()
+        if (id == null) flowOf(emptyList())
+        else callbackFlow {
+            val sub = db.collection("health_observations").whereEqualTo("farmId", id)
+                .addSnapshotListener { s, e ->
+                    val list = s?.documents?.mapNotNull { doc ->
+                        HealthObservation(
+                            id = 0L,
+                            date = doc.getLong("date") ?: 0L,
+                            behavior = doc.getString("behavior") ?: "NORMAL",
+                            feed = doc.getString("feed") ?: "NORMAL",
+                            water = doc.getString("water") ?: "NORMAL",
+                            respiration = doc.getString("respiration") ?: "NORMAL",
+                            droppings = doc.getString("droppings") ?: "NORMAL",
+                            appearance = doc.getString("appearance") ?: "NORMAL",
+                            notes = doc.getString("notes"),
+                            recordedBy = doc.getString("recordedBy"),
+                            firestoreId = doc.id,
+                            farmId = id,
+                            batchId = doc.getString("batchId")
+                        )
+                    }?.sortedByDescending { it.date } ?: emptyList()
+                    trySend(list)
+                }
+            awaitClose { sub.remove() }
+        }
+    }
+
+    suspend fun addHealthObservation(o: HealthObservation) {
+        checkAndThrowIfBlocked()
+        val fId = requireFarmId()
+        db.collection("health_observations").add(hashMapOf(
+            "date" to o.date,
+            "behavior" to o.behavior,
+            "feed" to o.feed,
+            "water" to o.water,
+            "respiration" to o.respiration,
+            "droppings" to o.droppings,
+            "appearance" to o.appearance,
+            "notes" to o.notes,
+            "recordedBy" to o.recordedBy,
+            "farmId" to fId,
+            "batchId" to o.batchId
+        )).await()
+    }
+
+    suspend fun deleteHealthObservation(id: String) {
+        checkAndThrowIfBlocked()
+        db.collection("health_observations").document(id).delete().await()
+    }
+
     suspend fun addHealthReminder(r: HealthReminder) {
         checkAndThrowIfBlocked()
         val fId = requireFarmId()

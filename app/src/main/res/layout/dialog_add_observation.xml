@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:maxHeight="650dp">
+
+<LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@drawable/bg_dialog_dark">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/bg_dialog_header"
+        android:padding="16dp"
+        android:gravity="center">
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Signaler une anomalie"
+            android:textColor="@color/white"
+            android:textSize="22sp"
+            android:textStyle="bold"/>
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="24dp">
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/tilBehavior"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Comportement"
+            android:layout_marginBottom="12dp"
+            app:hintTextColor="@color/text_secondary"
+            app:boxStrokeColor="@color/primary">
+            <AutoCompleteTextView android:id="@+id/actvBehavior" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="none" android:textColor="@color/text_primary" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/tilFeed"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Alimentation"
+            android:layout_marginBottom="12dp"
+            app:hintTextColor="@color/text_secondary"
+            app:boxStrokeColor="@color/primary">
+            <AutoCompleteTextView android:id="@+id/actvFeed" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="none" android:textColor="@color/text_primary" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/tilWater"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Eau"
+            android:layout_marginBottom="12dp"
+            app:hintTextColor="@color/text_secondary"
+            app:boxStrokeColor="@color/primary">
+            <AutoCompleteTextView android:id="@+id/actvWater" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="none" android:textColor="@color/text_primary" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/tilRespiration"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Respiration"
+            android:layout_marginBottom="12dp"
+            app:hintTextColor="@color/text_secondary"
+            app:boxStrokeColor="@color/primary">
+            <AutoCompleteTextView android:id="@+id/actvRespiration" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="none" android:textColor="@color/text_primary" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/tilDroppings"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Fientes"
+            android:layout_marginBottom="12dp"
+            app:hintTextColor="@color/text_secondary"
+            app:boxStrokeColor="@color/primary">
+            <AutoCompleteTextView android:id="@+id/actvDroppings" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="none" android:textColor="@color/text_primary" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/tilAppearance"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Aspect général"
+            android:layout_marginBottom="16dp"
+            app:hintTextColor="@color/text_secondary"
+            app:boxStrokeColor="@color/primary">
+            <AutoCompleteTextView android:id="@+id/actvAppearance" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="none" android:textColor="@color/text_primary" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Notes (optionnel)"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            android:layout_marginBottom="24dp"
+            app:hintTextColor="@color/text_secondary"
+            app:boxStrokeColor="@color/primary">
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etObservationNotes"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@color/text_primary" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnSaveObservation"
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:text="ENREGISTRER"
+            android:backgroundTint="@color/earthy_orange"
+            android:textColor="@color/white"
+            app:cornerRadius="8dp"
+            app:icon="@drawable/ic_check"
+            app:iconTint="@color/white"/>
+    </LinearLayout>
+</LinearLayout>
+</ScrollView>

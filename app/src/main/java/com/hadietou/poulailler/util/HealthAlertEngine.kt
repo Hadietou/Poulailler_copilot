@@ -1,6 +1,7 @@
 package com.hadietou.poulailler.util
 
 import com.hadietou.poulailler.data.DiseaseCase
+import com.hadietou.poulailler.data.HealthObservation
 import com.hadietou.poulailler.data.HealthReminder
 import com.hadietou.poulailler.data.Mortality
 import com.hadietou.poulailler.data.Treatment
@@ -151,12 +152,26 @@ object HealthAlertEngine {
         return alerts
     }
 
+    /** 🟠 Anomalie(s) relevée(s) lors de la check-list quotidienne des 2 derniers jours. */
+    fun checkObservations(observations: List<HealthObservation>, now: Long = System.currentTimeMillis()): List<HealthAlert> {
+        return observations
+            .filter { it.anomalyDetected && now - it.date <= 2 * DAY_MS }
+            .map { obs ->
+                HealthAlert(
+                    AlertLevel.ATTENTION,
+                    "Anomalie relevée à l'observation quotidienne",
+                    obs.anomalyFields.joinToString(" · ") { (k, v) -> "$k : $v" }
+                )
+            }
+    }
+
     /** Calcule toutes les alertes actives, triées par sévérité (critique d'abord). */
     fun computeAll(
         mortalities: List<Mortality>,
         reminders: List<HealthReminder>,
         treatments: List<Treatment> = emptyList(),
         diseaseCases: List<DiseaseCase> = emptyList(),
+        observations: List<HealthObservation> = emptyList(),
         now: Long = System.currentTimeMillis()
     ): List<HealthAlert> {
         val alerts = mutableListOf<HealthAlert>()
@@ -165,6 +180,7 @@ object HealthAlertEngine {
         alerts += checkReminders(reminders, now)
         alerts += checkActiveWithdrawals(treatments, now)
         alerts += checkDiseaseCases(diseaseCases, now)
+        alerts += checkObservations(observations, now)
         return alerts.sortedBy { if (it.level == AlertLevel.CRITIQUE) 0 else 1 }
     }
 }

@@ -50,6 +50,7 @@ class HealthDashboardActivity : AppCompatActivity(), NavigationView.OnNavigation
     private var selectedBatchId: String? = null
     private var allTreatments: List<com.hadietou.poulailler.data.Treatment> = emptyList()
     private var allDiseaseCases: List<com.hadietou.poulailler.data.DiseaseCase> = emptyList()
+    private var allObservations: List<com.hadietou.poulailler.data.HealthObservation> = emptyList()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -66,6 +67,7 @@ class HealthDashboardActivity : AppCompatActivity(), NavigationView.OnNavigation
         observeViewModel()
         observeTreatments()
         observeDiseaseCases()
+        observeObservations()
         viewModel.loadData()
     }
 
@@ -146,6 +148,26 @@ class HealthDashboardActivity : AppCompatActivity(), NavigationView.OnNavigation
             intent.putExtra("userIdString", userId)
             intent.putExtra("selectedBatchId", selectedBatchId)
             startActivity(intent)
+        }
+        binding.rowObservations.setOnClickListener {
+            val intent = Intent(this, ObservationActivity::class.java)
+            intent.putExtra("selectedBatchId", selectedBatchId)
+            startActivity(intent)
+        }
+    }
+
+    private fun observeObservations() {
+        lifecycleScope.launch {
+            firebaseRepo.getHealthObservationsFlow().collectLatest { list ->
+                allObservations = if (selectedBatchId != null) list.filter { it.batchId == selectedBatchId } else list
+                val today = allObservations.filter { isToday(it.date) }
+                binding.tvObservationsSubtitle.text = when {
+                    today.isEmpty() -> "Aucune observation aujourd'hui"
+                    today.any { it.anomalyDetected } -> "⚠️ Anomalie relevée aujourd'hui"
+                    else -> "✅ RAS aujourd'hui"
+                }
+                refreshAlerts()
+            }
         }
     }
 
@@ -259,7 +281,7 @@ class HealthDashboardActivity : AppCompatActivity(), NavigationView.OnNavigation
     private fun refreshAlerts() {
         val mortalities = viewModel.allMortalities.value.orEmpty()
         val reminders = viewModel.activeHealthReminders.value.orEmpty()
-        val alerts = HealthAlertEngine.computeAll(mortalities, reminders, allTreatments, allDiseaseCases)
+        val alerts = HealthAlertEngine.computeAll(mortalities, reminders, allTreatments, allDiseaseCases, allObservations)
 
         binding.containerAlerts.removeAllViews()
         if (alerts.isEmpty()) {
