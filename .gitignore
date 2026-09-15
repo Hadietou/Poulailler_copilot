@@ -20,3 +20,11 @@ local.properties
 *.pem
 id_rsa
 id_ed25519
+*.jks
+*.keystore
+*.p12
+key_store_path
+
+# Sorties de build (AAB/APK) et dossier de signature locale : jamais dans le dépôt,
+# ce dossier a déjà contenu une copie du keystore de signature par le passé.
+/app/release/
