@@ -206,6 +206,9 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
         binding.cardDashExpenses.setOnClickListener { showExpensesMenu(it) }
         binding.cardDashFeed.setOnClickListener { showFeedMenu(it) }
         binding.cardDashHealth.setOnClickListener { showHealthMenu(it) }
+        binding.layoutDashHealthMortalityRate.setOnClickListener { navigateToStats("MORTALITY") }
+        binding.layoutDashHealthWeather.setOnClickListener { navigateTo(VaccineActivity::class.java) }
+        binding.layoutDashHealthTreatment.setOnClickListener { navigateTo(VaccineActivity::class.java) }
 
         binding.cardNetProfit.setOnClickListener { navigateTo(SalesActivity::class.java) }
     }
@@ -401,14 +404,14 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
             binding.tvDashGapStd.setTextColor(if (gap >= 0) getColor(R.color.emerald_soft) else getColor(R.color.error))
         }
 
-        viewModel.survivalRate.observe(this) { rate ->
+        viewModel.cumulativeMortalityRate.observe(this) { rate ->
             val color = when {
-                rate < 90.0 -> R.color.error
-                rate < 95.0 -> R.color.earthy_orange
+                rate > 10.0 -> R.color.error
+                rate > 5.0 -> R.color.earthy_orange
                 else -> R.color.emerald_soft
             }
-            binding.tvDashHealthSurvival.text = String.format(Locale.getDefault(), "%.1f%%", rate)
-            binding.tvDashHealthSurvival.setTextColor(getColor(color))
+            binding.tvDashHealthMortalityRate.text = String.format(Locale.getDefault(), "%.1f%%", rate)
+            binding.tvDashHealthMortalityRate.setTextColor(getColor(color))
         }
         viewModel.monthlyMortalityCount.observe(this) { count ->
             binding.tvDashHealthMortality.text = count.toString()
