@@ -28,7 +28,7 @@ class HeatAlertWorker(context: Context, params: WorkerParameters) : CoroutineWor
     override suspend fun doWork(): Result {
         return try {
             checkHeatAlert()
-            checkSameDayHeatUpdate()
+            checkTodayHeatAlert()
             Result.success()
         } catch (e: Exception) {
             Log.e("HeatAlertWorker", "Error during heat alert check", e)
@@ -77,34 +77,30 @@ class HeatAlertWorker(context: Context, params: WorkerParameters) : CoroutineWor
                 "Vitamine C / Électrolytes",
                 "Période de chaleur prévue ($highTempValue°C le $highTempDay). Hydratation et anti-stress recommandés."
             )
-
-            // On mémorise le jour annoncé pour pouvoir revérifier la prévision
-            // (plus précise) le jour J à 8h, via checkSameDayHeatUpdate().
-            prefs.edit().putString("pendingHeatDay", highTempDay).apply()
         }
 
         prefs.edit().putString("lastCheckDate", todayDate).apply()
     }
 
     /**
-     * Revérifie, le jour J à partir de 8h (heure locale de Nouakchott), la prévision
-     * d'un jour de chaleur préalablement annoncé 24h à l'avance par [checkHeatAlert].
-     * La prévision du jour même étant plus précise que celle établie la veille, on
-     * envoie une nouvelle alerte "mise à jour" avec la valeur recalculée si le seuil
-     * est toujours dépassé (l'anti-spam de sendHeatAlertEmail autorise un envoi par
-     * date calendaire, donc l'alerte J-1 et la mise à jour du jour J passent toutes
-     * les deux). Si la température a finalement baissé sous le seuil, on n'envoie rien.
+     * Vérifie, chaque jour à partir de 8h (heure locale de Nouakchott), si la température
+     * du jour même dépasse le seuil, indépendamment de ce que [checkHeatAlert] a trouvé ou
+     * non pour les jours suivants.
+     *
+     * Auparavant, cette revérification se basait sur un "jour annoncé" (pendingHeatDay)
+     * mémorisé par checkHeatAlert() lors de l'alerte J-1 de la veille. Problème : si
+     * checkHeatAlert() retrouvait UN AUTRE jour chaud (ex: demain) lors de son passage du
+     * jour même, il écrasait ce jour annoncé avant que cette fonction ait pu le lire —
+     * la reconfirmation du jour même se retrouvait alors silencieusement sautée (elle ne
+     * trouvait plus "aujourd'hui" comme jour en attente). En vérifiant directement la
+     * prévision d'aujourd'hui (sans dépendre d'un état laissé par une autre fonction),
+     * ce problème disparaît : les deux alertes (J-1 pour demain, confirmation du jour
+     * même) peuvent désormais partir le même jour calendaire sans se marcher dessus.
      */
-    private suspend fun checkSameDayHeatUpdate() {
+    private suspend fun checkTodayHeatAlert() {
         val prefs = applicationContext.getSharedPreferences("HeatAlertPrefs", Context.MODE_PRIVATE)
-        val pendingHeatDay = prefs.getString("pendingHeatDay", "")
-        if (pendingHeatDay.isNullOrEmpty()) return
-
         val nouakchottTz = TimeZone.getTimeZone("Africa/Nouakchott")
         val todayDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).apply { timeZone = nouakchottTz }.format(Date())
-
-        // La revérification ne concerne que le jour annoncé, pas avant.
-        if (pendingHeatDay != todayDate) return
 
         val localHour = Calendar.getInstance(nouakchottTz).get(Calendar.HOUR_OF_DAY)
         if (localHour < 8) return
@@ -121,20 +117,17 @@ class HeatAlertWorker(context: Context, params: WorkerParameters) : CoroutineWor
         val todayIndex = daily.time.indexOf(todayDate)
 
         if (todayIndex != -1) {
-            val updatedTemp = maxTemperatures[todayIndex]
-            if (updatedTemp >= info.heatAlertTempCelsius) {
-                firebaseRepo.sendHeatAlertEmail(email, info.farmName, todayDate, updatedTemp)
+            val todayTemp = maxTemperatures[todayIndex]
+            if (todayTemp >= info.heatAlertTempCelsius) {
+                firebaseRepo.sendHeatAlertEmail(email, info.farmName, todayDate, todayTemp)
             } else {
-                Log.d("HeatAlertWorker", "Revérification 8h : température finalement sous le seuil ($updatedTemp°C), pas d'alerte.")
+                Log.d("HeatAlertWorker", "Vérification 8h : température du jour finalement sous le seuil ($todayTemp°C), pas d'alerte.")
             }
         }
 
-        // Que l'alerte ait été renvoyée ou non, la revérification du jour est faite :
-        // on évite de la refaire à chaque exécution du worker et on libère le jour annoncé.
-        prefs.edit()
-            .putString("sameDayCheckDate", todayDate)
-            .putString("pendingHeatDay", "")
-            .apply()
+        // Qu'une alerte ait été envoyée ou non, la vérification du jour est faite : on
+        // évite de la refaire à chaque exécution du worker (toutes les 6h) le même jour.
+        prefs.edit().putString("sameDayCheckDate", todayDate).apply()
     }
 
     private suspend fun addVitaminReminderForActiveBatch(title: String, desc: String) {

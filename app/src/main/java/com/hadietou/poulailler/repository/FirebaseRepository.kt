@@ -136,15 +136,22 @@ class FirebaseRepository {
 
     suspend fun sendHeatAlertEmail(responsibleEmail: String, farmName: String, day: String, temp: Double) {
         val fId = getFarmId() ?: return
-        
-        // Anti-spam : vérifier si une alerte a déjà été envoyée aujourd'hui
+
+        // Anti-spam : une alerte par (jour d'envoi, jour annoncé). L'ancienne clé unique
+        // "lastAlertDate" bloquait TOUTE alerte dès qu'une avait déjà été envoyée ce jour
+        // calendaire, quel que soit le jour dont elle parlait : impossible d'envoyer à la
+        // fois l'alerte J-1 pour demain ET la reconfirmation du jour même pour aujourd'hui
+        // si les deux tombent le même jour calendaire (ce qui arrive dès que deux jours
+        // consécutifs dépassent le seuil). La clé est donc désormais spécifique au jour
+        // annoncé, pour ne bloquer qu'un renvoi en double de la MÊME information.
         val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
         val configRef = db.collection("fermes").document(fId).collection("config").document("heat_alerts")
-        
+        val lastSentFieldKey = "lastSentDate_$day"
+
         try {
             val lastAlert = configRef.get().await()
-            if (lastAlert.exists() && lastAlert.getString("lastAlertDate") == today) {
-                Log.d("HeatAlert", "Alerte déjà envoyée aujourd'hui pour cette ferme.")
+            if (lastAlert.exists() && lastAlert.getString(lastSentFieldKey) == today) {
+                Log.d("HeatAlert", "Alerte pour le $day déjà envoyée aujourd'hui pour cette ferme.")
                 return
             }
 
@@ -180,7 +187,7 @@ class FirebaseRepository {
             if (response.isSuccessful) {
                 Log.d("HeatAlert", "Alerte envoyée avec succès : ${response.body()?.messageId}")
                 // Marquer comme envoyé SEULEMENT si l'API Brevo a répondu OK
-                configRef.set(hashMapOf("lastAlertDate" to today), SetOptions.merge())
+                configRef.set(hashMapOf(lastSentFieldKey to today), SetOptions.merge())
             } else {
                 Log.e("HeatAlert", "Échec Brevo : ${response.errorBody()?.string()}")
             }
