@@ -1,5 +1,6 @@
 package com.hadietou.poulailler.util
 
+import com.hadietou.poulailler.data.BiosecurityTask
 import com.hadietou.poulailler.data.DiseaseCase
 import com.hadietou.poulailler.data.HealthObservation
 import com.hadietou.poulailler.data.HealthReminder
@@ -165,6 +166,17 @@ object HealthAlertEngine {
             }
     }
 
+    /** 🟠 Tâche de biosécurité en retard par rapport à sa fréquence. */
+    fun checkBiosecurity(tasks: List<BiosecurityTask>): List<HealthAlert> {
+        return tasks.filter { it.isOverdue }.map { task ->
+            HealthAlert(
+                AlertLevel.ATTENTION,
+                "Tâche de biosécurité en retard",
+                task.task
+            )
+        }
+    }
+
     /** Calcule toutes les alertes actives, triées par sévérité (critique d'abord). */
     fun computeAll(
         mortalities: List<Mortality>,
@@ -172,6 +184,7 @@ object HealthAlertEngine {
         treatments: List<Treatment> = emptyList(),
         diseaseCases: List<DiseaseCase> = emptyList(),
         observations: List<HealthObservation> = emptyList(),
+        biosecurityTasks: List<BiosecurityTask> = emptyList(),
         now: Long = System.currentTimeMillis()
     ): List<HealthAlert> {
         val alerts = mutableListOf<HealthAlert>()
@@ -181,6 +194,7 @@ object HealthAlertEngine {
         alerts += checkActiveWithdrawals(treatments, now)
         alerts += checkDiseaseCases(diseaseCases, now)
         alerts += checkObservations(observations, now)
+        alerts += checkBiosecurity(biosecurityTasks)
         return alerts.sortedBy { if (it.level == AlertLevel.CRITIQUE) 0 else 1 }
     }
 }

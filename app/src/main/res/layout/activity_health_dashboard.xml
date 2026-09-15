@@ -446,6 +446,66 @@
                                 android:textColor="@color/text_secondary"
                                 android:textSize="20sp" />
                         </LinearLayout>
+
+                        <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/off_white" />
+
+                        <LinearLayout
+                            android:id="@+id/rowVetVisits"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:background="?attr/selectableItemBackground"
+                            android:padding="16dp">
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="🧑‍⚕️" android:textSize="20sp" />
+                            <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:layout_marginStart="14dp" android:orientation="vertical">
+                                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Visites vétérinaires" android:textColor="@color/text_primary" android:textSize="13sp" android:textStyle="bold" />
+                                <TextView android:id="@+id/tvVetVisitsSubtitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="@color/text_secondary" android:textSize="11sp" tools:text="Aucune visite enregistrée" />
+                            </LinearLayout>
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="›" android:textColor="@color/text_secondary" android:textSize="20sp" />
+                        </LinearLayout>
+
+                        <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/off_white" />
+
+                        <LinearLayout
+                            android:id="@+id/rowAnalyses"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:background="?attr/selectableItemBackground"
+                            android:padding="16dp">
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="🧪" android:textSize="20sp" />
+                            <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:layout_marginStart="14dp" android:orientation="vertical">
+                                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Analyses &amp; examens" android:textColor="@color/text_primary" android:textSize="13sp" android:textStyle="bold" />
+                                <TextView android:id="@+id/tvAnalysesSubtitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="@color/text_secondary" android:textSize="11sp" tools:text="Aucune analyse enregistrée" />
+                            </LinearLayout>
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="›" android:textColor="@color/text_secondary" android:textSize="20sp" />
+                        </LinearLayout>
+
+                        <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/off_white" />
+
+                        <LinearLayout
+                            android:id="@+id/rowBiosecurity"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:background="?attr/selectableItemBackground"
+                            android:padding="16dp">
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="🛡️" android:textSize="20sp" />
+                            <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:layout_marginStart="14dp" android:orientation="vertical">
+                                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Biosécurité" android:textColor="@color/text_primary" android:textSize="13sp" android:textStyle="bold" />
+                                <TextView android:id="@+id/tvBiosecuritySubtitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="@color/text_secondary" android:textSize="11sp" tools:text="Aucune tâche définie" />
+                            </LinearLayout>
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="›" android:textColor="@color/text_secondary" android:textSize="20sp" />
+                        </LinearLayout>
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 

@@ -51,6 +51,9 @@ class HealthDashboardActivity : AppCompatActivity(), NavigationView.OnNavigation
     private var allTreatments: List<com.hadietou.poulailler.data.Treatment> = emptyList()
     private var allDiseaseCases: List<com.hadietou.poulailler.data.DiseaseCase> = emptyList()
     private var allObservations: List<com.hadietou.poulailler.data.HealthObservation> = emptyList()
+    private var allVetVisits: List<com.hadietou.poulailler.data.VetVisit> = emptyList()
+    private var allAnalyses: List<com.hadietou.poulailler.data.LabAnalysis> = emptyList()
+    private var allBiosecurityTasks: List<com.hadietou.poulailler.data.BiosecurityTask> = emptyList()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -68,6 +71,9 @@ class HealthDashboardActivity : AppCompatActivity(), NavigationView.OnNavigation
         observeTreatments()
         observeDiseaseCases()
         observeObservations()
+        observeVetVisits()
+        observeAnalyses()
+        observeBiosecurity()
         viewModel.loadData()
     }
 
@@ -154,6 +160,19 @@ class HealthDashboardActivity : AppCompatActivity(), NavigationView.OnNavigation
             intent.putExtra("selectedBatchId", selectedBatchId)
             startActivity(intent)
         }
+        binding.rowVetVisits.setOnClickListener {
+            val intent = Intent(this, VetVisitActivity::class.java)
+            intent.putExtra("selectedBatchId", selectedBatchId)
+            startActivity(intent)
+        }
+        binding.rowAnalyses.setOnClickListener {
+            val intent = Intent(this, LabAnalysisActivity::class.java)
+            intent.putExtra("selectedBatchId", selectedBatchId)
+            startActivity(intent)
+        }
+        binding.rowBiosecurity.setOnClickListener {
+            startActivity(Intent(this, BiosecurityActivity::class.java))
+        }
     }
 
     private fun observeObservations() {
@@ -165,6 +184,41 @@ class HealthDashboardActivity : AppCompatActivity(), NavigationView.OnNavigation
                     today.isEmpty() -> "Aucune observation aujourd'hui"
                     today.any { it.anomalyDetected } -> "⚠️ Anomalie relevée aujourd'hui"
                     else -> "✅ RAS aujourd'hui"
+                }
+                refreshAlerts()
+            }
+        }
+    }
+
+    private fun observeVetVisits() {
+        lifecycleScope.launch {
+            firebaseRepo.getVetVisitsFlow().collectLatest { list ->
+                allVetVisits = if (selectedBatchId != null) list.filter { it.batchId == selectedBatchId } else list
+                binding.tvVetVisitsSubtitle.text = allVetVisits.firstOrNull()?.let {
+                    "Dernière visite : ${java.text.SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(java.util.Date(it.date))}"
+                } ?: "Aucune visite enregistrée"
+            }
+        }
+    }
+
+    private fun observeAnalyses() {
+        lifecycleScope.launch {
+            firebaseRepo.getLabAnalysesFlow().collectLatest { list ->
+                allAnalyses = if (selectedBatchId != null) list.filter { it.batchId == selectedBatchId } else list
+                binding.tvAnalysesSubtitle.text = if (allAnalyses.isEmpty()) "Aucune analyse enregistrée" else "${allAnalyses.size} analyse(s) enregistrée(s)"
+            }
+        }
+    }
+
+    private fun observeBiosecurity() {
+        lifecycleScope.launch {
+            firebaseRepo.getBiosecurityTasksFlow().collectLatest { list ->
+                allBiosecurityTasks = list
+                val overdue = allBiosecurityTasks.count { it.isOverdue }
+                binding.tvBiosecuritySubtitle.text = when {
+                    allBiosecurityTasks.isEmpty() -> "Aucune tâche définie"
+                    overdue > 0 -> "⚠️ $overdue tâche(s) en retard"
+                    else -> "Toutes les tâches à jour"
                 }
                 refreshAlerts()
             }
@@ -281,7 +335,7 @@ class HealthDashboardActivity : AppCompatActivity(), NavigationView.OnNavigation
     private fun refreshAlerts() {
         val mortalities = viewModel.allMortalities.value.orEmpty()
         val reminders = viewModel.activeHealthReminders.value.orEmpty()
-        val alerts = HealthAlertEngine.computeAll(mortalities, reminders, allTreatments, allDiseaseCases, allObservations)
+        val alerts = HealthAlertEngine.computeAll(mortalities, reminders, allTreatments, allDiseaseCases, allObservations, allBiosecurityTasks)
 
         binding.containerAlerts.removeAllViews()
         if (alerts.isEmpty()) {

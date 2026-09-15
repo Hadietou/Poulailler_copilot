@@ -1013,6 +1013,153 @@ class FirebaseRepository {
         db.collection("health_observations").document(id).delete().await()
     }
 
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    fun getVetVisitsFlow(): Flow<List<VetVisit>> = farmIdFlow.flatMapLatest { fId ->
+        val id = fId ?: getFarmId()
+        if (id == null) flowOf(emptyList())
+        else callbackFlow {
+            val sub = db.collection("vet_visits").whereEqualTo("farmId", id)
+                .addSnapshotListener { s, e ->
+                    val list = s?.documents?.mapNotNull { doc ->
+                        VetVisit(
+                            id = 0L,
+                            date = doc.getLong("date") ?: 0L,
+                            vetName = doc.getString("vetName") ?: "",
+                            reason = doc.getString("reason"),
+                            observations = doc.getString("observations"),
+                            diagnosis = doc.getString("diagnosis"),
+                            recommendations = doc.getString("recommendations"),
+                            vaccinationsDone = doc.getString("vaccinationsDone"),
+                            analysesRequested = doc.getString("analysesRequested"),
+                            nextVisitDate = doc.getLong("nextVisitDate"),
+                            firestoreId = doc.id,
+                            farmId = id,
+                            batchId = doc.getString("batchId")
+                        )
+                    }?.sortedByDescending { it.date } ?: emptyList()
+                    trySend(list)
+                }
+            awaitClose { sub.remove() }
+        }
+    }
+
+    suspend fun addVetVisit(v: VetVisit) {
+        checkAndThrowIfBlocked()
+        val fId = requireFarmId()
+        db.collection("vet_visits").add(hashMapOf(
+            "date" to v.date,
+            "vetName" to v.vetName,
+            "reason" to v.reason,
+            "observations" to v.observations,
+            "diagnosis" to v.diagnosis,
+            "recommendations" to v.recommendations,
+            "vaccinationsDone" to v.vaccinationsDone,
+            "analysesRequested" to v.analysesRequested,
+            "nextVisitDate" to v.nextVisitDate,
+            "farmId" to fId,
+            "batchId" to v.batchId
+        )).await()
+    }
+
+    suspend fun deleteVetVisit(id: String) {
+        checkAndThrowIfBlocked()
+        db.collection("vet_visits").document(id).delete().await()
+    }
+
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    fun getLabAnalysesFlow(): Flow<List<LabAnalysis>> = farmIdFlow.flatMapLatest { fId ->
+        val id = fId ?: getFarmId()
+        if (id == null) flowOf(emptyList())
+        else callbackFlow {
+            val sub = db.collection("lab_analyses").whereEqualTo("farmId", id)
+                .addSnapshotListener { s, e ->
+                    val list = s?.documents?.mapNotNull { doc ->
+                        LabAnalysis(
+                            id = 0L,
+                            type = doc.getString("type") ?: "AUTRE",
+                            date = doc.getLong("date") ?: 0L,
+                            resultSummary = doc.getString("resultSummary"),
+                            notes = doc.getString("notes"),
+                            firestoreId = doc.id,
+                            farmId = id,
+                            batchId = doc.getString("batchId")
+                        )
+                    }?.sortedByDescending { it.date } ?: emptyList()
+                    trySend(list)
+                }
+            awaitClose { sub.remove() }
+        }
+    }
+
+    suspend fun addLabAnalysis(a: LabAnalysis) {
+        checkAndThrowIfBlocked()
+        val fId = requireFarmId()
+        db.collection("lab_analyses").add(hashMapOf(
+            "type" to a.type,
+            "date" to a.date,
+            "resultSummary" to a.resultSummary,
+            "notes" to a.notes,
+            "farmId" to fId,
+            "batchId" to a.batchId
+        )).await()
+    }
+
+    suspend fun deleteLabAnalysis(id: String) {
+        checkAndThrowIfBlocked()
+        db.collection("lab_analyses").document(id).delete().await()
+    }
+
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    fun getBiosecurityTasksFlow(): Flow<List<BiosecurityTask>> = farmIdFlow.flatMapLatest { fId ->
+        val id = fId ?: getFarmId()
+        if (id == null) flowOf(emptyList())
+        else callbackFlow {
+            val sub = db.collection("biosecurity_tasks").whereEqualTo("farmId", id)
+                .addSnapshotListener { s, e ->
+                    val list = s?.documents?.mapNotNull { doc ->
+                        BiosecurityTask(
+                            id = 0L,
+                            task = doc.getString("task") ?: "",
+                            frequency = doc.getString("frequency") ?: "EVENEMENT",
+                            lastDoneDate = doc.getLong("lastDoneDate"),
+                            doneBy = doc.getString("doneBy"),
+                            firestoreId = doc.id,
+                            farmId = id
+                        )
+                    } ?: emptyList()
+                    trySend(list)
+                }
+            awaitClose { sub.remove() }
+        }
+    }
+
+    suspend fun addBiosecurityTask(t: BiosecurityTask) {
+        checkAndThrowIfBlocked()
+        val fId = requireFarmId()
+        db.collection("biosecurity_tasks").add(hashMapOf(
+            "task" to t.task,
+            "frequency" to t.frequency,
+            "lastDoneDate" to t.lastDoneDate,
+            "doneBy" to t.doneBy,
+            "farmId" to fId
+        )).await()
+    }
+
+    suspend fun updateBiosecurityTask(t: BiosecurityTask) {
+        checkAndThrowIfBlocked()
+        t.firestoreId?.let {
+            db.collection("biosecurity_tasks").document(it).update(hashMapOf(
+                "lastDoneDate" to t.lastDoneDate,
+                "doneBy" to t.doneBy
+            ) as Map<String, Any>).await()
+        }
+    }
+
+    suspend fun deleteBiosecurityTask(id: String) {
+        checkAndThrowIfBlocked()
+        db.collection("biosecurity_tasks").document(id).delete().await()
+    }
+
     suspend fun addHealthReminder(r: HealthReminder) {
         checkAndThrowIfBlocked()
         val fId = requireFarmId()

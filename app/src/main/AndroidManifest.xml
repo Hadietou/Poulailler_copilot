@@ -72,6 +72,15 @@
             android:name=".ui.ObservationActivity"
             android:exported="false" />
         <activity
+            android:name=".ui.VetVisitActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ui.LabAnalysisActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ui.BiosecurityActivity"
+            android:exported="false" />
+        <activity
             android:name=".ui.MortalityHistoryActivity"
             android:exported="false" />
         <activity

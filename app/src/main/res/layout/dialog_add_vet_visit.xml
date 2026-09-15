@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:maxHeight="650dp">
+
+<LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@drawable/bg_dialog_dark">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/bg_dialog_header"
+        android:padding="16dp"
+        android:gravity="center">
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Nouvelle Visite Vétérinaire"
+            android:textColor="@color/white"
+            android:textSize="20sp"
+            android:textStyle="bold"/>
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="24dp">
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Nom du vétérinaire"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            android:layout_marginBottom="12dp"
+            app:hintTextColor="@color/text_secondary"
+            app:boxStrokeColor="@color/primary">
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etVetName"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@color/text_primary" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnSelectVisitDate"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:text="Date de la visite"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:textColor="@color/text_primary"
+            app:strokeColor="@color/primary"
+            app:icon="@drawable/ic_calendar"
+            app:iconTint="@color/primary"
+            android:layout_marginBottom="12dp"/>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Motif (optionnel)"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            android:layout_marginBottom="12dp"
+            app:hintTextColor="@color/text_secondary"
+            app:boxStrokeColor="@color/primary">
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etVetReason"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@color/text_primary" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Observations (optionnel)"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            android:layout_marginBottom="12dp"
+            app:hintTextColor="@color/text_secondary"
+            app:boxStrokeColor="@color/primary">
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etVetObservations"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@color/text_primary" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Diagnostic (optionnel)"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            android:layout_marginBottom="12dp"
+            app:hintTextColor="@color/text_secondary"
+            app:boxStrokeColor="@color/primary">
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etVetDiagnosis"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@color/text_primary" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Recommandations (optionnel)"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            android:layout_marginBottom="12dp"
+            app:hintTextColor="@color/text_secondary"
+            app:boxStrokeColor="@color/primary">
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etVetRecommendations"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@color/text_primary" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Vaccinations réalisées (optionnel)"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            android:layout_marginBottom="12dp"
+            app:hintTextColor="@color/text_secondary"
+            app:boxStrokeColor="@color/primary">
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etVetVaccinations"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@color/text_primary" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Analyses demandées (optionnel)"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            android:layout_marginBottom="12dp"
+            app:hintTextColor="@color/text_secondary"
+            app:boxStrokeColor="@color/primary">
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etVetAnalyses"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@color/text_primary" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnSelectNextVisitDate"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:text="Prochaine visite (optionnel)"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:textColor="@color/text_primary"
+            app:strokeColor="@color/primary"
+            app:icon="@drawable/ic_calendar"
+            app:iconTint="@color/primary"
+            android:layout_marginBottom="24dp"/>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnSaveVetVisit"
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:text="ENREGISTRER"
+            android:backgroundTint="@color/accent_blue"
+            android:textColor="@color/white"
+            app:cornerRadius="8dp"
+            app:icon="@drawable/ic_check"
+            app:iconTint="@color/white"/>
+    </LinearLayout>
+</LinearLayout>
+</ScrollView>
