@@ -57,29 +57,43 @@
                     android:paddingTop="4dp"
                     android:paddingBottom="20dp">
 
-                    <TextView
-                        android:id="@+id/tvWelcome"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/loading"
-                        android:textColor="#B2FFB2"
-                        android:textSize="11sp"
-                        android:textAllCaps="true"
-                        android:letterSpacing="0.08" />
-
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
                         android:gravity="center_vertical"
                         android:orientation="horizontal">
+
                         <TextView
-                            android:id="@+id/tvDashboardBatchName"
+                            android:id="@+id/tvWelcome"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:layout_marginEnd="8dp"
+                            android:maxWidth="110dp"
+                            android:maxLines="1"
+                            android:ellipsize="end"
+                            android:text="@string/loading"
+                            android:textColor="#B2FFB2"
+                            android:textSize="12sp"
+                            android:textStyle="bold"
+                            android:textAllCaps="true"
+                            android:letterSpacing="0.06" />
+
+                        <View
+                            android:layout_width="1dp"
+                            android:layout_height="16dp"
+                            android:layout_marginEnd="8dp"
+                            android:background="#4DFFFFFF" />
+
+                        <TextView
+                            android:id="@+id/tvDashboardBatchName"
+                            android:layout_width="0dp"
+                            android:layout_weight="1"
+                            android:layout_height="wrap_content"
+                            android:maxLines="1"
+                            android:ellipsize="end"
                             android:text="@string/current_batch"
                             android:textColor="@color/white"
-                            android:textSize="22sp"
+                            android:textSize="20sp"
                             android:textStyle="bold" />
                         <ImageView
                             android:id="@+id/ivSelectBatch"
