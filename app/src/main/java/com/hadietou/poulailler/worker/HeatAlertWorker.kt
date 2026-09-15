@@ -75,7 +75,7 @@ class HeatAlertWorker(context: Context, params: WorkerParameters) : CoroutineWor
             firebaseRepo.sendHeatAlertEmail(email, info.farmName, highTempDay, highTempValue)
             addVitaminReminderForActiveBatch(
                 "Vitamine C / Électrolytes",
-                "Période de chaleur prévue ($highTempValue°C le $highTempDay). Hydratation et anti-stress recommandés."
+                "Période de chaleur prévue (${Math.round(highTempValue)}°C le $highTempDay). Hydratation et anti-stress recommandés."
             )
         }
 
@@ -121,7 +121,7 @@ class HeatAlertWorker(context: Context, params: WorkerParameters) : CoroutineWor
             if (todayTemp >= info.heatAlertTempCelsius) {
                 firebaseRepo.sendHeatAlertEmail(email, info.farmName, todayDate, todayTemp)
             } else {
-                Log.d("HeatAlertWorker", "Vérification 8h : température du jour finalement sous le seuil ($todayTemp°C), pas d'alerte.")
+                Log.d("HeatAlertWorker", "Vérification 8h : température du jour finalement sous le seuil (${Math.round(todayTemp)}°C), pas d'alerte.")
             }
         }
 

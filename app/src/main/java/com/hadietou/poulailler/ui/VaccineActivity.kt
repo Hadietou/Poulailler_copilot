@@ -12,7 +12,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import android.widget.Toast
-import androidx.appcompat.app.ActionBarDrawerToggle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.GravityCompat
 import androidx.lifecycle.lifecycleScope
@@ -115,7 +114,10 @@ class VaccineActivity : AppCompatActivity(), NavigationView.OnNavigationItemSele
                     val date = daily.time[i]
                     val temp = maxTemperatures[i]
                     val emoji = if (temp >= 35) "🔥" else "☀️"
-                    weatherText.append("• $date : ${"%.1f".format(temp)}°C $emoji\n")
+                    // Arrondi à l'entier, comme la case "Météo du jour" du dashboard : afficher une
+                    // décimale ici et un entier là-bas donnait l'impression (à tort) de deux valeurs
+                    // différentes pour la même température du jour (ex: 34.7°C ici vs 35°C là-bas).
+                    weatherText.append("• $date : ${Math.round(temp)}°C $emoji\n")
                 }
 
                 withContext(Dispatchers.Main) {
@@ -155,18 +157,9 @@ class VaccineActivity : AppCompatActivity(), NavigationView.OnNavigationItemSele
 
     private fun setupNavigation() {
         setSupportActionBar(binding.toolbar)
-        val toggle = ActionBarDrawerToggle(
-            this, binding.drawerLayout, binding.toolbar,
-            R.string.navigation_drawer_open, R.string.navigation_drawer_close
-        )
-        binding.drawerLayout.addDrawerListener(toggle)
-        toggle.syncState()
+        binding.toolbar.setNavigationOnClickListener { onBackPressed() }
 
         binding.navigationView.setNavigationItemSelectedListener(this)
-
-        binding.toolbar.findViewById<View>(R.id.ivBackToDashboard)?.setOnClickListener {
-            onBackPressed()
-        }
 
         rebuildDrawerMenu()
         updateNavHeader()

@@ -13,7 +13,6 @@ import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
-import androidx.appcompat.app.ActionBarDrawerToggle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.GravityCompat
 import androidx.lifecycle.lifecycleScope
@@ -137,18 +136,9 @@ class MortalityActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
 
     private fun setupNavigation() {
         setSupportActionBar(binding.toolbar)
-        val toggle = ActionBarDrawerToggle(
-            this, binding.drawerLayout, binding.toolbar,
-            R.string.navigation_drawer_open, R.string.navigation_drawer_close
-        )
-        binding.drawerLayout.addDrawerListener(toggle)
-        toggle.syncState()
+        binding.toolbar.setNavigationOnClickListener { onBackPressed() }
 
         binding.navigationView.setNavigationItemSelectedListener(this)
-
-        binding.toolbar.findViewById<View>(R.id.ivBackToDashboard)?.setOnClickListener {
-            onBackPressed()
-        }
 
         rebuildDrawerMenu()
         updateNavHeader()

@@ -19,22 +19,9 @@
                 android:layout_height="?attr/actionBarSize"
                 app:title="Ma Ferme"
                 app:titleTextColor="@color/white"
-                app:navigationIcon="@android:drawable/ic_menu_sort_by_size"
-                app:navigationIconTint="@color/white">
+                app:navigationIcon="@drawable/ic_back"
+                app:navigationIconTint="@color/white" />
 
-                <ImageView
-                    android:id="@+id/ivBackToDashboard"
-                    android:layout_width="48dp"
-                    android:layout_height="48dp"
-                    android:layout_gravity="end|center_vertical"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:clickable="true"
-                    android:contentDescription="@string/dashboard_title"
-                    android:focusable="true"
-                    android:padding="12dp"
-                    android:src="@drawable/ic_back"
-                    app:tint="@color/white" />
-            </com.google.android.material.appbar.MaterialToolbar>
         </com.google.android.material.appbar.AppBarLayout>
 
         <ScrollView

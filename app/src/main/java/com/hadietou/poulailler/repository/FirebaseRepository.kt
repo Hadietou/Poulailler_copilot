@@ -136,6 +136,9 @@ class FirebaseRepository {
 
     suspend fun sendHeatAlertEmail(responsibleEmail: String, farmName: String, day: String, temp: Double) {
         val fId = getFarmId() ?: return
+        // Arrondi à l'entier pour rester cohérent avec l'affichage dans l'app (dashboard,
+        // Suivi Sanitaire) : sans ça l'email affichait la valeur brute avec sa décimale.
+        val roundedTemp = Math.round(temp)
 
         // Anti-spam : une alerte par (jour d'envoi, jour annoncé). L'ancienne clé unique
         // "lastAlertDate" bloquait TOUTE alerte dès qu'une avait déjà été envoyée ce jour
@@ -155,7 +158,7 @@ class FirebaseRepository {
                 return
             }
 
-            Log.d("HeatAlert", "Envoi d'une alerte à $responsibleEmail pour $temp°C le $day")
+            Log.d("HeatAlert", "Envoi d'une alerte à $responsibleEmail pour $roundedTemp°C le $day")
             val emailRequest = BrevoEmailRequest(
                 sender = BrevoSender("KOURKOUROU App", "kourkourou@gmail.com"), 
                 to = listOf(BrevoReceiver(responsibleEmail)),
@@ -166,7 +169,7 @@ class FirebaseRepository {
                         <div style='background-color: #fdf2f2; border-left: 5px solid #e74c3c; padding: 15px;'>
                             <h1 style='color: #e74c3c; margin-top: 0;'>🔥 Alerte Température Élevée</h1>
                             <p>Bonjour,</p>
-                            <p>Une température critique de <span style='font-size: 18px; color: #e74c3c; font-weight: bold;'>$temp°C</span> est prévue le <b>$day</b> pour Nouakchott.</p>
+                            <p>Une température critique de <span style='font-size: 18px; color: #e74c3c; font-weight: bold;'>$roundedTemp°C</span> est prévue le <b>$day</b> pour Nouakchott.</p>
                             <p>Vous recevez cette alerte à l'avance afin de prendre les précautions nécessaires avant l'arrivée de la chaleur.</p>
                             <p><b>Mesures recommandées :</b></p>
                             <ul>
