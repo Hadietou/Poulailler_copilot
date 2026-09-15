@@ -26,6 +26,7 @@ import com.google.android.material.card.MaterialCardView
 import com.google.android.material.navigation.NavigationView
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.Locale
@@ -47,6 +48,7 @@ class HealthDashboardActivity : AppCompatActivity(), NavigationView.OnNavigation
     private var userRole: String = "AGENT"
     private var userId: String? = null
     private var selectedBatchId: String? = null
+    private var allTreatments: List<com.hadietou.poulailler.data.Treatment> = emptyList()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -61,6 +63,7 @@ class HealthDashboardActivity : AppCompatActivity(), NavigationView.OnNavigation
         setupNavigation()
         setupClickListeners()
         observeViewModel()
+        observeTreatments()
         viewModel.loadData()
     }
 
@@ -127,6 +130,32 @@ class HealthDashboardActivity : AppCompatActivity(), NavigationView.OnNavigation
             intent.putExtra("userIdString", userId)
             intent.putExtra("selectedBatchId", selectedBatchId)
             startActivity(intent)
+        }
+        binding.cardOpenTreatments.setOnClickListener {
+            val intent = Intent(this, TreatmentActivity::class.java)
+            intent.putExtra("role", userRole)
+            intent.putExtra("userIdString", userId)
+            intent.putExtra("selectedBatchId", selectedBatchId)
+            startActivity(intent)
+        }
+    }
+
+    private fun observeTreatments() {
+        lifecycleScope.launch {
+            firebaseRepo.getTreatmentsFlow().collectLatest { list ->
+                allTreatments = if (selectedBatchId != null) list.filter { it.batchId == selectedBatchId } else list
+                val now = System.currentTimeMillis()
+                val activeWithdrawals = allTreatments.count {
+                    (it.eggWithdrawalUntil?.let { u -> u > now } == true) || (it.slaughterWithdrawalUntil?.let { u -> u > now } == true)
+                }
+                val inProgress = allTreatments.count { it.status == "EN_COURS" }
+                binding.tvTreatmentsSubtitle.text = when {
+                    activeWithdrawals > 0 -> "⛔ $activeWithdrawals délai(s) d'attente en cours"
+                    inProgress > 0 -> "$inProgress en cours"
+                    else -> "Aucun traitement en cours"
+                }
+                refreshAlerts()
+            }
         }
     }
 
@@ -209,7 +238,7 @@ class HealthDashboardActivity : AppCompatActivity(), NavigationView.OnNavigation
     private fun refreshAlerts() {
         val mortalities = viewModel.allMortalities.value.orEmpty()
         val reminders = viewModel.activeHealthReminders.value.orEmpty()
-        val alerts = HealthAlertEngine.computeAll(mortalities, reminders)
+        val alerts = HealthAlertEngine.computeAll(mortalities, reminders, allTreatments)
 
         binding.containerAlerts.removeAllViews()
         if (alerts.isEmpty()) {
@@ -320,6 +349,13 @@ class HealthDashboardActivity : AppCompatActivity(), NavigationView.OnNavigation
             }
             R.id.nav_mortality -> {
                 val intent = Intent(this, MortalityActivity::class.java)
+                intent.putExtra("role", userRole)
+                intent.putExtra("userIdString", userId)
+                intent.putExtra("selectedBatchId", selectedBatchId)
+                startActivity(intent)
+            }
+            R.id.nav_treatments -> {
+                val intent = Intent(this, TreatmentActivity::class.java)
                 intent.putExtra("role", userRole)
                 intent.putExtra("userIdString", userId)
                 intent.putExtra("selectedBatchId", selectedBatchId)

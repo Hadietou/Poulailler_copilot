@@ -2,7 +2,11 @@ package com.hadietou.poulailler.util
 
 import com.hadietou.poulailler.data.HealthReminder
 import com.hadietou.poulailler.data.Mortality
+import com.hadietou.poulailler.data.Treatment
+import java.text.SimpleDateFormat
 import java.util.Calendar
+import java.util.Date
+import java.util.Locale
 
 enum class AlertLevel { CRITIQUE, ATTENTION }
 
@@ -92,12 +96,41 @@ object HealthAlertEngine {
         return alerts
     }
 
+    /** 🔴 Délai d'attente (œufs ou abattage) toujours en cours pour un traitement. */
+    fun checkActiveWithdrawals(treatments: List<Treatment>, now: Long = System.currentTimeMillis()): List<HealthAlert> {
+        val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+        val alerts = mutableListOf<HealthAlert>()
+        treatments.forEach { t ->
+            t.eggWithdrawalUntil?.let { until ->
+                if (until > now) alerts += HealthAlert(
+                    AlertLevel.CRITIQUE,
+                    "Délai d'attente œufs en cours",
+                    "${t.medicationName} : ne pas commercialiser les œufs avant le ${sdf.format(Date(until))}."
+                )
+            }
+            t.slaughterWithdrawalUntil?.let { until ->
+                if (until > now) alerts += HealthAlert(
+                    AlertLevel.CRITIQUE,
+                    "Délai d'attente abattage en cours",
+                    "${t.medicationName} : éviter l'abattage avant le ${sdf.format(Date(until))}."
+                )
+            }
+        }
+        return alerts
+    }
+
     /** Calcule toutes les alertes actives, triées par sévérité (critique d'abord). */
-    fun computeAll(mortalities: List<Mortality>, reminders: List<HealthReminder>, now: Long = System.currentTimeMillis()): List<HealthAlert> {
+    fun computeAll(
+        mortalities: List<Mortality>,
+        reminders: List<HealthReminder>,
+        treatments: List<Treatment> = emptyList(),
+        now: Long = System.currentTimeMillis()
+    ): List<HealthAlert> {
         val alerts = mutableListOf<HealthAlert>()
         checkMortalitySpike(mortalities, now)?.let { alerts += it }
         checkMortalityTrend(mortalities, now)?.let { alerts += it }
         alerts += checkReminders(reminders, now)
+        alerts += checkActiveWithdrawals(treatments, now)
         return alerts.sortedBy { if (it.level == AlertLevel.CRITIQUE) 0 else 1 }
     }
 }

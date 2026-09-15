@@ -801,6 +801,85 @@ class FirebaseRepository {
         db.collection("vaccines").document(id).delete().await()
     }
 
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    fun getTreatmentsFlow(): Flow<List<Treatment>> = farmIdFlow.flatMapLatest { fId ->
+        val id = fId ?: getFarmId()
+        if (id == null) flowOf(emptyList())
+        else callbackFlow {
+            val sub = db.collection("treatments").whereEqualTo("farmId", id)
+                .addSnapshotListener { s, e ->
+                    val list = s?.documents?.mapNotNull { doc ->
+                        Treatment(
+                            id = 0L,
+                            medicationName = doc.getString("medicationName") ?: "",
+                            reason = doc.getString("reason"),
+                            startDate = doc.getLong("startDate") ?: 0L,
+                            endDate = doc.getLong("endDate"),
+                            dose = doc.getString("dose"),
+                            route = doc.getString("route"),
+                            targetCount = doc.getLong("targetCount")?.toInt(),
+                            prescriber = doc.getString("prescriber"),
+                            status = doc.getString("status") ?: "EN_COURS",
+                            eggWithdrawalDays = doc.getLong("eggWithdrawalDays")?.toInt(),
+                            slaughterWithdrawalDays = doc.getLong("slaughterWithdrawalDays")?.toInt(),
+                            notes = doc.getString("notes"),
+                            firestoreId = doc.id,
+                            farmId = id,
+                            batchId = doc.getString("batchId")
+                        )
+                    }?.sortedByDescending { it.startDate } ?: emptyList()
+                    trySend(list)
+                }
+            awaitClose { sub.remove() }
+        }
+    }
+
+    suspend fun addTreatment(t: Treatment) {
+        checkAndThrowIfBlocked()
+        val fId = requireFarmId()
+        db.collection("treatments").add(hashMapOf(
+            "medicationName" to t.medicationName,
+            "reason" to t.reason,
+            "startDate" to t.startDate,
+            "endDate" to t.endDate,
+            "dose" to t.dose,
+            "route" to t.route,
+            "targetCount" to t.targetCount,
+            "prescriber" to t.prescriber,
+            "status" to t.status,
+            "eggWithdrawalDays" to t.eggWithdrawalDays,
+            "slaughterWithdrawalDays" to t.slaughterWithdrawalDays,
+            "notes" to t.notes,
+            "farmId" to fId,
+            "batchId" to t.batchId
+        )).await()
+    }
+
+    suspend fun updateTreatment(t: Treatment) {
+        checkAndThrowIfBlocked()
+        t.firestoreId?.let {
+            db.collection("treatments").document(it).update(hashMapOf(
+                "medicationName" to t.medicationName,
+                "reason" to t.reason,
+                "startDate" to t.startDate,
+                "endDate" to t.endDate,
+                "dose" to t.dose,
+                "route" to t.route,
+                "targetCount" to t.targetCount,
+                "prescriber" to t.prescriber,
+                "status" to t.status,
+                "eggWithdrawalDays" to t.eggWithdrawalDays,
+                "slaughterWithdrawalDays" to t.slaughterWithdrawalDays,
+                "notes" to t.notes
+            ) as Map<String, Any>).await()
+        }
+    }
+
+    suspend fun deleteTreatment(id: String) {
+        checkAndThrowIfBlocked()
+        db.collection("treatments").document(id).delete().await()
+    }
+
     suspend fun addHealthReminder(r: HealthReminder) {
         checkAndThrowIfBlocked()
         val fId = requireFarmId()

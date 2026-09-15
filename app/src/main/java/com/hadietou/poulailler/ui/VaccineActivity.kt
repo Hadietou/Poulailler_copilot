@@ -655,6 +655,13 @@ class VaccineActivity : AppCompatActivity(), NavigationView.OnNavigationItemSele
                 intent.putExtra("selectedBatchId", selectedBatchId)
                 startActivity(intent)
             }
+            R.id.nav_treatments -> {
+                val intent = Intent(this, TreatmentActivity::class.java)
+                intent.putExtra("role", userRole)
+                intent.putExtra("userIdString", userId)
+                intent.putExtra("selectedBatchId", selectedBatchId)
+                startActivity(intent)
+            }
             R.id.nav_delete_account -> {
                 val intent = Intent(Intent.ACTION_VIEW, Uri.parse(getString(R.string.delete_account_url)))
                 startActivity(intent)

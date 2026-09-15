@@ -60,6 +60,10 @@
             android:id="@+id/nav_mortality"
             android:icon="@drawable/ic_mortality"
             android:title="Suivi Mortalité" />
+        <item
+            android:id="@+id/nav_treatments"
+            android:icon="@drawable/ic_medication"
+            android:title="Traitements" />
     </group>
 
     <group android:checkableBehavior="single">
