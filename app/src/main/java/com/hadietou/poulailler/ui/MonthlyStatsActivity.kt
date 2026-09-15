@@ -50,8 +50,7 @@ class MonthlyStatsActivity : AppCompatActivity() {
             "EXPENSES" -> "Suivi des dépenses"
             else -> "Statistiques Mensuelles"
         }
-        binding.tvChartTitle.text = title
-        supportActionBar?.title = ""
+        supportActionBar?.title = title
 
         val summaryLabel = when (statsType) {
             "COLLECTION" -> "Production Mensuelle d'œufs"
