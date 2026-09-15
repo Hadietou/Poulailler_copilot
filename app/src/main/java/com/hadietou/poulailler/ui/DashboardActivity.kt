@@ -207,8 +207,8 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
         binding.cardDashFeed.setOnClickListener { showFeedMenu(it) }
         binding.cardDashHealth.setOnClickListener { showHealthMenu(it) }
         binding.layoutDashHealthMortalityRate.setOnClickListener { navigateToStats("MORTALITY") }
-        binding.layoutDashHealthWeather.setOnClickListener { navigateTo(HealthDashboardActivity::class.java) }
-        binding.layoutDashHealthTreatment.setOnClickListener { navigateTo(HealthDashboardActivity::class.java) }
+        binding.layoutDashHealthWeather.setOnClickListener { navigateTo(VaccineActivity::class.java) }
+        binding.layoutDashHealthTreatment.setOnClickListener { navigateTo(TreatmentActivity::class.java) }
 
         binding.cardNetProfit.setOnClickListener { navigateTo(SalesActivity::class.java) }
     }
