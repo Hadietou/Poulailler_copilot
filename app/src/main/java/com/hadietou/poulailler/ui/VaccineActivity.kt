@@ -21,7 +21,6 @@ import androidx.recyclerview.widget.RecyclerView
 import com.hadietou.poulailler.R
 import com.hadietou.poulailler.BuildConfig
 import com.hadietou.poulailler.data.AppDatabase
-import com.hadietou.poulailler.data.FarmInfo
 import com.hadietou.poulailler.data.VaccineEntry
 import com.hadietou.poulailler.data.HealthReminder
 import com.hadietou.poulailler.data.HealthReminderLog
@@ -29,7 +28,6 @@ import com.hadietou.poulailler.databinding.ActivityVaccineBinding
 import com.hadietou.poulailler.databinding.DialogAddVaccineBinding
 import com.hadietou.poulailler.databinding.ItemVaccineBinding
 import com.hadietou.poulailler.repository.FirebaseRepository
-import com.hadietou.poulailler.network.WeatherUtils
 import com.google.android.material.navigation.NavigationView
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.Dispatchers
@@ -81,7 +79,6 @@ class VaccineActivity : AppCompatActivity(), NavigationView.OnNavigationItemSele
         observeHealthReminderLogs()
         loadEnhancedSanitaryGuide()
         checkAccessStatus()
-        fetchWeatherForecast()
 
         binding.fabAddVaccine.setOnClickListener {
             if (isBlocked) { showBlockingDialog(); return@setOnClickListener }
@@ -91,46 +88,6 @@ class VaccineActivity : AppCompatActivity(), NavigationView.OnNavigationItemSele
         binding.btnShowMore.setOnClickListener {
             isShowingAll = true
             refreshDisplay()
-        }
-
-        if (intent.getBooleanExtra("scrollToLighting", false)) {
-            binding.root.post {
-                binding.nestedScrollView.smoothScrollTo(0, binding.cardLightingLogic.top)
-            }
-        }
-    }
-
-    private fun fetchWeatherForecast() {
-        binding.weatherProgressBar.visibility = View.VISIBLE
-        lifecycleScope.launch(Dispatchers.IO) {
-            try {
-                val info = firebaseRepo.getFarmInfo()
-                val response = WeatherUtils.fetchForecast(info?.latitude, info?.longitude)
-                val daily = response.daily
-                val offset = info?.weatherTempOffsetCelsius ?: FarmInfo.DEFAULT_WEATHER_TEMP_OFFSET
-                val maxTemperatures = WeatherUtils.applyOffset(daily.maxTemperatures, offset)
-
-                val weatherText = StringBuilder()
-                for (i in 0 until daily.time.size) {
-                    val date = daily.time[i]
-                    val temp = maxTemperatures[i]
-                    val emoji = if (temp >= 35) "🔥" else "☀️"
-                    // Arrondi à l'entier, comme la case "Météo du jour" du dashboard : afficher une
-                    // décimale ici et un entier là-bas donnait l'impression (à tort) de deux valeurs
-                    // différentes pour la même température du jour (ex: 34.7°C ici vs 35°C là-bas).
-                    weatherText.append("• $date : ${Math.round(temp)}°C $emoji\n")
-                }
-
-                withContext(Dispatchers.Main) {
-                    binding.weatherProgressBar.visibility = View.GONE
-                    binding.tvWeatherInfo.text = weatherText.toString().trim()
-                }
-            } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    binding.weatherProgressBar.visibility = View.GONE
-                    binding.tvWeatherInfo.text = "Impossible de charger la météo."
-                }
-            }
         }
     }
 

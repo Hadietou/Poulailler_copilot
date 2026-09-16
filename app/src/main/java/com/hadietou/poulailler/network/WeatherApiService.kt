@@ -8,7 +8,7 @@ interface WeatherApiService {
     suspend fun getForecast(
         @Query("latitude") lat: Double = 18.0858,
         @Query("longitude") lon: Double = -15.9785,
-        @Query("daily") daily: String = "temperature_2m_max",
+        @Query("daily") daily: String = "temperature_2m_max,temperature_2m_min",
         @Query("timezone") timezone: String = "auto",
         @Query("forecast_days") days: Int = 5,
         // ECMWF IFS (0.25°) : modèle le plus fiable pour le Sahel/Mauritanie,

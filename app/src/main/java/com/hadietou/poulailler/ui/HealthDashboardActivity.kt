@@ -155,6 +155,9 @@ class HealthDashboardActivity : AppCompatActivity(), NavigationView.OnNavigation
             intent.putExtra("selectedBatchId", selectedBatchId)
             startActivity(intent)
         }
+        binding.rowWeather.setOnClickListener {
+            startActivity(Intent(this, WeatherActivity::class.java))
+        }
         binding.rowObservations.setOnClickListener {
             val intent = Intent(this, ObservationActivity::class.java)
             intent.putExtra("selectedBatchId", selectedBatchId)

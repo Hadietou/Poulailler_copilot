@@ -72,6 +72,9 @@
             android:name=".ui.ObservationActivity"
             android:exported="false" />
         <activity
+            android:name=".ui.WeatherActivity"
+            android:exported="false" />
+        <activity
             android:name=".ui.VetVisitActivity"
             android:exported="false" />
         <activity

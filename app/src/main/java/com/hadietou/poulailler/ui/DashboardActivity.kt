@@ -132,8 +132,13 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
     }
 
     private fun updateLightingIndicator() {
-        val lightingHours = viewModel.farmInfo.value?.lightingHoursAfterSunrise ?: FarmInfo.DEFAULT_LIGHTING_HOURS
-        val extinctionTime = SunUtils.getExtinctionTime(lightingHours)
+        val info = viewModel.farmInfo.value
+        val lightingHours = info?.lightingHoursAfterSunrise ?: FarmInfo.DEFAULT_LIGHTING_HOURS
+        val extinctionTime = if (info?.latitude != null && info.longitude != null) {
+            SunUtils.getExtinctionTime(lightingHours, info.latitude, info.longitude)
+        } else {
+            SunUtils.getExtinctionTime(lightingHours)
+        }
         binding.tvLightingTime.text = getString(R.string.lighting_extinguish_at, extinctionTime)
     }
 
@@ -187,7 +192,7 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
 
     private fun setupDashboardCardListeners() {
         binding.cardLightingAlert.setOnClickListener {
-            val intent = Intent(this, VaccineActivity::class.java)
+            val intent = Intent(this, WeatherActivity::class.java)
             intent.putExtra("scrollToLighting", true)
             intent.putExtra("role", userRole)
             intent.putExtra("userIdString", userId)
@@ -206,8 +211,9 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
         binding.cardDashExpenses.setOnClickListener { showExpensesMenu(it) }
         binding.cardDashFeed.setOnClickListener { showFeedMenu(it) }
         binding.cardDashHealth.setOnClickListener { showHealthMenu(it) }
+        binding.layoutOpenHealthDashboard.setOnClickListener { navigateTo(HealthDashboardActivity::class.java) }
         binding.layoutDashHealthMortalityRate.setOnClickListener { navigateToStats("MORTALITY") }
-        binding.layoutDashHealthWeather.setOnClickListener { navigateTo(VaccineActivity::class.java) }
+        binding.layoutDashHealthWeather.setOnClickListener { navigateTo(WeatherActivity::class.java) }
         binding.layoutDashHealthTreatment.setOnClickListener { navigateTo(TreatmentActivity::class.java) }
 
         binding.cardNetProfit.setOnClickListener { navigateTo(SalesActivity::class.java) }

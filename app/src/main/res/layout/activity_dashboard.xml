@@ -527,6 +527,10 @@
                                         <ImageView android:layout_width="16dp" android:layout_height="16dp" android:layout_gravity="center" android:src="@drawable/ic_heart" app:tint="@color/white" />
                                     </com.google.android.material.card.MaterialCardView>
                                     <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="10dp" android:text="Santé &amp; Mortalité" android:textColor="@color/text_primary" android:textSize="13sp" android:textStyle="bold" />
+                                    <LinearLayout android:id="@+id/layoutOpenHealthDashboard" android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:paddingHorizontal="6dp" android:paddingVertical="4dp" android:clickable="true" android:focusable="true" android:foreground="?attr/selectableItemBackground">
+                                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Suivi sanitaire" android:textColor="@color/error" android:textSize="10sp" android:textStyle="bold" />
+                                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="2dp" android:text="›" android:textColor="@color/error" android:textSize="16sp" android:textStyle="bold" />
+                                    </LinearLayout>
                                 </LinearLayout>
 
                                 <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="14dp" android:orientation="horizontal" android:gravity="bottom">

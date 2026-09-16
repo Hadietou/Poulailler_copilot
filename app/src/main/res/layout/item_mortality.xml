@@ -60,12 +60,14 @@
                 android:visibility="gone"/>
         </LinearLayout>
 
-        <ImageView
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:src="@drawable/ic_delete"
-            app:tint="#F44336"
-            android:contentDescription="Icône perte" />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="›"
+            android:textColor="@color/text_secondary"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:contentDescription="Modifier cet enregistrement" />
 
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

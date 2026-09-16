@@ -9,5 +9,7 @@ data class WeatherResponse(
 data class DailyData(
     val time: List<String>,
     @SerializedName("temperature_2m_max")
-    val maxTemperatures: List<Double>
+    val maxTemperatures: List<Double>,
+    @SerializedName("temperature_2m_min")
+    val minTemperatures: List<Double> = emptyList()
 )
