@@ -369,7 +369,8 @@ class MortalityActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
             setTextColor(getColor(R.color.white))
             setOnClickListener { showAdviceDialog(dialogBinding.actvMortalityCause.text.toString()) }
         }
-        (dialogBinding.root as ViewGroup).addView(btnAdvice, 3)
+        val contentLayout = dialogBinding.btnSaveMortality.parent as ViewGroup
+        contentLayout.addView(btnAdvice, contentLayout.indexOfChild(dialogBinding.btnSaveMortality))
 
         if (userRole == "RESPONSABLE") {
             dialogBinding.btnSaveMortality.text = "MODIFIER"
