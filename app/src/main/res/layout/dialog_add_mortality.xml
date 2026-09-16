@@ -54,7 +54,7 @@
             android:layout_marginBottom="12dp"
             app:hintTextColor="@color/text_secondary"
             app:boxStrokeColor="@color/primary"
-            app:startIconDrawable="@drawable/ic_delete"
+            app:startIconDrawable="@drawable/ic_mortality"
             app:startIconTint="@color/primary">
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/etMortalityInput"
