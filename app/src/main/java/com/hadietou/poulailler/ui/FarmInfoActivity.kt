@@ -32,6 +32,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.*
+import com.hadietou.poulailler.util.CountryData
 import com.hadietou.poulailler.util.DrawerSubmenuController
 import com.hadietou.poulailler.util.NavMenuStyler
 import com.hadietou.poulailler.util.NetworkStatusMonitor
@@ -43,7 +44,7 @@ class FarmInfoActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
     private var currentBatch: Batch? = null
     private val firebaseRepo = FirebaseRepository()
 
-    private val currencies = arrayOf("MRU", "CFA")
+    private val currencies = CountryData.currencies
     private var userRole: String = "AGENT"
     private var userId: String? = null
     private var isBlocked = false

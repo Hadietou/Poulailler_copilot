@@ -23,8 +23,11 @@ class BatchActivity : AppCompatActivity() {
     private val calendar = Calendar.getInstance()
     private val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
     private lateinit var adapter: BatchAdapter
-    private val breeds = arrayOf("Lohmann Brown", "Isa Brown", "Leghorn", "Rhode Island Red", "SASSO / Améliorée", "COBB 500 (Chair)", "ROSS 308 (Chair)")
+    private val layingBreeds = arrayOf("Lohmann Brown", "Isa Brown", "Leghorn", "Rhode Island Red", "SASSO / Améliorée")
+    private val chairBreeds = arrayOf("COBB 500 (Chair)", "ROSS 308 (Chair)", "SASSO / Améliorée")
     private val batchTypes = arrayOf("PONDEUSE", "CHAIR")
+
+    private fun breedsFor(type: String) = if (type == "CHAIR") chairBreeds else layingBreeds
     private var isBlocked = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -36,6 +39,9 @@ class BatchActivity : AppCompatActivity() {
         setupRecyclerView()
         setupClickListeners()
         observeViewModel()
+
+        // Le tableau de bord d'une ferme sans lot propose directement « lot pondeuses » ou « lot chair ».
+        intent.getStringExtra("presetType")?.takeIf { it in batchTypes }?.let { showAddBatchDialog(it) }
     }
 
     private fun setupToolbar() {
@@ -69,19 +75,24 @@ class BatchActivity : AppCompatActivity() {
             .show()
     }
 
-    private fun showAddBatchDialog() {
+    private fun showAddBatchDialog(presetType: String? = null) {
         val dialogBinding = DialogAddBatchBinding.inflate(LayoutInflater.from(this))
         val dialog = AlertDialog.Builder(this)
             .setView(dialogBinding.root)
             .create()
 
+        val initialType = presetType ?: batchTypes[0]
         val typeAdapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, batchTypes)
         dialogBinding.actvBatchType.setAdapter(typeAdapter)
-        dialogBinding.actvBatchType.setText(batchTypes[0], false)
+        dialogBinding.actvBatchType.setText(initialType, false)
 
-        val breedAdapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, breeds)
-        dialogBinding.actvHenBreed.setAdapter(breedAdapter)
-        dialogBinding.actvHenBreed.setText(breeds[0], false)
+        fun applyBreedsFor(type: String) {
+            val list = breedsFor(type)
+            dialogBinding.actvHenBreed.setAdapter(ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, list))
+            dialogBinding.actvHenBreed.setText(list[0], false)
+        }
+        applyBreedsFor(initialType)
+        dialogBinding.actvBatchType.setOnItemClickListener { _, _, position, _ -> applyBreedsFor(batchTypes[position]) }
 
         var arrivalDate = System.currentTimeMillis()
         var birthDate = System.currentTimeMillis()

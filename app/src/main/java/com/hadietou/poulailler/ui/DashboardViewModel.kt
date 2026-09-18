@@ -87,6 +87,8 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
 
     val allBatches = MutableLiveData<List<Batch>>(emptyList())
     val selectedBatch = MutableLiveData<Batch?>()
+    /** Faux tant que la première liste de lots n'est pas arrivée : évite d'afficher « aucun lot » pendant le chargement. */
+    val batchesLoaded = MutableLiveData(false)
 
     val effectiveHensCount = MutableLiveData<Int>(0)
     val totalMortalityCount = MutableLiveData<Int>(0)
@@ -134,9 +136,12 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
             try {
                 firebaseRepo.getBatchesFlow().collectLatest { batches ->
                     allBatches.value = batches
-                    if (selectedBatch.value == null && batches.isNotEmpty()) {
+                    if (batches.isEmpty()) {
+                        selectedBatch.value = null
+                    } else if (selectedBatch.value == null) {
                         selectedBatch.value = batches.firstOrNull { it.status == "ACTIVE" } ?: batches.first()
                     }
+                    batchesLoaded.value = true
                     refreshAllStats()
                     checkAndGenerateReminders()
                 }

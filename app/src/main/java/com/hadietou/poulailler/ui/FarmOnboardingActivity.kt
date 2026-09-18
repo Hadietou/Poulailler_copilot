@@ -14,6 +14,7 @@ import com.hadietou.poulailler.databinding.ActivityFarmOnboardingBinding
 import com.hadietou.poulailler.databinding.DialogCreateFarmBinding
 import com.hadietou.poulailler.databinding.ItemInvitationBinding
 import com.hadietou.poulailler.repository.FirebaseRepository
+import com.hadietou.poulailler.util.CountryData
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
@@ -35,8 +36,8 @@ class FarmOnboardingActivity : AppCompatActivity() {
     private val firebaseRepo = FirebaseRepository()
     private var userId: String? = null
 
-    private val countries = arrayOf("Mauritanie", "Sénégal", "Mali", "Guinée", "Côte d'Ivoire", "Bénin", "Togo", "Burkina Faso", "Niger")
-    private val currencies = arrayOf("MRU", "CFA")
+    private val countries = CountryData.countryNames
+    private val currencies = CountryData.currencies
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -139,7 +140,7 @@ class FarmOnboardingActivity : AppCompatActivity() {
         dialogBinding.actvCurrency.setText(currencies[0], false)
 
         dialogBinding.actvCountry.setOnItemClickListener { _, _, position, _ ->
-            dialogBinding.actvCurrency.setText(if (countries[position] == "Mauritanie") "MRU" else "CFA", false)
+            dialogBinding.actvCurrency.setText(CountryData.currencyFor(countries[position]), false)
         }
 
         dialogBinding.btnConfirmCreateFarm.setOnClickListener {

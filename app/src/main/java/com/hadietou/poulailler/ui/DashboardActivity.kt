@@ -27,6 +27,7 @@ import com.hadietou.poulailler.databinding.DialogCreateFarmBinding
 import com.hadietou.poulailler.databinding.DialogLinkPhoneBinding
 import com.hadietou.poulailler.repository.FirebaseRepository
 import com.hadietou.poulailler.data.FarmInfo
+import com.hadietou.poulailler.util.CountryData
 import com.hadietou.poulailler.util.SunUtils
 import com.hadietou.poulailler.util.ReportUtils
 import com.google.android.material.navigation.NavigationView
@@ -198,6 +199,9 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
             startActivity(Intent(this, FarmInfoActivity::class.java))
         }
 
+        binding.btnCreateLayerBatch.setOnClickListener { openBatchCreation("PONDEUSE") }
+        binding.btnCreateChairBatch.setOnClickListener { openBatchCreation("CHAIR") }
+
         binding.toolbar.findViewById<View>(R.id.ivHeaderReport)?.setOnClickListener {
             val prodChart = if (binding.productionChart.visibility == View.VISIBLE) binding.productionChart.chartBitmap else null
             val expChart = if (binding.expensesBarChart.visibility == View.VISIBLE) binding.expensesBarChart.drawToBitmap() else null
@@ -277,6 +281,14 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
         startActivity(intent)
     }
 
+    private fun openBatchCreation(type: String) {
+        val intent = Intent(this, BatchActivity::class.java)
+        intent.putExtra("role", userRole)
+        intent.putExtra("userIdString", userId)
+        intent.putExtra("presetType", type)
+        startActivity(intent)
+    }
+
     private fun setupBatchSpinner() {
         binding.spinnerBatches.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
@@ -333,14 +345,33 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
     private fun updateUIBasedOnBatchType() {
         val batch = viewModel.selectedBatch.value
         val isChair = batch?.typeLot == "CHAIR"
-        
+
+        // Ferme neuve : aucun lot par défaut, on propose d'en créer un (pondeuses ou chair)
+        // plutôt que d'afficher un tableau de bord vide de pondeuses.
+        val noBatch = viewModel.batchesLoaded.value == true && batch == null
+        binding.layoutNoBatch.visibility = if (noBatch) View.VISIBLE else View.GONE
+        binding.layoutDashboardBody.visibility = if (noBatch) View.GONE else View.VISIBLE
+        binding.cardHeroStats.visibility = if (noBatch) View.GONE else View.VISIBLE
+        binding.scrollHeroStatus.visibility = if (noBatch) View.GONE else View.VISIBLE
+        binding.ivSelectBatch.visibility = if (noBatch) View.GONE else View.VISIBLE
+        if (noBatch) binding.tvDashboardBatchName.text = "Aucun lot"
+        val canCreateBatch = userRole == "RESPONSABLE"
+        binding.layoutNoBatchActions.visibility = if (canCreateBatch) View.VISIBLE else View.GONE
+        binding.tvNoBatchHint.text = if (canCreateBatch) {
+            "Créez votre premier lot pour commencer le suivi. Le tableau de bord s'adapte au type de lot : production d'œufs pour les pondeuses, croissance et consommation pour la chair."
+        } else {
+            "Le responsable de la ferme n'a pas encore créé de lot. Il apparaîtra ici dès sa création."
+        }
+
+        // Les cartes propres à la ponte disparaissent pour un lot de chair.
         val eggVisibility = if (isChair) View.GONE else View.VISIBLE
         binding.cardLayingRate.visibility = eggVisibility
         binding.cardLightingAlert.visibility = eggVisibility
         binding.cardStockCircle.visibility = eggVisibility
         binding.cardEggTraysStock.visibility = eggVisibility
         binding.cardEggProduction.visibility = eggVisibility
-        
+        binding.cardEggSales.visibility = eggVisibility
+
         binding.cardFeedStockCircle.visibility = View.VISIBLE
         
         val menu = binding.navigationView.menu
@@ -361,9 +392,12 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
         viewModel.farmInfo.observe(this) { info ->
             if (info != null) {
                 binding.tvWelcome.text = info.farmName.uppercase()
+                binding.tvDashExpensesCurrency.text = info.currency
             }
             updateLightingIndicator()
         }
+
+        viewModel.batchesLoaded.observe(this) { updateUIBasedOnRole() }
 
         viewModel.allBatches.observe(this) { batches ->
             val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, batches.map { it.name })
@@ -512,6 +546,8 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
 
         viewModel.eggTraysStock.observe(this) { stock ->
             if (stock == null) return@observe // On ignore tant que ce n'est pas chargé
+            // Les alvéoles à œufs ne concernent que les pondeuses : jamais d'alerte pour un lot de chair.
+            if (viewModel.selectedBatch.value?.typeLot == "CHAIR") return@observe
 
             binding.tvEggTraysStockValue.text = "Alvéoles : $stock"
             val criticalThreshold = viewModel.farmInfo.value?.eggTraysCriticalThreshold ?: FarmInfo.DEFAULT_EGG_TRAYS_CRITICAL
@@ -626,8 +662,8 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
      * fois, cela remplace son affectation d'agent actuelle.
      */
     private fun showCreateOwnFarmDialog() {
-        val countries = arrayOf("Mauritanie", "Sénégal", "Mali", "Guinée", "Côte d'Ivoire", "Bénin", "Togo", "Burkina Faso", "Niger")
-        val currencies = arrayOf("MRU", "CFA")
+        val countries = CountryData.countryNames
+        val currencies = CountryData.currencies
 
         val dialogBinding = DialogCreateFarmBinding.inflate(layoutInflater)
         val dialog = AlertDialog.Builder(this).setView(dialogBinding.root).create()
@@ -641,7 +677,7 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
         dialogBinding.actvCurrency.setText(currencies[0], false)
 
         dialogBinding.actvCountry.setOnItemClickListener { _, _, position, _ ->
-            dialogBinding.actvCurrency.setText(if (countries[position] == "Mauritanie") "MRU" else "CFA", false)
+            dialogBinding.actvCurrency.setText(CountryData.currencyFor(countries[position]), false)
         }
 
         dialogBinding.btnConfirmCreateFarm.setOnClickListener {
