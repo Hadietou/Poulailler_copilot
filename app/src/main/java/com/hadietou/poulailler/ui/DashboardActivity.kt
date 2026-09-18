@@ -10,6 +10,7 @@ import android.view.View
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.TextView
+import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.viewModels
 import androidx.appcompat.app.ActionBarDrawerToggle
@@ -22,6 +23,8 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.hadietou.poulailler.R
 import com.hadietou.poulailler.BuildConfig
 import com.hadietou.poulailler.databinding.ActivityDashboardBinding
+import com.hadietou.poulailler.databinding.DialogCreateFarmBinding
+import com.hadietou.poulailler.databinding.DialogLinkPhoneBinding
 import com.hadietou.poulailler.repository.FirebaseRepository
 import com.hadietou.poulailler.data.FarmInfo
 import com.hadietou.poulailler.util.SunUtils
@@ -44,10 +47,14 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
 
     private lateinit var binding: ActivityDashboardBinding
     private val viewModel: DashboardViewModel by viewModels()
+    private val loginVm: LoginViewModel by viewModels()
     private var userRole: String = "AGENT"
     private var userId: String? = null
     private val firebaseRepo = FirebaseRepository()
     private var isBlocked = false
+    // Un compte créé par email n'a pas de numéro : lui proposer d'en lier un (voir
+    // nav_link_phone) pour pouvoir aussi se connecter par téléphone à l'avenir.
+    private var hasPhoneNumber = false
     private lateinit var reminderAdapter: HealthReminderAdapter
     
     private val drawerSubmenus = DrawerSubmenuController()
@@ -59,7 +66,11 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
             setContentView(binding.root)
             NetworkStatusMonitor.observe(this, binding.root)
 
-            userId = FirebaseAuth.getInstance().currentUser?.uid
+            userId = if (com.hadietou.poulailler.demo.DemoMode.enabled) {
+                com.hadietou.poulailler.demo.DemoData.USER_ID
+            } else {
+                FirebaseAuth.getInstance().currentUser?.uid
+            }
             if (userId == null) {
                 startActivity(Intent(this, LoginActivity::class.java))
                 finish()
@@ -82,6 +93,7 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
                     val profile = firebaseRepo.getUserProfile(userId!!)
                     if (profile != null) {
                         userRole = profile.role
+                        hasPhoneNumber = !profile.phoneNumber.isNullOrBlank()
                         withContext(Dispatchers.Main) {
                             updateUIBasedOnRole()
                             updateNavHeader(profile.username, profile.role)
@@ -155,8 +167,11 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
     private fun rebuildDrawerMenu() {
         binding.navigationView.menu.clear()
         binding.navigationView.inflateMenu(R.menu.drawer_menu)
+        // updateUIBasedOnRole() appelle déjà updateUIBasedOnBatchType() en interne (et
+        // réapplique les restrictions de rôle APRÈS, voir ce commentaire là-bas) : un second
+        // appel ici resterait juste après, retoggle la visibilité des groupes de sous-menu
+        // SANS réappliquer ensuite les restrictions de rôle qui vivent dans ces groupes.
         updateUIBasedOnRole()
-        updateUIBasedOnBatchType()
         refreshDrawerMenuStyle()
     }
 
@@ -283,19 +298,36 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
     private fun updateUIBasedOnRole() {
         val isResp = userRole == "RESPONSABLE"
         val menu = binding.navigationView.menu
-        menu.findItem(R.id.nav_users)?.isVisible = isResp
         menu.findItem(R.id.nav_expenses)?.isVisible = isResp
         menu.findItem(R.id.nav_batches)?.isVisible = isResp
-        
+
         binding.titleFinance.visibility = if (isResp) View.VISIBLE else View.GONE
         binding.cardNetProfit.visibility = if (isResp) View.VISIBLE else View.GONE
-        
+
         val headerView = binding.navigationView.getHeaderView(0)
         headerView?.findViewById<View>(R.id.tvFarmNameNav)?.visibility = View.GONE
 
         binding.toolbar.findViewById<View>(R.id.ivHeaderReport)?.visibility = if (isResp) View.VISIBLE else View.GONE
-        
+
+        // updateUIBasedOnBatchType() applique la visibilité des groupes de sous-menu via
+        // Menu.setGroupVisible (voir DrawerSubmenuController.applyGroupVisibility) — qui, par
+        // conception de l'API Android, n'est qu'un raccourci pour appeler item.setVisible sur
+        // chaque item du groupe : il n'existe PAS de drapeau "groupe" séparé qui persisterait.
+        // nav_users/nav_create_own_farm/nav_switch_farm vivent tous dans group_account_submenu :
+        // leurs restrictions par rôle doivent donc être réappliquées APRÈS cet appel (sans quoi
+        // elles disparaissent dès que "Compte" est déplié), ET combinées avec l'état
+        // déplié/replié lui-même (sans quoi elles réapparaissent même "Compte" replié, dès que
+        // le rôle/les fermes de l'utilisateur les rendent à nouveau applicables).
         updateUIBasedOnBatchType()
+        val accountExpanded = drawerSubmenus.expanded == DrawerSubmenuController.Submenu.ACCOUNT
+        menu.findItem(R.id.nav_users)?.isVisible = accountExpanded && isResp
+        // Un responsable gère déjà sa propre ferme ; proposer d'en créer une autre ne
+        // concerne que les agents pour l'instant (voir FirebaseRepository.createFarmExtended
+        // et la note d'architecture multi-fermes : la ferme active bascule vers la nouvelle,
+        // sans perdre l'appartenance précédente — voir nav_switch_farm/refreshFarmSwitcherMenuItem).
+        menu.findItem(R.id.nav_create_own_farm)?.isVisible = accountExpanded && !isResp
+        menu.findItem(R.id.nav_link_phone)?.isVisible = accountExpanded && !hasPhoneNumber
+        refreshFarmSwitcherMenuItem(accountExpanded)
     }
 
     private fun updateUIBasedOnBatchType() {
@@ -352,7 +384,11 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
                 binding.tvDashboardBatchName.text = ""
             }
             updateHensAgeHeader()
-            updateUIBasedOnBatchType()
+            // Passe par updateUIBasedOnRole() plutôt qu'un appel direct à
+            // updateUIBasedOnBatchType() : ce dernier retoggle la visibilité des groupes de
+            // sous-menu (voir le commentaire dans updateUIBasedOnRole), ce qui doit toujours
+            // être suivi d'une réapplication des restrictions de rôle.
+            updateUIBasedOnRole()
         }
 
         viewModel.effectiveHensCount.observe(this) {
@@ -427,7 +463,7 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
             binding.tvDashFeedStock.text = it.toInt().toString()
         }
         viewModel.feedAutonomyDays.observe(this) { days ->
-            binding.tvFeedStockCircleValue.text = "Stock : ${days}j"
+            binding.tvFeedStockCircleValue.text = "Aliment : ${days}j"
             binding.tvDashFeedAutonomy.text = "Autonomie : $days jours"
 
             val info = viewModel.farmInfo.value
@@ -564,6 +600,10 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
             R.id.nav_treatments -> navigateTo(TreatmentActivity::class.java)
             R.id.nav_diseases -> navigateTo(DiseaseActivity::class.java)
 
+            R.id.nav_create_own_farm -> showCreateOwnFarmDialog()
+            R.id.nav_switch_farm -> showFarmSwitcherDialog()
+            R.id.nav_link_phone -> showLinkPhoneDialog()
+
             R.id.nav_delete_account -> {
                 val intent = Intent(Intent.ACTION_VIEW, Uri.parse(getString(R.string.delete_account_url)))
                 startActivity(intent)
@@ -578,6 +618,265 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
         }
         binding.drawerLayout.closeDrawer(GravityCompat.START)
         return true
+    }
+
+    /**
+     * Permet à un agent de créer sa propre ferme et d'en devenir responsable (voir
+     * FirebaseRepository.createFarmExtended). Un utilisateur n'ayant qu'une seule ferme à la
+     * fois, cela remplace son affectation d'agent actuelle.
+     */
+    private fun showCreateOwnFarmDialog() {
+        val countries = arrayOf("Mauritanie", "Sénégal", "Mali", "Guinée", "Côte d'Ivoire", "Bénin", "Togo", "Burkina Faso", "Niger")
+        val currencies = arrayOf("MRU", "CFA")
+
+        val dialogBinding = DialogCreateFarmBinding.inflate(layoutInflater)
+        val dialog = AlertDialog.Builder(this).setView(dialogBinding.root).create()
+
+        val countryAdapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, countries)
+        dialogBinding.actvCountry.setAdapter(countryAdapter)
+        dialogBinding.actvCountry.setText(countries[0], false)
+
+        val currencyAdapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, currencies)
+        dialogBinding.actvCurrency.setAdapter(currencyAdapter)
+        dialogBinding.actvCurrency.setText(currencies[0], false)
+
+        dialogBinding.actvCountry.setOnItemClickListener { _, _, position, _ ->
+            dialogBinding.actvCurrency.setText(if (countries[position] == "Mauritanie") "MRU" else "CFA", false)
+        }
+
+        dialogBinding.btnConfirmCreateFarm.setOnClickListener {
+            val farmName = dialogBinding.etFarmName.text.toString().trim()
+            val city = dialogBinding.etCity.text.toString().trim()
+            val country = dialogBinding.actvCountry.text.toString()
+            val currency = dialogBinding.actvCurrency.text.toString()
+
+            if (farmName.isEmpty() || city.isEmpty()) {
+                Toast.makeText(this, "Nom de ferme et ville requis", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            lifecycleScope.launch(Dispatchers.IO) {
+                try {
+                    val uid = userId ?: return@launch
+                    val profile = firebaseRepo.getUserProfile(uid)
+                    val code = firebaseRepo.createFarmExtended(
+                        farmName, currency, profile?.username ?: "Responsable", profile?.email ?: "", country, city
+                    )
+                    withContext(Dispatchers.Main) {
+                        dialog.dismiss()
+                        Toast.makeText(this@DashboardActivity, "Ferme créée ! Code : $code", Toast.LENGTH_LONG).show()
+                        val intent = Intent(this@DashboardActivity, DashboardActivity::class.java)
+                        intent.putExtra("role", "RESPONSABLE")
+                        intent.putExtra("userIdString", uid)
+                        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                        startActivity(intent)
+                        finish()
+                    }
+                } catch (e: Exception) {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(this@DashboardActivity, e.message ?: "Erreur", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+        }
+
+        dialog.show()
+    }
+
+    /** N'affiche "Changer de ferme" que si "Compte" est déplié ET que l'utilisateur a plus d'une ferme. */
+    private fun refreshFarmSwitcherMenuItem(accountExpanded: Boolean) {
+        lifecycleScope.launch {
+            val memberships = withContext(Dispatchers.IO) { firebaseRepo.getMemberships() }
+            binding.navigationView.menu.findItem(R.id.nav_switch_farm)?.isVisible = accountExpanded && memberships.size > 1
+        }
+    }
+
+    /** Liste les fermes de l'utilisateur et bascule la ferme active vers celle choisie. */
+    private fun showFarmSwitcherDialog() {
+        lifecycleScope.launch {
+            val memberships = withContext(Dispatchers.IO) { firebaseRepo.getMemberships() }
+            if (memberships.size < 2) return@launch
+
+            val currentFarmId = withContext(Dispatchers.IO) { firebaseRepo.getFarmId() }
+            val labels = memberships.map { "${it.farmName} (${if (it.role == "RESPONSABLE") "Responsable" else "Agent"})" }.toTypedArray()
+            val selectedIndex = memberships.indexOfFirst { it.farmId == currentFarmId }.coerceAtLeast(0)
+
+            AlertDialog.Builder(this@DashboardActivity)
+                .setTitle("Changer de ferme")
+                .setSingleChoiceItems(labels, selectedIndex) { dialog, which ->
+                    val target = memberships[which]
+                    dialog.dismiss()
+                    if (target.farmId == currentFarmId) return@setSingleChoiceItems
+                    lifecycleScope.launch(Dispatchers.IO) {
+                        try {
+                            firebaseRepo.switchActiveFarm(target.farmId)
+                            withContext(Dispatchers.Main) {
+                                val intent = Intent(this@DashboardActivity, DashboardActivity::class.java)
+                                intent.putExtra("role", target.role)
+                                intent.putExtra("userIdString", userId)
+                                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                                startActivity(intent)
+                                finish()
+                            }
+                        } catch (e: Exception) {
+                            withContext(Dispatchers.Main) {
+                                Toast.makeText(this@DashboardActivity, e.message ?: "Erreur", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    }
+                }
+                .setNegativeButton("Annuler", null)
+                .show()
+        }
+    }
+
+    private val linkPhoneCountryDialOptions = listOf(
+        "🇲🇷 +222" to "+222",
+        "🇸🇳 +221" to "+221",
+        "🇲🇱 +223" to "+223",
+        "🇬🇳 +224" to "+224",
+        "🇨🇮 +225" to "+225",
+        "🇧🇯 +229" to "+229",
+        "🇹🇬 +228" to "+228",
+        "🇧🇫 +226" to "+226",
+        "🇳🇪 +227" to "+227",
+        "🇩🇿 +213" to "+213",
+        "🇦🇴 +244" to "+244",
+        "🇧🇼 +267" to "+267",
+        "🇧🇮 +257" to "+257",
+        "🇨🇻 +238" to "+238",
+        "🇨🇲 +237" to "+237",
+        "🇨🇫 +236" to "+236",
+        "🇹🇩 +235" to "+235",
+        "🇰🇲 +269" to "+269",
+        "🇨🇬 +242" to "+242",
+        "🇨🇩 +243" to "+243",
+        "🇩🇯 +253" to "+253",
+        "🇪🇬 +20" to "+20",
+        "🇬🇶 +240" to "+240",
+        "🇪🇷 +291" to "+291",
+        "🇸🇿 +268" to "+268",
+        "🇪🇹 +251" to "+251",
+        "🇬🇦 +241" to "+241",
+        "🇬🇲 +220" to "+220",
+        "🇬🇭 +233" to "+233",
+        "🇬🇼 +245" to "+245",
+        "🇰🇪 +254" to "+254",
+        "🇱🇸 +266" to "+266",
+        "🇱🇷 +231" to "+231",
+        "🇱🇾 +218" to "+218",
+        "🇲🇬 +261" to "+261",
+        "🇲🇼 +265" to "+265",
+        "🇲🇺 +230" to "+230",
+        "🇲🇦 +212" to "+212",
+        "🇲🇿 +258" to "+258",
+        "🇳🇦 +264" to "+264",
+        "🇳🇬 +234" to "+234",
+        "🇷🇼 +250" to "+250",
+        "🇸🇹 +239" to "+239",
+        "🇸🇨 +248" to "+248",
+        "🇸🇱 +232" to "+232",
+        "🇸🇴 +252" to "+252",
+        "🇿🇦 +27" to "+27",
+        "🇸🇸 +211" to "+211",
+        "🇸🇩 +249" to "+249",
+        "🇹🇿 +255" to "+255",
+        "🇹🇳 +216" to "+216",
+        "🇺🇬 +256" to "+256",
+        "🇿🇲 +260" to "+260",
+        "🇿🇼 +263" to "+263",
+        "🇨🇭 +41" to "+41",
+        "🇫🇷 +33" to "+33"
+    )
+
+    /**
+     * Permet à un utilisateur créé par email (sans numéro) de lier un numéro vérifié par SMS
+     * à son compte, pour pouvoir aussi se connecter par téléphone à l'avenir (voir
+     * FirebaseRepository.linkPhoneToCurrentAccount et nav_link_phone).
+     */
+    private fun showLinkPhoneDialog() {
+        val dialogBinding = DialogLinkPhoneBinding.inflate(layoutInflater)
+        val dialog = AlertDialog.Builder(this).setView(dialogBinding.root).create()
+
+        val codeAdapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, linkPhoneCountryDialOptions.map { it.first })
+        dialogBinding.actvLinkCountryCode.setAdapter(codeAdapter)
+        dialogBinding.actvLinkCountryCode.setText(linkPhoneCountryDialOptions[0].first, false)
+
+        var pendingPhone: String? = null
+
+        fun onPhoneLinked() {
+            hasPhoneNumber = true
+            updateUIBasedOnRole()
+            dialog.dismiss()
+        }
+
+        dialogBinding.btnLinkSendCode.setOnClickListener {
+            val dialCode = linkPhoneCountryDialOptions.find { it.first == dialogBinding.actvLinkCountryCode.text.toString() }?.second
+                ?: linkPhoneCountryDialOptions[0].second
+            val digits = dialogBinding.etLinkPhone.text.toString().filter { it.isDigit() }
+            if (digits.isEmpty()) {
+                Toast.makeText(this, "Numéro de téléphone requis", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            val phone = "$dialCode$digits"
+            pendingPhone = phone
+            dialogBinding.btnLinkSendCode.isEnabled = false
+            loginVm.startPhoneVerification(
+                activity = this,
+                phoneNumber = phone,
+                onCodeSent = {
+                    runOnUiThread {
+                        dialogBinding.btnLinkSendCode.isEnabled = true
+                        dialogBinding.layoutLinkOtpSection.visibility = View.VISIBLE
+                        dialogBinding.tvLinkOtpSentTo.text = "Code envoyé au $phone"
+                        Toast.makeText(this, "Code SMS envoyé", Toast.LENGTH_SHORT).show()
+                    }
+                },
+                onAutoVerified = { credential ->
+                    runOnUiThread { dialogBinding.btnLinkSendCode.isEnabled = true }
+                    lifecycleScope.launch(Dispatchers.IO) {
+                        try {
+                            firebaseRepo.linkPhoneToCurrentAccount(credential, phone)
+                            withContext(Dispatchers.Main) {
+                                Toast.makeText(this@DashboardActivity, "Numéro lié avec succès !", Toast.LENGTH_SHORT).show()
+                                onPhoneLinked()
+                            }
+                        } catch (e: Exception) {
+                            withContext(Dispatchers.Main) {
+                                Toast.makeText(this@DashboardActivity, e.message ?: "Erreur", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    }
+                },
+                onFailed = { message ->
+                    runOnUiThread {
+                        dialogBinding.btnLinkSendCode.isEnabled = true
+                        Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+                    }
+                }
+            )
+        }
+
+        dialogBinding.btnLinkVerifyCode.setOnClickListener {
+            val phone = pendingPhone
+            val code = dialogBinding.etLinkOtpCode.text.toString().trim()
+            if (phone == null) {
+                Toast.makeText(this, "Redemandez un code.", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            if (code.isEmpty()) {
+                Toast.makeText(this, "Code requis", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            loginVm.verifyOtpForLinking(code, phone) { success, message ->
+                runOnUiThread {
+                    Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+                    if (success) onPhoneLinked()
+                }
+            }
+        }
+
+        dialog.show()
     }
 
     override fun onResume() {

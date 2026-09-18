@@ -5,22 +5,15 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
 import com.hadietou.poulailler.repository.FirebaseRepository
-import com.hadietou.poulailler.util.PasswordHasher
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
 
 class ResponsableViewModel(application: Application) : AndroidViewModel(application) {
 
     private val firebaseRepo = FirebaseRepository()
-    private val db = FirebaseFirestore.getInstance()
 
     val agents = MutableLiveData<List<Map<String, Any>>>()
     val loginHistory = MutableLiveData<List<Map<String, Any>>>()
-    val farmCode = MutableLiveData<String>()
-    val farmName = MutableLiveData<String>()
     val createAgentStatus = MutableLiveData<Pair<Boolean, String>>()
     val isUserPending = MutableLiveData<Boolean>(true)
     val isAccessBlocked = MutableLiveData<Boolean>(false)
@@ -53,16 +46,6 @@ class ResponsableViewModel(application: Application) : AndroidViewModel(applicat
         }
     }
 
-    fun loadFarmCode() {
-        viewModelScope.launch {
-            val code = firebaseRepo.getFarmCode()
-            farmCode.postValue(code ?: "------")
-            
-            val info = firebaseRepo.getFarmInfo()
-            farmName.postValue(info?.farmName ?: "ferme")
-        }
-    }
-
     fun checkUserStatus() {
         viewModelScope.launch {
             val profile = firebaseRepo.getCurrentUserProfile()
@@ -83,44 +66,4 @@ class ResponsableViewModel(application: Application) : AndroidViewModel(applicat
         }
     }
 
-    fun createAgentSimplified(agentName: String, onComplete: (String, String) -> Unit) {
-        viewModelScope.launch {
-            try {
-                // Vérification du blocage avant création
-                if (firebaseRepo.isFarmAccessBlocked()) {
-                    createAgentStatus.postValue(Pair(false, "Action impossible : Votre ferme doit être validée pour continuer."))
-                    return@launch
-                }
-
-                val currentFarmName = farmName.value?.replace(" ", "_")?.lowercase() ?: "ferme"
-                val cleanAgentName = agentName.replace(" ", "_").lowercase()
-                val login = "${cleanAgentName}@${currentFarmName}.com"
-                
-                val password = (100000..999999).random().toString()
-
-                val fId = firebaseRepo.getFarmId() ?: throw Exception("ID de ferme non trouvé")
-
-                val agentData = hashMapOf(
-                    "username" to agentName,
-                    "email" to login,
-                    // Jamais en clair dans Firestore : seul le haché est stocké, le mot de
-                    // passe en clair n'est renvoyé qu'une fois via onComplete() pour être
-                    // communiqué à l'agent (cf. PasswordHasher, vérifié dans
-                    // LoginViewModel.checkPreCreatedAgent lors de la première connexion).
-                    "password" to PasswordHasher.hash(password),
-                    "role" to "AGENT",
-                    "farmId" to fId,
-                    "active" to true,
-                    "isPreCreated" to true,
-                    "createdAt" to System.currentTimeMillis()
-                )
-
-                db.collection("users").document(login).set(agentData).await()
-                onComplete(login, password)
-                
-            } catch (e: Exception) {
-                createAgentStatus.postValue(Pair(false, e.message ?: "Erreur lors de la création de l'agent"))
-            }
-        }
-    }
 }

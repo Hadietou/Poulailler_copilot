@@ -53,13 +53,14 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Nom du vaccin / médicament"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
             android:layout_marginBottom="12dp"
             app:hintTextColor="@color/text_secondary"
             app:boxStrokeColor="@color/primary"
             app:startIconDrawable="@drawable/ic_add"
             app:startIconTint="@color/primary">
             <com.google.android.material.textfield.TextInputEditText
+        style="@style/Widget.App.TextInputEditText"
                 android:id="@+id/etVaccineName"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -82,11 +83,12 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Remarques"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
             android:layout_marginBottom="12dp"
             app:hintTextColor="@color/text_secondary"
             app:boxStrokeColor="@color/primary">
             <com.google.android.material.textfield.TextInputEditText
+        style="@style/Widget.App.TextInputEditText"
                 android:id="@+id/etRemarks"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -117,11 +119,12 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:hint="Fabricant"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
                 android:layout_marginBottom="12dp"
                 app:hintTextColor="@color/text_secondary"
                 app:boxStrokeColor="@color/primary">
                 <com.google.android.material.textfield.TextInputEditText
+        style="@style/Widget.App.TextInputEditText"
                     android:id="@+id/etManufacturer"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -139,10 +142,11 @@
                     android:layout_height="wrap_content"
                     android:layout_marginEnd="6dp"
                     android:hint="N° de lot"
-                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
                     app:hintTextColor="@color/text_secondary"
                     app:boxStrokeColor="@color/primary">
                     <com.google.android.material.textfield.TextInputEditText
+        style="@style/Widget.App.TextInputEditText"
                         android:id="@+id/etLotNumber"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -155,10 +159,11 @@
                     android:layout_height="wrap_content"
                     android:layout_marginStart="6dp"
                     android:hint="Dose"
-                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
                     app:hintTextColor="@color/text_secondary"
                     app:boxStrokeColor="@color/primary">
                     <com.google.android.material.textfield.TextInputEditText
+        style="@style/Widget.App.TextInputEditText"
                         android:id="@+id/etDose"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -206,10 +211,11 @@
                     android:layout_height="wrap_content"
                     android:layout_marginEnd="6dp"
                     android:hint="Effectif vacciné"
-                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
                     app:hintTextColor="@color/text_secondary"
                     app:boxStrokeColor="@color/primary">
                     <com.google.android.material.textfield.TextInputEditText
+        style="@style/Widget.App.TextInputEditText"
                         android:id="@+id/etTargetCount"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -223,10 +229,11 @@
                     android:layout_height="wrap_content"
                     android:layout_marginStart="6dp"
                     android:hint="Effectué par"
-                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
                     app:hintTextColor="@color/text_secondary"
                     app:boxStrokeColor="@color/primary">
                     <com.google.android.material.textfield.TextInputEditText
+        style="@style/Widget.App.TextInputEditText"
                         android:id="@+id/etAdministeredBy"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"

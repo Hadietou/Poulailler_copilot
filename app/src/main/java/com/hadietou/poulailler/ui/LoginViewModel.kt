@@ -1,21 +1,40 @@
 package com.hadietou.poulailler.ui
 
+import android.app.Activity
 import android.app.Application
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.hadietou.poulailler.repository.FirebaseRepository
 import com.hadietou.poulailler.util.PasswordHasher
+import com.google.firebase.FirebaseException
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.PhoneAuthCredential
+import com.google.firebase.auth.PhoneAuthOptions
+import com.google.firebase.auth.PhoneAuthProvider
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
+import java.util.concurrent.TimeUnit
 
 class LoginViewModel(application: Application) : AndroidViewModel(application) {
 
     private val auth = FirebaseAuth.getInstance()
     private val db = FirebaseFirestore.getInstance()
     private val firebaseRepo = FirebaseRepository()
+
+    // État de la vérification SMS en cours (voir startPhoneVerification / verifyOtpForSignup).
+    private var verificationId: String? = null
+
+    /**
+     * Ce numéro tenait-il déjà un compte avant cette vérification, ou vient-il d'être créé ?
+     * Un compte téléphone n'a pas de mot de passe : se reconnecter plus tard repasse par ce
+     * même écran d'inscription (un nouveau code SMS, jamais un mot de passe) — ce indicateur
+     * sert à adapter le message affiché après coup (LoginActivity) plutôt que de prétendre à
+     * tort qu'un nouveau compte est créé à chaque connexion.
+     */
+    var lastPhoneLoginWasNewAccount: Boolean = false
+        private set
 
     /**
      * Reprend automatiquement une session Firebase déjà active (ex: après une simple
@@ -134,35 +153,99 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun register(
-        emailInput: String, 
-        password: String, 
-        username: String, 
-        role: String, 
-        farmName: String, 
-        farmCode: String, 
-        currency: String = "MRU", 
-        country: String? = null,
-        city: String? = null,
-        onResult: (Boolean, String) -> Unit
+    // ── Inscription par numéro de téléphone (nouveau parcours) ──────────────────────────
+    // Voir la note d'architecture dans FirebaseRepository : le numéro de téléphone, vérifié
+    // par SMS, est désormais l'identifiant des nouveaux comptes. Contrairement à l'ancienne
+    // inscription par email, aucun mot de passe n'est demandé ici — la preuve de possession
+    // du numéro (code SMS) tient lieu d'authentification, comme le veut Firebase Phone Auth.
+
+    /**
+     * Démarre la vérification SMS pour [phoneNumber] (format E.164, ex: "+22212345678").
+     * [onAutoVerified] peut être appelé directement sur certains appareils (récupération
+     * automatique du SMS par Google Play Services), sans même passer par [onCodeSent].
+     */
+    fun startPhoneVerification(
+        activity: Activity,
+        phoneNumber: String,
+        onCodeSent: () -> Unit,
+        onAutoVerified: (PhoneAuthCredential) -> Unit,
+        onFailed: (String) -> Unit
     ) {
-        val email = emailInput.trim().lowercase()
+        val options = PhoneAuthOptions.newBuilder(auth)
+            .setPhoneNumber(phoneNumber)
+            .setTimeout(60L, TimeUnit.SECONDS)
+            .setActivity(activity)
+            .setCallbacks(object : PhoneAuthProvider.OnVerificationStateChangedCallbacks() {
+                override fun onVerificationCompleted(credential: PhoneAuthCredential) {
+                    onAutoVerified(credential)
+                }
+                override fun onVerificationFailed(e: FirebaseException) {
+                    Log.e("LoginVM", "Phone verification failed", e)
+                    onFailed(e.message ?: "Échec de la vérification du numéro.")
+                }
+                override fun onCodeSent(id: String, token: PhoneAuthProvider.ForceResendingToken) {
+                    verificationId = id
+                    onCodeSent()
+                }
+            })
+            .build()
+        PhoneAuthProvider.verifyPhoneNumber(options)
+    }
+
+    /** À appeler une fois le code SMS saisi par l'utilisateur, pour finaliser l'inscription. */
+    fun verifyOtpForSignup(code: String, username: String, phoneNumber: String, email: String?, onResult: (Boolean, String, String) -> Unit) {
+        val vId = verificationId
+        if (vId == null) {
+            onResult(false, "Session expirée, redemandez un code.", "")
+            return
+        }
+        signInWithPhoneCredential(PhoneAuthProvider.getCredential(vId, code), username, phoneNumber, email, onResult)
+    }
+
+    /** Cas de récupération automatique du SMS (pas de saisie manuelle du code nécessaire). */
+    fun signUpWithAutoVerifiedCredential(credential: PhoneAuthCredential, username: String, phoneNumber: String, email: String?, onResult: (Boolean, String, String) -> Unit) {
+        signInWithPhoneCredential(credential, username, phoneNumber, email, onResult)
+    }
+
+    private fun signInWithPhoneCredential(credential: PhoneAuthCredential, username: String, phoneNumber: String, email: String?, onResult: (Boolean, String, String) -> Unit) {
         viewModelScope.launch {
             try {
-                val result = auth.createUserWithEmailAndPassword(email, password).await()
-                val uid = result.user?.uid
-                if (uid != null) {
-                    if (role == "RESPONSABLE") {
-                        val code = firebaseRepo.createFarmExtended(farmName, currency, username, email, country, city)
-                        onResult(true, "Ferme créée ! Code : $code")
-                    } else {
-                        if (firebaseRepo.joinFarm(farmCode)) {
-                            firebaseRepo.createUserProfile(uid, username, email, "AGENT")
-                            onResult(true, "Compte lié !")
-                        } else onResult(false, "Code ferme invalide")
+                val result = auth.signInWithCredential(credential).await()
+                val user = result.user
+                if (user != null) {
+                    val existing = firebaseRepo.getUserProfile(user.uid)
+                    lastPhoneLoginWasNewAccount = existing == null
+                    if (existing == null) {
+                        firebaseRepo.createMinimalUserProfile(user.uid, username, phoneNumber, email)
                     }
-                }
-            } catch (e: Exception) { onResult(false, e.message ?: "Erreur") }
+                    handleSuccessfulAuth(user.uid, existing?.email ?: "", onResult)
+                } else onResult(false, "Erreur de connexion", "")
+            } catch (e: Exception) {
+                Log.e("LoginVM", "Phone sign-in error", e)
+                onResult(false, e.message ?: "Code invalide.", "")
+            }
+        }
+    }
+
+    /**
+     * Lie le numéro vérifié au compte ACTUELLEMENT connecté (voir
+     * [FirebaseRepository.linkPhoneToCurrentAccount]) : permet à un utilisateur existant
+     * (créé par email) de se connecter désormais aussi par téléphone, sans perdre ses données.
+     */
+    fun verifyOtpForLinking(code: String, phoneNumber: String, onResult: (Boolean, String) -> Unit) {
+        val vId = verificationId
+        if (vId == null) {
+            onResult(false, "Session expirée, redemandez un code.")
+            return
+        }
+        viewModelScope.launch {
+            try {
+                firebaseRepo.linkPhoneToCurrentAccount(PhoneAuthProvider.getCredential(vId, code), phoneNumber)
+                onResult(true, "Numéro de téléphone ajouté à votre compte.")
+            } catch (e: Exception) {
+                Log.e("LoginVM", "Phone linking error", e)
+                onResult(false, e.message ?: "Erreur lors de la liaison du numéro.")
+            }
         }
     }
 }

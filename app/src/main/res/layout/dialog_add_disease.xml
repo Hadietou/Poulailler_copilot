@@ -55,13 +55,14 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Maladie suspectée (optionnel)"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
             android:layout_marginBottom="12dp"
             app:hintTextColor="@color/text_secondary"
             app:boxStrokeColor="@color/primary"
             app:startIconDrawable="@drawable/ic_disease"
             app:startIconTint="@color/primary">
             <com.google.android.material.textfield.TextInputEditText
+        style="@style/Widget.App.TextInputEditText"
                 android:id="@+id/etSuspectedDisease"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -121,10 +122,11 @@
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="6dp"
                 android:hint="Effectif concerné"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
                 app:hintTextColor="@color/text_secondary"
                 app:boxStrokeColor="@color/primary">
                 <com.google.android.material.textfield.TextInputEditText
+        style="@style/Widget.App.TextInputEditText"
                     android:id="@+id/etAffectedCount"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -138,10 +140,11 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="6dp"
                 android:hint="Effectif mort"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
                 app:hintTextColor="@color/text_secondary"
                 app:boxStrokeColor="@color/primary">
                 <com.google.android.material.textfield.TextInputEditText
+        style="@style/Widget.App.TextInputEditText"
                     android:id="@+id/etDeathCount"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -154,11 +157,12 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Zone / bâtiment (optionnel)"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
             android:layout_marginBottom="12dp"
             app:hintTextColor="@color/text_secondary"
             app:boxStrokeColor="@color/primary">
             <com.google.android.material.textfield.TextInputEditText
+        style="@style/Widget.App.TextInputEditText"
                 android:id="@+id/etDiseaseZone"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -169,11 +173,12 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Observations (optionnel)"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
             android:layout_marginBottom="12dp"
             app:hintTextColor="@color/text_secondary"
             app:boxStrokeColor="@color/primary">
             <com.google.android.material.textfield.TextInputEditText
+        style="@style/Widget.App.TextInputEditText"
                 android:id="@+id/etObserverNotes"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -184,11 +189,12 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Diagnostic vétérinaire (optionnel)"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
             android:layout_marginBottom="12dp"
             app:hintTextColor="@color/text_secondary"
             app:boxStrokeColor="@color/primary">
             <com.google.android.material.textfield.TextInputEditText
+        style="@style/Widget.App.TextInputEditText"
                 android:id="@+id/etVetDiagnosis"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -199,11 +205,12 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Mesures prises (optionnel)"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
             android:layout_marginBottom="24dp"
             app:hintTextColor="@color/text_secondary"
             app:boxStrokeColor="@color/primary">
             <com.google.android.material.textfield.TextInputEditText
+        style="@style/Widget.App.TextInputEditText"
                 android:id="@+id/etActionsTaken"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"

@@ -161,7 +161,7 @@
                                 app:cardElevation="0dp">
                                 <LinearLayout android:layout_width="wrap_content" android:layout_height="36dp" android:paddingHorizontal="10dp" android:gravity="center_vertical">
                                     <ImageView android:layout_width="14dp" android:layout_height="14dp" android:src="@drawable/ic_feed" app:tint="@color/white" />
-                                    <TextView android:id="@+id/tvFeedStockCircleValue" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="6dp" android:textColor="@color/white" android:textSize="11sp" android:textStyle="bold" tools:text="Stock : 12j" />
+                                    <TextView android:id="@+id/tvFeedStockCircleValue" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="6dp" android:textColor="@color/white" android:textSize="11sp" android:textStyle="bold" tools:text="Aliment : 12j" />
                                 </LinearLayout>
                             </com.google.android.material.card.MaterialCardView>
 

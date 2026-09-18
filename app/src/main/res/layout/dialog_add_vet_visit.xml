@@ -36,11 +36,12 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Nom du vétérinaire"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
             android:layout_marginBottom="12dp"
             app:hintTextColor="@color/text_secondary"
             app:boxStrokeColor="@color/primary">
             <com.google.android.material.textfield.TextInputEditText
+        style="@style/Widget.App.TextInputEditText"
                 android:id="@+id/etVetName"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -63,11 +64,12 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Motif (optionnel)"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
             android:layout_marginBottom="12dp"
             app:hintTextColor="@color/text_secondary"
             app:boxStrokeColor="@color/primary">
             <com.google.android.material.textfield.TextInputEditText
+        style="@style/Widget.App.TextInputEditText"
                 android:id="@+id/etVetReason"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -78,11 +80,12 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Observations (optionnel)"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
             android:layout_marginBottom="12dp"
             app:hintTextColor="@color/text_secondary"
             app:boxStrokeColor="@color/primary">
             <com.google.android.material.textfield.TextInputEditText
+        style="@style/Widget.App.TextInputEditText"
                 android:id="@+id/etVetObservations"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -93,11 +96,12 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Diagnostic (optionnel)"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
             android:layout_marginBottom="12dp"
             app:hintTextColor="@color/text_secondary"
             app:boxStrokeColor="@color/primary">
             <com.google.android.material.textfield.TextInputEditText
+        style="@style/Widget.App.TextInputEditText"
                 android:id="@+id/etVetDiagnosis"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -108,11 +112,12 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Recommandations (optionnel)"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
             android:layout_marginBottom="12dp"
             app:hintTextColor="@color/text_secondary"
             app:boxStrokeColor="@color/primary">
             <com.google.android.material.textfield.TextInputEditText
+        style="@style/Widget.App.TextInputEditText"
                 android:id="@+id/etVetRecommendations"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -123,11 +128,12 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Vaccinations réalisées (optionnel)"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
             android:layout_marginBottom="12dp"
             app:hintTextColor="@color/text_secondary"
             app:boxStrokeColor="@color/primary">
             <com.google.android.material.textfield.TextInputEditText
+        style="@style/Widget.App.TextInputEditText"
                 android:id="@+id/etVetVaccinations"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -138,11 +144,12 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Analyses demandées (optionnel)"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
             android:layout_marginBottom="12dp"
             app:hintTextColor="@color/text_secondary"
             app:boxStrokeColor="@color/primary">
             <com.google.android.material.textfield.TextInputEditText
+        style="@style/Widget.App.TextInputEditText"
                 android:id="@+id/etVetAnalyses"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"

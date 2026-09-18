@@ -203,15 +203,19 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
 
     private fun addVitaminReminder(batchId: String, title: String, desc: String) {
         viewModelScope.launch {
-            val existing = allReminders.value?.find { it.title == title && it.batchId == batchId && !it.isDone }
-            if (existing == null) {
-                firebaseRepo.addHealthReminder(HealthReminder(
-                    type = "VITAMINE",
-                    title = title,
-                    description = desc,
-                    dueDate = System.currentTimeMillis(),
-                    batchId = batchId
-                ))
+            try {
+                val existing = allReminders.value?.find { it.title == title && it.batchId == batchId && !it.isDone }
+                if (existing == null) {
+                    firebaseRepo.addHealthReminder(HealthReminder(
+                        type = "VITAMINE",
+                        title = title,
+                        description = desc,
+                        dueDate = System.currentTimeMillis(),
+                        batchId = batchId
+                    ))
+                }
+            } catch (e: Exception) {
+                Log.e("DashboardVM", "Error adding vitamin reminder", e)
             }
         }
     }

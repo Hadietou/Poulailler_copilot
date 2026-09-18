@@ -7,6 +7,7 @@ import android.view.LayoutInflater
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ArrayAdapter
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.viewModels
@@ -45,6 +46,65 @@ class ResponsableActivity : AppCompatActivity(), NavigationView.OnNavigationItem
     
     private val drawerSubmenus = DrawerSubmenuController()
 
+    private val countryDialOptions = listOf(
+        "🇲🇷 +222" to "+222",
+        "🇸🇳 +221" to "+221",
+        "🇲🇱 +223" to "+223",
+        "🇬🇳 +224" to "+224",
+        "🇨🇮 +225" to "+225",
+        "🇧🇯 +229" to "+229",
+        "🇹🇬 +228" to "+228",
+        "🇧🇫 +226" to "+226",
+        "🇳🇪 +227" to "+227",
+        "🇩🇿 +213" to "+213",
+        "🇦🇴 +244" to "+244",
+        "🇧🇼 +267" to "+267",
+        "🇧🇮 +257" to "+257",
+        "🇨🇻 +238" to "+238",
+        "🇨🇲 +237" to "+237",
+        "🇨🇫 +236" to "+236",
+        "🇹🇩 +235" to "+235",
+        "🇰🇲 +269" to "+269",
+        "🇨🇬 +242" to "+242",
+        "🇨🇩 +243" to "+243",
+        "🇩🇯 +253" to "+253",
+        "🇪🇬 +20" to "+20",
+        "🇬🇶 +240" to "+240",
+        "🇪🇷 +291" to "+291",
+        "🇸🇿 +268" to "+268",
+        "🇪🇹 +251" to "+251",
+        "🇬🇦 +241" to "+241",
+        "🇬🇲 +220" to "+220",
+        "🇬🇭 +233" to "+233",
+        "🇬🇼 +245" to "+245",
+        "🇰🇪 +254" to "+254",
+        "🇱🇸 +266" to "+266",
+        "🇱🇷 +231" to "+231",
+        "🇱🇾 +218" to "+218",
+        "🇲🇬 +261" to "+261",
+        "🇲🇼 +265" to "+265",
+        "🇲🇺 +230" to "+230",
+        "🇲🇦 +212" to "+212",
+        "🇲🇿 +258" to "+258",
+        "🇳🇦 +264" to "+264",
+        "🇳🇬 +234" to "+234",
+        "🇷🇼 +250" to "+250",
+        "🇸🇹 +239" to "+239",
+        "🇸🇨 +248" to "+248",
+        "🇸🇱 +232" to "+232",
+        "🇸🇴 +252" to "+252",
+        "🇿🇦 +27" to "+27",
+        "🇸🇸 +211" to "+211",
+        "🇸🇩 +249" to "+249",
+        "🇹🇿 +255" to "+255",
+        "🇹🇳 +216" to "+216",
+        "🇺🇬 +256" to "+256",
+        "🇿🇲 +260" to "+260",
+        "🇿🇼 +263" to "+263",
+        "🇨🇭 +41" to "+41",
+        "🇫🇷 +33" to "+33"
+    )
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityResponsableBinding.inflate(layoutInflater)
@@ -58,27 +118,63 @@ class ResponsableActivity : AppCompatActivity(), NavigationView.OnNavigationItem
         setupRecyclerViews()
         observeViewModel()
         setupClickListeners()
+        setupDropdowns()
 
         vm.observeAgents()
         vm.observeLoginHistory()
-        vm.loadFarmCode()
         vm.checkUserStatus()
     }
 
+    private fun setupDropdowns() {
+        val codeAdapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, countryDialOptions.map { it.first })
+        binding.actvAgentCountryCode.setAdapter(codeAdapter)
+        binding.actvAgentCountryCode.setText(countryDialOptions[0].first, false)
+    }
+
+    /**
+     * Remplace l'ancien mécanisme d'identifiants pré-créés par une invitation adressée au
+     * numéro de téléphone de l'agent (voir la note d'architecture dans FirebaseRepository) :
+     * l'agent installe l'app, crée son compte avec ce numéro, et voit l'invitation dès qu'il
+     * se connecte — que le message WhatsApp ait été lu ou non.
+     */
     private fun setupClickListeners() {
         binding.btnCreateAgent.setOnClickListener {
             if (isBlocked) { showBlockingDialog(); return@setOnClickListener }
-            
+
             val name = binding.etAgentName.text.toString().trim()
             if (name.isEmpty()) {
                 Toast.makeText(this, "Veuillez saisir le nom de l'agent", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
+            val dialCode = countryDialOptions.find { it.first == binding.actvAgentCountryCode.text.toString() }?.second
+                ?: countryDialOptions[0].second
+            val digits = binding.etAgentPhone.text.toString().filter { it.isDigit() }
+            if (digits.isEmpty()) {
+                Toast.makeText(this, "Veuillez saisir le numéro de téléphone de l'agent", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            val phoneNumber = "$dialCode$digits"
 
-            vm.createAgentSimplified(name) { login, pass ->
-                firebaseRepo.shareAgentCredentials(this, login, pass)
-                binding.etAgentName.setText("")
-                Toast.makeText(this, "Identifiants générés et prêts à être partagés", Toast.LENGTH_LONG).show()
+            lifecycleScope.launch(Dispatchers.IO) {
+                try {
+                    val invitation = firebaseRepo.createInvitation(phoneNumber)
+                    withContext(Dispatchers.Main) {
+                        binding.etAgentName.setText("")
+                        binding.etAgentPhone.setText("")
+                        AlertDialog.Builder(this@ResponsableActivity)
+                            .setTitle("Invitation ajoutée")
+                            .setMessage("L'agent verra l'invitation dès qu'il se connecte à l'application. Voulez-vous aussi la lui envoyer par WhatsApp ?")
+                            .setPositiveButton("Envoyer par WhatsApp") { _, _ ->
+                                startActivity(firebaseRepo.buildWhatsAppInviteIntent(phoneNumber, invitation.farmName))
+                            }
+                            .setNegativeButton("Non, merci", null)
+                            .show()
+                    }
+                } catch (e: Exception) {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(this@ResponsableActivity, e.message ?: "Erreur", Toast.LENGTH_SHORT).show()
+                    }
+                }
             }
         }
     }
@@ -173,10 +269,6 @@ class ResponsableActivity : AppCompatActivity(), NavigationView.OnNavigationItem
         vm.loginHistory.observe(this) { list ->
             val filteredList = list.take(10)
             binding.rvLoginHistory.adapter = LoginHistoryAdapter(filteredList)
-        }
-
-        vm.farmCode.observe(this) { code ->
-            binding.tvFarmCode.text = code
         }
 
         vm.isUserPending.observe(this) { isPending ->

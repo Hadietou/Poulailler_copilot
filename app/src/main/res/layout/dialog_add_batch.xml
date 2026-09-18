@@ -53,8 +53,9 @@
                 android:hint="Nom du lot (ex: Janvier 2024)"
                 app:hintTextColor="@color/text_secondary"
                 app:boxStrokeColor="@color/primary"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense">
                 <com.google.android.material.textfield.TextInputEditText
+        style="@style/Widget.App.TextInputEditText"
                     android:id="@+id/etBatchName"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -69,8 +70,9 @@
                 android:hint="Nombre de sujets initial"
                 app:hintTextColor="@color/text_secondary"
                 app:boxStrokeColor="@color/primary"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense">
                 <com.google.android.material.textfield.TextInputEditText
+        style="@style/Widget.App.TextInputEditText"
                     android:id="@+id/etHensCount"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -101,8 +103,9 @@
                 android:hint="Nom prenom du fournisseur"
                 app:hintTextColor="@color/text_secondary"
                 app:boxStrokeColor="@color/primary"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense">
                 <com.google.android.material.textfield.TextInputEditText
+        style="@style/Widget.App.TextInputEditText"
                     android:id="@+id/etProviderName"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -117,8 +120,9 @@
                 android:hint="Téléphone du fournisseur"
                 app:hintTextColor="@color/text_secondary"
                 app:boxStrokeColor="@color/primary"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense">
                 <com.google.android.material.textfield.TextInputEditText
+        style="@style/Widget.App.TextInputEditText"
                     android:id="@+id/etProviderPhone"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -133,8 +137,9 @@
                 android:hint="Date d'arrivée"
                 app:hintTextColor="@color/text_secondary"
                 app:boxStrokeColor="@color/primary"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense">
                 <com.google.android.material.textfield.TextInputEditText
+        style="@style/Widget.App.TextInputEditText"
                     android:id="@+id/etArrivalDate"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -150,8 +155,9 @@
                 android:hint="Age (Date de naissance poussins)"
                 app:hintTextColor="@color/text_secondary"
                 app:boxStrokeColor="@color/primary"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense">
                 <com.google.android.material.textfield.TextInputEditText
+        style="@style/Widget.App.TextInputEditText"
                     android:id="@+id/etBirthDate"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"

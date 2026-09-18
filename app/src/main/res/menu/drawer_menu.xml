@@ -94,6 +94,20 @@
             android:icon="@drawable/ic_users"
             android:title="Gestion des comptes" />
         <item
+            android:id="@+id/nav_create_own_farm"
+            android:icon="@drawable/ic_batches"
+            android:title="🚜 Créer ma propre ferme" />
+        <item
+            android:id="@+id/nav_switch_farm"
+            android:icon="@drawable/ic_batches"
+            android:visible="false"
+            android:title="🔀 Changer de ferme" />
+        <item
+            android:id="@+id/nav_link_phone"
+            android:icon="@drawable/ic_users"
+            android:visible="false"
+            android:title="📱 Lier mon numéro de téléphone" />
+        <item
             android:id="@+id/nav_delete_account"
             android:icon="@drawable/ic_delete_account"
             android:title="Supprimer mon compte" />

@@ -38,10 +38,11 @@
                 android:layout_weight="1"
                 android:layout_height="wrap_content"
                 android:hint="Rechercher une localité"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
                 app:hintTextColor="@color/white"
                 app:boxStrokeColor="@color/white">
                 <com.google.android.material.textfield.TextInputEditText
+        style="@style/Widget.App.TextInputEditText"
                     android:id="@+id/etSearchLocality"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"

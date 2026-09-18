@@ -29,6 +29,12 @@
         <item name="materialCardViewStyle">@style/Widget.App.CardView</item>
         <item name="shapeAppearanceLargeComponent">@style/ShapeAppearance.App.LargeComponent</item>
 
+        <!-- Champs de saisie moins hauts (variante "Dense" de Material Components) : appliqué
+             ici plutôt que sur chaque champ, car aucun champ de l'app ne redéfinit son style
+             explicitement (seuls les TextInputLayout parents le font). -->
+        <item name="editTextStyle">@style/Widget.App.TextInputEditText</item>
+        <item name="textInputStyle">@style/Widget.App.TextInputLayout</item>
+
         <!-- Dialog themes -->
         <item name="materialAlertDialogTheme">@style/ThemeOverlay.App.MaterialAlertDialog</item>
         <item name="alertDialogTheme">@style/ThemeOverlay.App.MaterialAlertDialog</item>
@@ -51,4 +57,12 @@
         <item name="cornerFamily">rounded</item>
         <item name="cornerSize">16dp</item>
     </style>
+
+    <style name="Widget.App.TextInputEditText" parent="Widget.MaterialComponents.TextInputEditText.OutlinedBox.Dense">
+        <item name="android:paddingTop">8dp</item>
+        <item name="android:paddingBottom">8dp</item>
+        <item name="android:minHeight">0dp</item>
+    </style>
+
+    <style name="Widget.App.TextInputLayout" parent="Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense" />
 </resources>

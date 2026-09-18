@@ -22,7 +22,7 @@ class DrawerSubmenuController(initiallyExpanded: Submenu? = null) {
         /** Ids des items de sous-menu (toutes sections confondues), pour NavMenuStyler.style(). */
         val CHILD_ITEM_IDS = listOf(
             R.id.nav_collect, R.id.nav_sales, R.id.nav_vaccines, R.id.nav_mortality, R.id.nav_treatments, R.id.nav_diseases,
-            R.id.nav_users, R.id.nav_delete_account, R.id.nav_logout
+            R.id.nav_users, R.id.nav_create_own_farm, R.id.nav_switch_farm, R.id.nav_link_phone, R.id.nav_delete_account, R.id.nav_logout
         )
         private val ALL = Submenu.values()
     }

@@ -43,13 +43,14 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Total œufs pondus (Sains + Cassés)"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
             android:layout_marginBottom="12dp"
             app:hintTextColor="@color/text_secondary"
             app:boxStrokeColor="@color/primary"
             app:startIconDrawable="@drawable/ic_add"
             app:startIconTint="@color/primary">
             <com.google.android.material.textfield.TextInputEditText
+        style="@style/Widget.App.TextInputEditText"
                 android:id="@+id/etEggsCount"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -61,13 +62,14 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Nombre d'œufs cassés (déjà inclus dans le total)"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
             android:layout_marginBottom="12dp"
             app:hintTextColor="@color/text_secondary"
             app:boxStrokeColor="@color/primary"
             app:startIconDrawable="@drawable/ic_delete"
             app:startIconTint="@color/error">
             <com.google.android.material.textfield.TextInputEditText
+        style="@style/Widget.App.TextInputEditText"
                 android:id="@+id/etBrokenEggsCount"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -79,11 +81,12 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Remarques (poules malades, etc.)"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
             android:layout_marginBottom="24dp"
             app:hintTextColor="@color/text_secondary"
             app:boxStrokeColor="@color/primary">
             <com.google.android.material.textfield.TextInputEditText
+        style="@style/Widget.App.TextInputEditText"
                 android:id="@+id/etRemarks"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"

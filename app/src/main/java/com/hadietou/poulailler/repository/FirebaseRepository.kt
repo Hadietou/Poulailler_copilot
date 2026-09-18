@@ -2,8 +2,11 @@ package com.hadietou.poulailler.repository
 
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.util.Log
 import com.hadietou.poulailler.data.*
+import com.hadietou.poulailler.demo.DemoData
+import com.hadietou.poulailler.demo.DemoMode
 import com.hadietou.poulailler.network.*
 import com.hadietou.poulailler.BuildConfig
 import com.google.firebase.auth.FirebaseAuth
@@ -28,9 +31,10 @@ class FirebaseRepository {
     }
 
     suspend fun getFarmId(): String? {
+        if (DemoMode.enabled) return DemoData.FARM_ID
         val current = _farmIdFlow.value
         if (current != null) return current
-        
+
         val uid = auth.currentUser?.uid ?: return null
         return try {
             val userDoc = db.collection("users").document(uid).get().await()
@@ -92,11 +96,54 @@ class FirebaseRepository {
             "createdAt" to System.currentTimeMillis()
         )
         db.collection("users").document(uid).set(userData, SetOptions.merge()).await()
+        addOrUpdateMembership(uid, farmId, farmName, "RESPONSABLE")
 
         sendValidationEmailViaBrevo(farmName, uid, email, country, city)
-        
+
         _farmIdFlow.value = farmId
         return farmCode
+    }
+
+    /**
+     * Note d'architecture multi-fermes : un utilisateur peut appartenir à plusieurs fermes
+     * (ex. agent chez quelqu'un ET responsable de sa propre ferme, ou agent dans plusieurs
+     * fermes). users/{uid}.farmId/role restent la "ferme active" lue par tout le reste de
+     * l'app (aucun autre écran n'a besoin de changer) ; users/{uid}/memberships/{farmId}
+     * garde la liste complète pour le sélecteur "Changer de ferme".
+     */
+    private suspend fun addOrUpdateMembership(uid: String, farmId: String, farmName: String, role: String) {
+        db.collection("users").document(uid).collection("memberships").document(farmId).set(
+            hashMapOf("farmId" to farmId, "farmName" to farmName, "role" to role)
+        ).await()
+    }
+
+    suspend fun getMemberships(): List<Membership> {
+        if (DemoMode.enabled) return emptyList()
+        val uid = auth.currentUser?.uid ?: return emptyList()
+        return try {
+            db.collection("users").document(uid).collection("memberships").get().await().documents.mapNotNull { doc ->
+                val fId = doc.getString("farmId") ?: return@mapNotNull null
+                Membership(
+                    farmId = fId,
+                    farmName = doc.getString("farmName") ?: "",
+                    role = doc.getString("role") ?: "AGENT"
+                )
+            }
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
+    /** Bascule la ferme active vers [farmId] (doit être une ferme dont l'utilisateur est déjà membre). */
+    suspend fun switchActiveFarm(farmId: String) {
+        val uid = auth.currentUser?.uid ?: throw Exception("Non connecté")
+        val membership = db.collection("users").document(uid).collection("memberships").document(farmId).get().await()
+        val role = membership.getString("role") ?: throw Exception("Ferme introuvable")
+        db.collection("users").document(uid).set(
+            hashMapOf("farmId" to farmId, "role" to role) as Map<String, Any>,
+            SetOptions.merge()
+        ).await()
+        _farmIdFlow.value = farmId
     }
 
     private suspend fun sendValidationEmailViaBrevo(farmName: String, uid: String, email: String, country: String? = null, city: String? = null) {
@@ -250,6 +297,7 @@ class FirebaseRepository {
     }
 
     suspend fun getResponsibleEmail(): String? {
+        if (DemoMode.enabled) return null
         val fId = getFarmId() ?: run {
             Log.e("HeatAlert", "Impossible de récupérer l'ID de la ferme")
             return null
@@ -274,19 +322,12 @@ class FirebaseRepository {
         }
     }
 
-    suspend fun joinFarm(farmCode: String): Boolean {
-        val uid = auth.currentUser?.uid ?: return false
-        val farmQuery = db.collection("fermes").whereEqualTo("code", farmCode.uppercase().trim()).get().await()
-        if (farmQuery.isEmpty) return false
-        
-        val farmId = farmQuery.documents[0].id
-        val userLink = hashMapOf("farmId" to farmId, "role" to "AGENT", "active" to true)
-        db.collection("users").document(uid).set(userLink, SetOptions.merge()).await()
-        _farmIdFlow.value = farmId
-        return true
+    suspend fun getUserProfile(uid: String): User? {
+        if (DemoMode.enabled) return DemoData.users.find { it.uid == uid } ?: DemoData.currentUser
+        return getUserProfileFromFirestore(uid)
     }
 
-    suspend fun getUserProfile(uid: String): User? = try {
+    private suspend fun getUserProfileFromFirestore(uid: String): User? = try {
         val doc = db.collection("users").document(uid).get().await()
         if (doc.exists()) {
             val fId = doc.getString("farmId")
@@ -297,18 +338,23 @@ class FirebaseRepository {
                 username = doc.getString("username") ?: "Utilisateur", 
                 email = doc.getString("email") ?: "",
                 password = "", 
-                role = doc.getString("role") ?: "AGENT", 
-                active = doc.getBoolean("active") ?: true, 
+                role = doc.getString("role") ?: "AGENT",
+                active = doc.getBoolean("active") ?: true,
                 farmId = fId,
                 isPending = doc.getBoolean("isPending") ?: false,
-                createdAt = doc.getLong("createdAt") ?: 0L
+                createdAt = doc.getLong("createdAt") ?: 0L,
+                phoneNumber = doc.getString("phoneNumber")
             )
         } else null
     } catch (e: Exception) { null }
 
-    suspend fun getCurrentUserProfile(): User? = auth.currentUser?.uid?.let { getUserProfile(it) }
+    suspend fun getCurrentUserProfile(): User? {
+        if (DemoMode.enabled) return DemoData.currentUser
+        return auth.currentUser?.uid?.let { getUserProfile(it) }
+    }
 
     suspend fun isFarmAccessBlocked(): Boolean {
+        if (DemoMode.enabled) return false
         val fId = getFarmId() ?: return false
         return try {
             val farmDoc = db.collection("fermes").document(fId).get().await()
@@ -331,6 +377,7 @@ class FirebaseRepository {
     }
 
     private suspend fun checkAndThrowIfBlocked() {
+        if (DemoMode.enabled) throw Exception(DemoMode.READ_ONLY_MESSAGE)
         if (isFarmAccessBlocked()) {
             throw Exception("Accès bloqué : validation requise après 20 jours.")
         }
@@ -338,14 +385,151 @@ class FirebaseRepository {
 
     suspend fun createUserProfile(uid: String, username: String, email: String, role: String, isPending: Boolean = false) {
         val data = hashMapOf(
-            "username" to username, 
-            "email" to email, 
-            "role" to role, 
+            "username" to username,
+            "email" to email,
+            "role" to role,
             "active" to true,
             "isPending" to isPending,
             "createdAt" to System.currentTimeMillis()
         )
         db.collection("users").document(uid).set(data, SetOptions.merge()).await()
+    }
+
+    /**
+     * Profil minimal créé à l'inscription, avant toute création/adhésion de ferme (voir la
+     * note d'architecture ci-dessous) : ni [User.role] ni farmId ne sont fixés — l'utilisateur
+     * choisit ensuite, une fois connecté, de créer sa propre ferme ou d'accepter une invitation
+     * en attente pour son numéro de téléphone (voir [getPendingInvitationsFlow]).
+     *
+     * Nouveau parcours d'inscription : le numéro de téléphone est désormais l'identifiant
+     * principal des nouveaux comptes (vérifié par SMS), tandis que les comptes existants créés
+     * par email continuent de fonctionner tels quels — voir [linkPhoneToCurrentAccount] pour le
+     * rattachement d'un numéro à un compte existant sans perte de données (Firebase "account
+     * linking" : même uid, donc mêmes documents Firestore).
+     */
+    suspend fun createMinimalUserProfile(uid: String, username: String, phoneNumber: String?, email: String? = null) {
+        val data = hashMapOf<String, Any?>(
+            "username" to username,
+            "role" to User.ROLE_UNASSIGNED,
+            "active" to true,
+            "isPending" to false,
+            "createdAt" to System.currentTimeMillis(),
+            "phoneNumber" to phoneNumber,
+            "email" to email
+        )
+        db.collection("users").document(uid).set(data, SetOptions.merge()).await()
+    }
+
+    /**
+     * Associe un numéro de téléphone déjà vérifié (credential Firebase Phone Auth) au compte
+     * ACTUELLEMENT connecté, via le "account linking" natif de Firebase Auth : l'uid ne change
+     * pas, donc toutes les données Firestore existantes (ferme, lots, historique...) restent
+     * accessibles. C'est le mécanisme qui permet à un compte créé par email de se connecter
+     * ensuite avec son numéro de téléphone, sans rien perdre.
+     */
+    suspend fun linkPhoneToCurrentAccount(credential: com.google.firebase.auth.PhoneAuthCredential, phoneNumber: String) {
+        val user = auth.currentUser ?: throw Exception("Non connecté")
+        user.linkWithCredential(credential).await()
+        db.collection("users").document(user.uid).update("phoneNumber", phoneNumber).await()
+    }
+
+
+    // ── Invitations (rejoindre une ferme en tant qu'agent) ──────────────────────────────
+
+    /**
+     * Crée une invitation pour le numéro de téléphone donné à rejoindre la ferme courante.
+     * Ne fait qu'enregistrer l'invitation côté serveur : c'est [getPendingInvitationsFlow],
+     * consulté par quiconque se connecte avec ce numéro, qui la rend visible — indépendamment
+     * de l'envoi ou de la lecture du message WhatsApp (voir [buildWhatsAppInviteIntent]).
+     */
+    suspend fun createInvitation(phoneNumber: String): Invitation {
+        checkAndThrowIfBlocked()
+        val fId = requireFarmId()
+        val info = getFarmInfo()
+        val me = getCurrentUserProfile()
+        val data = hashMapOf(
+            "phoneNumber" to phoneNumber,
+            "farmId" to fId,
+            "farmName" to (info?.farmName ?: ""),
+            "invitedByUsername" to (me?.username ?: ""),
+            "status" to "PENDING",
+            "createdAt" to System.currentTimeMillis()
+        )
+        val ref = db.collection("invitations").add(data).await()
+        return Invitation(
+            phoneNumber = phoneNumber,
+            farmId = fId,
+            farmName = info?.farmName ?: "",
+            invitedByUsername = me?.username ?: "",
+            firestoreId = ref.id
+        )
+    }
+
+    /** Invitations PENDING adressées à [phoneNumber] — vide si aucun numéro (compte pas encore lié). */
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    fun getPendingInvitationsFlow(phoneNumber: String?): Flow<List<Invitation>> {
+        if (DemoMode.enabled) return flowOf(emptyList())
+        if (phoneNumber.isNullOrBlank()) return flowOf(emptyList())
+        return callbackFlow {
+            val sub = db.collection("invitations")
+                .whereEqualTo("phoneNumber", phoneNumber)
+                .whereEqualTo("status", "PENDING")
+                .addSnapshotListener { s, e ->
+                    val list = s?.documents?.mapNotNull { doc ->
+                        Invitation(
+                            phoneNumber = doc.getString("phoneNumber") ?: "",
+                            farmId = doc.getString("farmId") ?: "",
+                            farmName = doc.getString("farmName") ?: "",
+                            invitedByUsername = doc.getString("invitedByUsername") ?: "",
+                            status = doc.getString("status") ?: "PENDING",
+                            createdAt = doc.getLong("createdAt") ?: 0L,
+                            firestoreId = doc.id
+                        )
+                    }?.sortedByDescending { it.createdAt } ?: emptyList()
+                    trySend(list)
+                }
+            awaitClose { sub.remove() }
+        }
+    }
+
+    /** Rattache l'utilisateur courant à la ferme de l'invitation, en tant qu'agent. */
+    suspend fun acceptInvitation(invitation: Invitation) {
+        val uid = auth.currentUser?.uid ?: throw Exception("Non connecté")
+        db.collection("users").document(uid).set(
+            hashMapOf(
+                "farmId" to invitation.farmId,
+                "role" to "AGENT",
+                "active" to true,
+                "isPending" to false
+            ) as Map<String, Any>,
+            SetOptions.merge()
+        ).await()
+        addOrUpdateMembership(uid, invitation.farmId, invitation.farmName, "AGENT")
+        invitation.firestoreId?.let {
+            db.collection("invitations").document(it).update("status", "ACCEPTED").await()
+        }
+        _farmIdFlow.value = invitation.farmId
+    }
+
+    suspend fun declineInvitation(invitation: Invitation) {
+        invitation.firestoreId?.let {
+            db.collection("invitations").document(it).update("status", "DECLINED").await()
+        }
+    }
+
+    /**
+     * Intent WhatsApp pré-rempli invitant [phoneNumber] à installer l'app et rejoindre
+     * [farmName]. Simple incitation : le rattachement réel se fait via [createInvitation]
+     * + [getPendingInvitationsFlow], pas via un jeton dans ce lien.
+     */
+    fun buildWhatsAppInviteIntent(phoneNumber: String, farmName: String): Intent {
+        val message = "Bonjour ! Vous êtes invité(e) à rejoindre la ferme \"$farmName\" sur KOURKOUROU 🐔\n\n" +
+            "1. Installez l'application : https://play.google.com/store/apps/details?id=com.hadietou.poulailler\n" +
+            "2. Créez votre compte avec CE numéro de téléphone.\n" +
+            "3. Une fois connecté(e), vous verrez l'invitation à rejoindre \"$farmName\"."
+        val digitsOnly = phoneNumber.filter { it.isDigit() }
+        val uri = Uri.parse("https://wa.me/$digitsOnly?text=${Uri.encode(message)}")
+        return Intent(Intent.ACTION_VIEW, uri)
     }
 
     private fun mapFarmInfo(s: com.google.firebase.firestore.DocumentSnapshot): FarmInfo = FarmInfo(
@@ -369,6 +553,7 @@ class FirebaseRepository {
     )
 
     suspend fun getFarmInfo(): FarmInfo? {
+        if (DemoMode.enabled) return DemoData.farmInfo
         val id = getFarmId() ?: return null
         return try {
             val s = db.collection("fermes").document(id).collection("config").document("farm_info").get().await()
@@ -377,7 +562,7 @@ class FirebaseRepository {
     }
 
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
-    fun getBatchesFlow(): Flow<List<Batch>> = farmIdFlow.flatMapLatest { fId ->
+    fun getBatchesFlow(): Flow<List<Batch>> = if (DemoMode.enabled) flowOf(DemoData.batches) else farmIdFlow.flatMapLatest { fId ->
         val id = fId ?: getFarmId()
         if (id == null) flowOf(emptyList())
         else callbackFlow {
@@ -406,7 +591,7 @@ class FirebaseRepository {
     }
 
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
-    fun getEggEntriesFlow(): Flow<List<EggEntry>> = farmIdFlow.flatMapLatest { fId ->
+    fun getEggEntriesFlow(): Flow<List<EggEntry>> = if (DemoMode.enabled) flowOf(DemoData.eggEntries) else farmIdFlow.flatMapLatest { fId ->
         val id = fId ?: getFarmId()
         if (id == null) flowOf(emptyList())
         else callbackFlow {
@@ -422,7 +607,7 @@ class FirebaseRepository {
     }
 
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
-    fun getMortalityFlow(): Flow<List<Mortality>> = farmIdFlow.flatMapLatest { fId ->
+    fun getMortalityFlow(): Flow<List<Mortality>> = if (DemoMode.enabled) flowOf(DemoData.mortalities) else farmIdFlow.flatMapLatest { fId ->
         val id = fId ?: getFarmId()
         if (id == null) flowOf(emptyList())
         else callbackFlow {
@@ -448,7 +633,7 @@ class FirebaseRepository {
     }
 
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
-    fun getSalesFlow(): Flow<List<EggSale>> = farmIdFlow.flatMapLatest { fId ->
+    fun getSalesFlow(): Flow<List<EggSale>> = if (DemoMode.enabled) flowOf(DemoData.sales) else farmIdFlow.flatMapLatest { fId ->
         val id = fId ?: getFarmId()
         if (id == null) flowOf(emptyList())
         else callbackFlow {
@@ -464,7 +649,7 @@ class FirebaseRepository {
     }
 
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
-    fun getExpensesFlow(): Flow<List<Expense>> = farmIdFlow.flatMapLatest { fId ->
+    fun getExpensesFlow(): Flow<List<Expense>> = if (DemoMode.enabled) flowOf(DemoData.expenses) else farmIdFlow.flatMapLatest { fId ->
         val id = fId ?: getFarmId()
         if (id == null) flowOf(emptyList())
         else callbackFlow {
@@ -480,7 +665,7 @@ class FirebaseRepository {
     }
 
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
-    fun getVaccinesFlow(): Flow<List<VaccineEntry>> = farmIdFlow.flatMapLatest { fId ->
+    fun getVaccinesFlow(): Flow<List<VaccineEntry>> = if (DemoMode.enabled) flowOf(DemoData.vaccines) else farmIdFlow.flatMapLatest { fId ->
         val id = fId ?: getFarmId()
         if (id == null) flowOf(emptyList())
         else callbackFlow {
@@ -512,7 +697,7 @@ class FirebaseRepository {
     }
 
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
-    fun getHealthRemindersFlow(): Flow<List<HealthReminder>> = farmIdFlow.flatMapLatest { fId ->
+    fun getHealthRemindersFlow(): Flow<List<HealthReminder>> = if (DemoMode.enabled) flowOf(DemoData.healthReminders) else farmIdFlow.flatMapLatest { fId ->
         val id = fId ?: getFarmId()
         if (id == null) flowOf(emptyList())
         else callbackFlow {
@@ -543,7 +728,7 @@ class FirebaseRepository {
      * Historique permanent des rappels de santé marqués FAIT (voir [HealthReminderLog]).
      */
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
-    fun getHealthReminderLogsFlow(): Flow<List<HealthReminderLog>> = farmIdFlow.flatMapLatest { fId ->
+    fun getHealthReminderLogsFlow(): Flow<List<HealthReminderLog>> = if (DemoMode.enabled) flowOf(DemoData.healthReminderLogs) else farmIdFlow.flatMapLatest { fId ->
         val id = fId ?: getFarmId()
         if (id == null) flowOf(emptyList())
         else callbackFlow {
@@ -567,7 +752,7 @@ class FirebaseRepository {
     }
 
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
-    fun getFarmInfoFlow(): Flow<FarmInfo?> = farmIdFlow.flatMapLatest { fId ->
+    fun getFarmInfoFlow(): Flow<FarmInfo?> = if (DemoMode.enabled) flowOf(DemoData.farmInfo) else farmIdFlow.flatMapLatest { fId ->
         val id = fId ?: getFarmId()
         if (id == null) flowOf(null)
         else callbackFlow {
@@ -804,7 +989,7 @@ class FirebaseRepository {
     }
 
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
-    fun getTreatmentsFlow(): Flow<List<Treatment>> = farmIdFlow.flatMapLatest { fId ->
+    fun getTreatmentsFlow(): Flow<List<Treatment>> = if (DemoMode.enabled) flowOf(DemoData.treatments) else farmIdFlow.flatMapLatest { fId ->
         val id = fId ?: getFarmId()
         if (id == null) flowOf(emptyList())
         else callbackFlow {
@@ -883,7 +1068,7 @@ class FirebaseRepository {
     }
 
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
-    fun getDiseaseCasesFlow(): Flow<List<DiseaseCase>> = farmIdFlow.flatMapLatest { fId ->
+    fun getDiseaseCasesFlow(): Flow<List<DiseaseCase>> = if (DemoMode.enabled) flowOf(DemoData.diseaseCases) else farmIdFlow.flatMapLatest { fId ->
         val id = fId ?: getFarmId()
         if (id == null) flowOf(emptyList())
         else callbackFlow {
@@ -963,7 +1148,7 @@ class FirebaseRepository {
     }
 
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
-    fun getHealthObservationsFlow(): Flow<List<HealthObservation>> = farmIdFlow.flatMapLatest { fId ->
+    fun getHealthObservationsFlow(): Flow<List<HealthObservation>> = if (DemoMode.enabled) flowOf(DemoData.healthObservations) else farmIdFlow.flatMapLatest { fId ->
         val id = fId ?: getFarmId()
         if (id == null) flowOf(emptyList())
         else callbackFlow {
@@ -1016,7 +1201,7 @@ class FirebaseRepository {
     }
 
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
-    fun getVetVisitsFlow(): Flow<List<VetVisit>> = farmIdFlow.flatMapLatest { fId ->
+    fun getVetVisitsFlow(): Flow<List<VetVisit>> = if (DemoMode.enabled) flowOf(DemoData.vetVisits) else farmIdFlow.flatMapLatest { fId ->
         val id = fId ?: getFarmId()
         if (id == null) flowOf(emptyList())
         else callbackFlow {
@@ -1069,7 +1254,7 @@ class FirebaseRepository {
     }
 
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
-    fun getLabAnalysesFlow(): Flow<List<LabAnalysis>> = farmIdFlow.flatMapLatest { fId ->
+    fun getLabAnalysesFlow(): Flow<List<LabAnalysis>> = if (DemoMode.enabled) flowOf(DemoData.labAnalyses) else farmIdFlow.flatMapLatest { fId ->
         val id = fId ?: getFarmId()
         if (id == null) flowOf(emptyList())
         else callbackFlow {
@@ -1112,7 +1297,7 @@ class FirebaseRepository {
     }
 
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
-    fun getBiosecurityTasksFlow(): Flow<List<BiosecurityTask>> = farmIdFlow.flatMapLatest { fId ->
+    fun getBiosecurityTasksFlow(): Flow<List<BiosecurityTask>> = if (DemoMode.enabled) flowOf(DemoData.biosecurityTasks) else farmIdFlow.flatMapLatest { fId ->
         val id = fId ?: getFarmId()
         if (id == null) flowOf(emptyList())
         else callbackFlow {
@@ -1226,7 +1411,7 @@ class FirebaseRepository {
     }
 
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
-    fun getAllUsersFlow(): Flow<List<User>> = farmIdFlow.flatMapLatest { fId ->
+    fun getAllUsersFlow(): Flow<List<User>> = if (DemoMode.enabled) flowOf(DemoData.users) else farmIdFlow.flatMapLatest { fId ->
         val id = fId ?: getFarmId()
         if (id == null) flowOf(emptyList())
         else callbackFlow {
@@ -1253,7 +1438,7 @@ class FirebaseRepository {
     }
 
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
-    fun getLoginHistoryFlow(): Flow<List<LoginEntry>> = farmIdFlow.flatMapLatest { fId ->
+    fun getLoginHistoryFlow(): Flow<List<LoginEntry>> = if (DemoMode.enabled) flowOf(DemoData.loginHistory) else farmIdFlow.flatMapLatest { fId ->
         val id = fId ?: getFarmId()
         if (id == null) flowOf(emptyList())
         else callbackFlow {
@@ -1272,16 +1457,6 @@ class FirebaseRepository {
                     trySend(list)
                 }
             awaitClose { sub.remove() }
-        }
-    }
-
-    suspend fun getFarmCode(): String? {
-        val fId = requireFarmId()
-        return try {
-            val doc = db.collection("fermes").document(fId).get().await()
-            doc.getString("code")
-        } catch (e: Exception) {
-            null
         }
     }
 

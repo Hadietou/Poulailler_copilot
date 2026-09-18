@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:fillViewport="true"
@@ -61,54 +62,14 @@
                     android:textColor="@color/text_primary"
                     android:layout_marginBottom="12dp"/>
 
-                <!-- Selection Flux Inscription -->
-                <LinearLayout
-                    android:id="@+id/layoutRegisterChoices"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:visibility="gone"
-                    android:layout_marginBottom="16dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Choisissez votre mode d'inscription :"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="14sp"
-                        android:layout_marginBottom="12dp"/>
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnChoiceResponsable"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="CRÉER MA FERME"
-                        android:textStyle="bold"
-                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                        app:strokeColor="@color/primary"
-                        android:textColor="@color/primary"
-                        app:icon="@drawable/ic_add"/>
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnChoiceAgent"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:text="REJOINDRE UNE FERME"
-                        android:textStyle="bold"
-                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                        app:strokeColor="@color/accent_blue"
-                        android:textColor="@color/accent_blue"
-                        app:icon="@drawable/ic_share"/>
-                </LinearLayout>
-
                 <com.google.android.material.textfield.TextInputLayout
                     android:id="@+id/tilEmail"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:hint="Email"
-                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense">
                     <com.google.android.material.textfield.TextInputEditText
+        style="@style/Widget.App.TextInputEditText"
                         android:id="@+id/etEmail"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -122,8 +83,9 @@
                     android:layout_marginTop="12dp"
                     android:hint="Mot de passe"
                     app:passwordToggleEnabled="true"
-                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense">
                     <com.google.android.material.textfield.TextInputEditText
+        style="@style/Widget.App.TextInputEditText"
                         android:id="@+id/etPassword"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -137,88 +99,123 @@
                     android:layout_marginTop="12dp"
                     android:hint="Votre Nom"
                     android:visibility="gone"
-                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense">
                     <com.google.android.material.textfield.TextInputEditText
+        style="@style/Widget.App.TextInputEditText"
                         android:id="@+id/etUsername"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content" />
                 </com.google.android.material.textfield.TextInputLayout>
 
-                <!-- Agent field -->
+                <!-- Inscription : email optionnel, permet de récupérer le compte si le numéro
+                     de téléphone devient inaccessible (voir handleSendCode dans LoginActivity). -->
                 <com.google.android.material.textfield.TextInputLayout
-                    android:id="@+id/tilFarmCode"
+                    android:id="@+id/tilRegisterEmail"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
-                    android:hint="Code de la ferme reçu"
+                    android:hint="Email (recommandé)"
                     android:visibility="gone"
-                    app:helperText="Saisissez le code à 6 caractères"
-                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense">
                     <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/etFarmCode"
+                        style="@style/Widget.App.TextInputEditText"
+                        android:id="@+id/etRegisterEmail"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:textAllCaps="true" />
+                        android:inputType="textEmailAddress" />
                 </com.google.android.material.textfield.TextInputLayout>
 
-                <!-- Responsable Fields -->
+                <!-- Inscription : numéro de téléphone (identifiant du compte, vérifié par SMS) -->
                 <LinearLayout
-                    android:id="@+id/layoutFarmInfoFields"
+                    android:id="@+id/layoutPhoneRow"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginTop="12dp"
+                    android:visibility="gone">
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:layout_width="128dp"
+                        android:layout_height="wrap_content"
+                        android:hint="Indicatif"
+                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu">
+                        <AutoCompleteTextView
+                            android:id="@+id/actvCountryCode"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="none" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="8dp"
+                        android:hint="Numéro de téléphone"
+                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense">
+                        <com.google.android.material.textfield.TextInputEditText
+                            style="@style/Widget.App.TextInputEditText"
+                            android:id="@+id/etPhoneNumber"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="phone" />
+                    </com.google.android.material.textfield.TextInputLayout>
+                </LinearLayout>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnSendCode"
+                    android:layout_width="match_parent"
+                    android:layout_height="52dp"
+                    android:layout_marginTop="14dp"
+                    android:text="RECEVOIR UN CODE PAR SMS"
+                    android:textStyle="bold"
+                    app:cornerRadius="8dp"
+                    android:backgroundTint="@color/accent_blue"
+                    android:textColor="@color/white"
+                    android:visibility="gone" />
+
+                <!-- Inscription : saisie du code reçu par SMS -->
+                <LinearLayout
+                    android:id="@+id/layoutOtpSection"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
                     android:visibility="gone">
 
-                    <com.google.android.material.textfield.TextInputLayout
+                    <TextView
+                        android:id="@+id/tvOtpSentTo"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:hint="Nom de votre Ferme"
-                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
-                        <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/etFarmName"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content" />
-                    </com.google.android.material.textfield.TextInputLayout>
+                        android:layout_marginTop="14dp"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="13sp"
+                        tools:text="Code envoyé au +222 12 34 56 78"/>
 
                     <com.google.android.material.textfield.TextInputLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:hint="Pays"
-                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu">
-                        <AutoCompleteTextView
-                            android:id="@+id/actvCountry"
+                        android:layout_marginTop="8dp"
+                        android:hint="Code reçu par SMS"
+                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense">
+                        <com.google.android.material.textfield.TextInputEditText
+                            style="@style/Widget.App.TextInputEditText"
+                            android:id="@+id/etOtpCode"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:inputType="none" />
+                            android:inputType="number"
+                            android:maxLength="6" />
                     </com.google.android.material.textfield.TextInputLayout>
 
-                    <com.google.android.material.textfield.TextInputLayout
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnVerifyCode"
                         android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:hint="Ville"
-                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
-                        <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/etCity"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content" />
-                    </com.google.android.material.textfield.TextInputLayout>
-
-                    <com.google.android.material.textfield.TextInputLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:hint="Devise"
-                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu">
-                        <AutoCompleteTextView
-                            android:id="@+id/actvCurrencySignup"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:inputType="none" />
-                    </com.google.android.material.textfield.TextInputLayout>
-
+                        android:layout_height="52dp"
+                        android:layout_marginTop="10dp"
+                        android:text="VÉRIFIER LE CODE"
+                        android:textStyle="bold"
+                        app:cornerRadius="8dp"
+                        android:backgroundTint="@color/emerald_soft"
+                        android:textColor="@color/white" />
                 </LinearLayout>
 
                 <com.google.android.material.button.MaterialButton
@@ -238,7 +235,35 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
-                    android:text="CRÉER MA FERME" />
+                    android:text="Créer un compte" />
+
+                <View
+                    android:id="@+id/dividerDemo"
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginTop="16dp"
+                    android:background="@color/off_white" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnViewDemo"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:text="👀 VOIR UNE DÉMO"
+                    android:textStyle="bold"
+                    app:strokeColor="@color/emerald_soft"
+                    android:textColor="@color/emerald_soft" />
+
+                <TextView
+                    android:id="@+id/tvDemoHint"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:gravity="center"
+                    android:text="Explorez l'application avec des données fictives, sans créer de compte."
+                    android:textColor="@color/text_secondary"
+                    android:textSize="11sp" />
 
                 <TextView
                     android:id="@+id/tvAppVersionLogin"

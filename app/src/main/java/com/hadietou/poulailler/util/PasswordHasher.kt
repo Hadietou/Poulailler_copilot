@@ -9,10 +9,9 @@ import javax.crypto.spec.PBEKeySpec
 /**
  * Hachage de mots de passe/codes temporaires avant stockage (Room local ou Firestore).
  *
- * Utilisé notamment pour le mot de passe temporaire généré lors de la création d'un
- * agent (voir ResponsableViewModel.createAgentSimplified / LoginViewModel.checkPreCreatedAgent) :
- * on ne veut jamais qu'un mot de passe, même de courte durée de vie, soit lisible en clair
- * dans la base.
+ * Utilisé notamment pour les mots de passe temporaires vérifiés dans
+ * LoginViewModel.checkPreCreatedAgent : on ne veut jamais qu'un mot de passe, même de
+ * courte durée de vie, soit lisible en clair dans la base.
  *
  * Format stocké : "iterations:saltBase64:hashBase64" (PBKDF2WithHmacSHA256, sel aléatoire
  * par mot de passe). Ce format auto-descriptif permet de reconnaître une valeur déjà hachée

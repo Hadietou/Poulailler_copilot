@@ -32,13 +32,14 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Date"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
             android:layout_marginBottom="12dp"
             app:hintTextColor="@color/text_secondary"
             app:boxStrokeColor="@color/primary"
             app:startIconDrawable="@drawable/ic_calendar"
             app:startIconTint="@color/primary">
             <com.google.android.material.textfield.TextInputEditText
+        style="@style/Widget.App.TextInputEditText"
                 android:id="@+id/etExpenseDate"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -90,12 +91,13 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Quantité (kg)"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
             android:layout_marginBottom="12dp"
             android:visibility="gone"
             app:hintTextColor="@color/text_secondary"
             app:boxStrokeColor="@color/primary">
             <com.google.android.material.textfield.TextInputEditText
+        style="@style/Widget.App.TextInputEditText"
                 android:id="@+id/etQuantityKg"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -108,13 +110,14 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Montant"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
             android:layout_marginBottom="12dp"
             app:hintTextColor="@color/text_secondary"
             app:boxStrokeColor="@color/primary"
             app:startIconDrawable="@drawable/ic_batches"
             app:startIconTint="@color/primary">
             <com.google.android.material.textfield.TextInputEditText
+        style="@style/Widget.App.TextInputEditText"
                 android:id="@+id/etAmount"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -126,11 +129,12 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Description / Notes"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
             android:layout_marginBottom="24dp"
             app:hintTextColor="@color/text_secondary"
             app:boxStrokeColor="@color/primary">
             <com.google.android.material.textfield.TextInputEditText
+        style="@style/Widget.App.TextInputEditText"
                 android:id="@+id/etDescription"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"

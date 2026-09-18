@@ -31,13 +31,14 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Date de l'événement"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
             android:layout_marginBottom="12dp"
             app:hintTextColor="@color/text_secondary"
             app:boxStrokeColor="@color/primary"
             app:startIconDrawable="@drawable/ic_calendar"
             app:startIconTint="@color/primary">
             <com.google.android.material.textfield.TextInputEditText
+        style="@style/Widget.App.TextInputEditText"
                 android:id="@+id/etMortalityDate"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -50,13 +51,14 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Nombre de poules mortes"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
             android:layout_marginBottom="12dp"
             app:hintTextColor="@color/text_secondary"
             app:boxStrokeColor="@color/primary"
             app:startIconDrawable="@drawable/ic_mortality"
             app:startIconTint="@color/primary">
             <com.google.android.material.textfield.TextInputEditText
+        style="@style/Widget.App.TextInputEditText"
                 android:id="@+id/etMortalityInput"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -105,13 +107,14 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Zone / bâtiment (optionnel)"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
             android:layout_marginBottom="12dp"
             app:hintTextColor="@color/text_secondary"
             app:boxStrokeColor="@color/primary"
             app:startIconDrawable="@drawable/ic_location"
             app:startIconTint="@color/primary">
             <com.google.android.material.textfield.TextInputEditText
+        style="@style/Widget.App.TextInputEditText"
                 android:id="@+id/etMortalityZone"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -123,13 +126,14 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Cause confirmée (optionnel, après diagnostic)"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
             android:layout_marginBottom="24dp"
             app:hintTextColor="@color/text_secondary"
             app:boxStrokeColor="@color/primary"
             app:startIconDrawable="@drawable/ic_check"
             app:startIconTint="@color/primary">
             <com.google.android.material.textfield.TextInputEditText
+        style="@style/Widget.App.TextInputEditText"
                 android:id="@+id/etMortalityConfirmedCause"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"

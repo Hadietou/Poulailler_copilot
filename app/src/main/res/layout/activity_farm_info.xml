@@ -81,8 +81,9 @@
                                 android:hint="Ration (g/sujet)"
                                 app:hintTextColor="#B0B0B0"
                                 app:boxStrokeColor="#FFD700"
-                                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+                                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense">
                                 <com.google.android.material.textfield.TextInputEditText
+        style="@style/Widget.App.TextInputEditText"
                                     android:id="@+id/etFeedRation"
                                     android:layout_width="match_parent"
                                     android:layout_height="wrap_content"
@@ -284,11 +285,12 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:hint="Nom de la ferme"
-                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
                         android:layout_marginBottom="12dp"
                         app:hintTextColor="@color/white"
                         app:boxStrokeColor="@color/white">
                         <com.google.android.material.textfield.TextInputEditText
+        style="@style/Widget.App.TextInputEditText"
                             android:id="@+id/etFarmName"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
@@ -300,12 +302,13 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:hint="Nombre de poules au depart"
-                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
                         android:layout_marginBottom="12dp"
                         android:visibility="gone"
                         app:hintTextColor="@color/white"
                         app:boxStrokeColor="@color/white">
                         <com.google.android.material.textfield.TextInputEditText
+        style="@style/Widget.App.TextInputEditText"
                             android:id="@+id/etHensCount"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
@@ -318,12 +321,13 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:hint="Race des poules"
-                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
                         android:layout_marginBottom="12dp"
                         android:visibility="gone"
                         app:hintTextColor="@color/white"
                         app:boxStrokeColor="@color/white">
                         <com.google.android.material.textfield.TextInputEditText
+        style="@style/Widget.App.TextInputEditText"
                             android:id="@+id/etHenBreed"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
@@ -335,12 +339,13 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:hint="Date d'arrivée"
-                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
                         android:layout_marginBottom="12dp"
                         android:visibility="gone"
                         app:hintTextColor="@color/white"
                         app:boxStrokeColor="@color/white">
                         <com.google.android.material.textfield.TextInputEditText
+        style="@style/Widget.App.TextInputEditText"
                             android:id="@+id/etArrivalDate"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
@@ -354,12 +359,13 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:hint="Date de naissance"
-                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
                         android:layout_marginBottom="12dp"
                         android:visibility="gone"
                         app:hintTextColor="@color/white"
                         app:boxStrokeColor="@color/white">
                         <com.google.android.material.textfield.TextInputEditText
+        style="@style/Widget.App.TextInputEditText"
                             android:id="@+id/etBirthDate"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
@@ -379,10 +385,11 @@
                             android:layout_weight="1"
                             android:layout_height="wrap_content"
                             android:hint="Localité (ville/village)"
-                            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
                             app:hintTextColor="@color/white"
                             app:boxStrokeColor="@color/white">
                             <com.google.android.material.textfield.TextInputEditText
+        style="@style/Widget.App.TextInputEditText"
                                 android:id="@+id/etLocality"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
@@ -440,20 +447,22 @@
                         <com.google.android.material.textfield.TextInputLayout
                             android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"
                             android:hint="Alvéoles critique (nb)"
-                            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
                             android:layout_marginEnd="6dp" android:layout_marginBottom="12dp"
                             app:hintTextColor="@color/white" app:boxStrokeColor="@color/white">
                             <com.google.android.material.textfield.TextInputEditText
+        style="@style/Widget.App.TextInputEditText"
                                 android:id="@+id/etEggTraysCritical" android:layout_width="match_parent" android:layout_height="wrap_content"
                                 android:inputType="number" android:textColor="@color/text_primary" />
                         </com.google.android.material.textfield.TextInputLayout>
                         <com.google.android.material.textfield.TextInputLayout
                             android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"
                             android:hint="Canicule (°C)"
-                            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
                             android:layout_marginStart="6dp" android:layout_marginBottom="12dp"
                             app:hintTextColor="@color/white" app:boxStrokeColor="@color/white">
                             <com.google.android.material.textfield.TextInputEditText
+        style="@style/Widget.App.TextInputEditText"
                                 android:id="@+id/etHeatAlertTemp" android:layout_width="match_parent" android:layout_height="wrap_content"
                                 android:inputType="number" android:textColor="@color/text_primary" />
                         </com.google.android.material.textfield.TextInputLayout>
@@ -462,10 +471,11 @@
                     <com.google.android.material.textfield.TextInputLayout
                         android:layout_width="match_parent" android:layout_height="wrap_content"
                         android:hint="Seuil alerte mortalité (x moyenne 7 jours)"
-                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
                         android:layout_marginBottom="4dp"
                         app:hintTextColor="@color/white" app:boxStrokeColor="@color/white">
                         <com.google.android.material.textfield.TextInputEditText
+        style="@style/Widget.App.TextInputEditText"
                             android:id="@+id/etMortalitySpikeMultiplier" android:layout_width="match_parent" android:layout_height="wrap_content"
                             android:inputType="numberDecimal" android:textColor="@color/text_primary" />
                     </com.google.android.material.textfield.TextInputLayout>
@@ -480,10 +490,11 @@
                     <com.google.android.material.textfield.TextInputLayout
                         android:layout_width="match_parent" android:layout_height="wrap_content"
                         android:hint="Correction météo locale (°C)"
-                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
                         android:layout_marginBottom="4dp"
                         app:hintTextColor="@color/white" app:boxStrokeColor="@color/white">
                         <com.google.android.material.textfield.TextInputEditText
+        style="@style/Widget.App.TextInputEditText"
                             android:id="@+id/etWeatherTempOffset" android:layout_width="match_parent" android:layout_height="wrap_content"
                             android:inputType="numberSigned|numberDecimal" android:textColor="@color/text_primary" />
                     </com.google.android.material.textfield.TextInputLayout>
@@ -499,20 +510,22 @@
                         <com.google.android.material.textfield.TextInputLayout
                             android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"
                             android:hint="Aliment critique (jours)"
-                            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
                             android:layout_marginEnd="6dp" android:layout_marginBottom="12dp"
                             app:hintTextColor="@color/white" app:boxStrokeColor="@color/white">
                             <com.google.android.material.textfield.TextInputEditText
+        style="@style/Widget.App.TextInputEditText"
                                 android:id="@+id/etFeedStockCriticalDays" android:layout_width="match_parent" android:layout_height="wrap_content"
                                 android:inputType="number" android:textColor="@color/text_primary" />
                         </com.google.android.material.textfield.TextInputLayout>
                         <com.google.android.material.textfield.TextInputLayout
                             android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"
                             android:hint="Aliment alerte (jours)"
-                            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
                             android:layout_marginStart="6dp" android:layout_marginBottom="12dp"
                             app:hintTextColor="@color/white" app:boxStrokeColor="@color/white">
                             <com.google.android.material.textfield.TextInputEditText
+        style="@style/Widget.App.TextInputEditText"
                                 android:id="@+id/etFeedStockWarningDays" android:layout_width="match_parent" android:layout_height="wrap_content"
                                 android:inputType="number" android:textColor="@color/text_primary" />
                         </com.google.android.material.textfield.TextInputLayout>
@@ -522,20 +535,22 @@
                         <com.google.android.material.textfield.TextInputLayout
                             android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"
                             android:hint="Photopériode (h)"
-                            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
                             android:layout_marginEnd="6dp" android:layout_marginBottom="12dp"
                             app:hintTextColor="@color/white" app:boxStrokeColor="@color/white">
                             <com.google.android.material.textfield.TextInputEditText
+        style="@style/Widget.App.TextInputEditText"
                                 android:id="@+id/etLightingHours" android:layout_width="match_parent" android:layout_height="wrap_content"
                                 android:inputType="number" android:textColor="@color/text_primary" />
                         </com.google.android.material.textfield.TextInputLayout>
                         <com.google.android.material.textfield.TextInputLayout
                             android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"
                             android:hint="Vaccins (mois)"
-                            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
                             android:layout_marginStart="6dp" android:layout_marginBottom="12dp"
                             app:hintTextColor="@color/white" app:boxStrokeColor="@color/white">
                             <com.google.android.material.textfield.TextInputEditText
+        style="@style/Widget.App.TextInputEditText"
                                 android:id="@+id/etVaccineInterval" android:layout_width="match_parent" android:layout_height="wrap_content"
                                 android:inputType="number" android:textColor="@color/text_primary" />
                         </com.google.android.material.textfield.TextInputLayout>
@@ -545,20 +560,22 @@
                         <com.google.android.material.textfield.TextInputLayout
                             android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"
                             android:hint="Déparasitage interne (mois)"
-                            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
                             android:layout_marginEnd="6dp" android:layout_marginBottom="24dp"
                             app:hintTextColor="@color/white" app:boxStrokeColor="@color/white">
                             <com.google.android.material.textfield.TextInputEditText
+        style="@style/Widget.App.TextInputEditText"
                                 android:id="@+id/etDewormingInternalInterval" android:layout_width="match_parent" android:layout_height="wrap_content"
                                 android:inputType="number" android:textColor="@color/text_primary" />
                         </com.google.android.material.textfield.TextInputLayout>
                         <com.google.android.material.textfield.TextInputLayout
                             android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"
                             android:hint="Déparasitage externe (mois)"
-                            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
                             android:layout_marginStart="6dp" android:layout_marginBottom="24dp"
                             app:hintTextColor="@color/white" app:boxStrokeColor="@color/white">
                             <com.google.android.material.textfield.TextInputEditText
+        style="@style/Widget.App.TextInputEditText"
                                 android:id="@+id/etDewormingExternalInterval" android:layout_width="match_parent" android:layout_height="wrap_content"
                                 android:inputType="number" android:textColor="@color/text_primary" />
                         </com.google.android.material.textfield.TextInputLayout>

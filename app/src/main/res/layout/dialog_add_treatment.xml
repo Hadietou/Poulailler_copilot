@@ -36,13 +36,14 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Nom du médicament"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
             android:layout_marginBottom="12dp"
             app:hintTextColor="@color/text_secondary"
             app:boxStrokeColor="@color/primary"
             app:startIconDrawable="@drawable/ic_medication"
             app:startIconTint="@color/primary">
             <com.google.android.material.textfield.TextInputEditText
+        style="@style/Widget.App.TextInputEditText"
                 android:id="@+id/etMedicationName"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -53,11 +54,12 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Motif (optionnel)"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
             android:layout_marginBottom="12dp"
             app:hintTextColor="@color/text_secondary"
             app:boxStrokeColor="@color/primary">
             <com.google.android.material.textfield.TextInputEditText
+        style="@style/Widget.App.TextInputEditText"
                 android:id="@+id/etReason"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -124,10 +126,11 @@
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="6dp"
                 android:hint="Dose"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
                 app:hintTextColor="@color/text_secondary"
                 app:boxStrokeColor="@color/primary">
                 <com.google.android.material.textfield.TextInputEditText
+        style="@style/Widget.App.TextInputEditText"
                     android:id="@+id/etTreatmentDose"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -140,10 +143,11 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="6dp"
                 android:hint="Voie"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
                 app:hintTextColor="@color/text_secondary"
                 app:boxStrokeColor="@color/primary">
                 <com.google.android.material.textfield.TextInputEditText
+        style="@style/Widget.App.TextInputEditText"
                     android:id="@+id/etTreatmentRoute"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -155,11 +159,12 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Prescripteur / vétérinaire (optionnel)"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
             android:layout_marginBottom="16dp"
             app:hintTextColor="@color/text_secondary"
             app:boxStrokeColor="@color/primary">
             <com.google.android.material.textfield.TextInputEditText
+        style="@style/Widget.App.TextInputEditText"
                 android:id="@+id/etPrescriber"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -187,10 +192,11 @@
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="6dp"
                 android:hint="Œufs (jours)"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
                 app:hintTextColor="@color/text_secondary"
                 app:boxStrokeColor="@color/primary">
                 <com.google.android.material.textfield.TextInputEditText
+        style="@style/Widget.App.TextInputEditText"
                     android:id="@+id/etEggWithdrawalDays"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -204,10 +210,11 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="6dp"
                 android:hint="Abattage (jours)"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
                 app:hintTextColor="@color/text_secondary"
                 app:boxStrokeColor="@color/primary">
                 <com.google.android.material.textfield.TextInputEditText
+        style="@style/Widget.App.TextInputEditText"
                     android:id="@+id/etSlaughterWithdrawalDays"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -220,11 +227,12 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Notes (optionnel)"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
             android:layout_marginBottom="24dp"
             app:hintTextColor="@color/text_secondary"
             app:boxStrokeColor="@color/primary">
             <com.google.android.material.textfield.TextInputEditText
+        style="@style/Widget.App.TextInputEditText"
                 android:id="@+id/etTreatmentNotes"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
