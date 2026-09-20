@@ -1,13 +1,11 @@
 package com.hadietou.poulailler.util
 
 import android.content.Context
-import android.graphics.Typeface
 import androidx.appcompat.app.AlertDialog
 import android.text.Spannable
 import android.text.SpannableStringBuilder
 import android.text.style.ForegroundColorSpan
 import android.text.style.RelativeSizeSpan
-import android.text.style.StyleSpan
 import androidx.core.content.ContextCompat
 import com.google.android.material.navigation.NavigationView
 import com.hadietou.poulailler.R
@@ -15,7 +13,8 @@ import com.hadietou.poulailler.R
 /**
  * Habille le menu latéral (NavigationView) pour distinguer clairement :
  * - les items simples (destinations directes)
- * - les items "parents" qui déplient un sous-menu (titre en gras + chevron)
+ * - les items "parents" qui déplient un sous-menu (même icône et même texte que les items
+ *   simples : seul le chevron les distingue, pour que les entrées de premier niveau restent homogènes)
  * - les items de sous-menu (indentés, icône et couleur plus douces)
  *
  * Remplace l'ancien rendu où un parent déplié prenait l'apparence "sélectionné"
@@ -91,9 +90,7 @@ object NavMenuStyler {
             ?.trim() ?: return
 
         val chevron = if (expanded) CHEVRON_EXPANDED else CHEVRON_COLLAPSED
-        val builder = SpannableStringBuilder(baseTitle).apply {
-            setSpan(StyleSpan(Typeface.BOLD), 0, baseTitle.length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
-        }
+        val builder = SpannableStringBuilder(baseTitle)
         val chevronStart = builder.length
         builder.append(chevron)
         builder.setSpan(
@@ -109,8 +106,6 @@ object NavMenuStyler {
             Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
         )
         item.title = builder
-
-        item.icon?.mutate()?.setTint(ContextCompat.getColor(context, R.color.primary))
     }
 
     private fun styleChild(context: Context, item: android.view.MenuItem?) {

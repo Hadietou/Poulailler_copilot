@@ -54,9 +54,6 @@
             android:name=".ui.LocationPickerActivity"
             android:exported="false" />
         <activity
-            android:name=".ui.BatchActivity"
-            android:exported="false" />
-        <activity
             android:name=".ui.MortalityActivity"
             android:exported="false" />
         <activity

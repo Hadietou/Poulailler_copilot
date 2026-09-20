@@ -6,22 +6,31 @@ import android.os.Bundle
 import android.util.Log
 import android.view.MenuItem
 import android.view.View
+import android.text.InputType
+import android.view.LayoutInflater
 import android.widget.ArrayAdapter
+import android.widget.EditText
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.core.view.GravityCompat
+import androidx.core.view.ViewCompat
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.LinearLayoutManager
 import com.hadietou.poulailler.R
 import com.hadietou.poulailler.BuildConfig
 import com.hadietou.poulailler.data.Batch
 import com.hadietou.poulailler.data.FarmInfo
+import com.hadietou.poulailler.data.Mortality
 import com.hadietou.poulailler.data.FeedRationChange
 import com.hadietou.poulailler.data.parseFeedRationHistory
 import com.hadietou.poulailler.data.toHistoryString
 import com.hadietou.poulailler.databinding.ActivityFarmInfoBinding
+import com.hadietou.poulailler.databinding.ItemThresholdRowBinding
 import com.hadietou.poulailler.network.RetrofitClient
 import com.hadietou.poulailler.repository.FirebaseRepository
 import com.google.android.material.navigation.NavigationView
@@ -50,6 +59,13 @@ class FarmInfoActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
     private var isBlocked = false
     
     private val drawerSubmenus = DrawerSubmenuController()
+
+    // Gestion des lots (autrefois un écran à part, désormais une section de cette page).
+    private val batchViewModel: BatchViewModel by viewModels()
+    private lateinit var batchDialogs: BatchDialogs
+    private lateinit var batchAdapter: BatchAdapter
+    private var allBatches: List<Batch> = emptyList()
+    private var mortalities: List<Mortality> = emptyList()
 
     // Position choisie pour la localité (saisie manuelle géocodée ou sélection sur la carte).
     private var pickedLatitude: Double? = null
@@ -80,8 +96,11 @@ class FarmInfoActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
 
         setupNavigation()
         setupCurrencyDropdown()
+        setupBatchSection(isFirstCreation = savedInstanceState == null)
         loadExistingData()
         observeCurrentBatch()
+        observeTeamSize()
+        observeMortalities()
         checkAccessStatus()
 
         binding.btnSaveFarmInfo.setOnClickListener {
@@ -98,10 +117,11 @@ class FarmInfoActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
             showEditMode(false)
         }
 
-        binding.btnSaveRation.setOnClickListener {
-            if (isBlocked) { showBlockingDialog(); return@setOnClickListener }
-            saveManualRation()
+        val editRation = View.OnClickListener {
+            if (isBlocked) showBlockingDialog() else showRationDialog()
         }
+        binding.btnEditRation.setOnClickListener(editRation)
+        binding.cardFeedRation.setOnClickListener(editRation)
 
         binding.btnPickOnMap.setOnClickListener {
             if (isBlocked) { showBlockingDialog(); return@setOnClickListener }
@@ -116,36 +136,127 @@ class FarmInfoActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
         binding.cardFeedRation.visibility = if (userRole == "RESPONSABLE") View.VISIBLE else View.GONE
     }
 
-    private fun observeCurrentBatch() {
+    // ── Lots ────────────────────────────────────────────────────────────────────────────
+
+    private fun setupBatchSection(isFirstCreation: Boolean) {
+        batchDialogs = BatchDialogs(this, batchViewModel)
+        val isResponsable = userRole == "RESPONSABLE"
+
+        batchAdapter = BatchAdapter { batch ->
+            when {
+                !isResponsable -> Unit
+                isBlocked -> showBlockingDialog()
+                else -> batchDialogs.showBatchOptions(batch)
+            }
+        }
+        binding.rvBatches.layoutManager = LinearLayoutManager(this)
+        binding.rvBatches.adapter = batchAdapter
+
+        binding.btnAddBatch.visibility = if (isResponsable) View.VISIBLE else View.GONE
+        binding.btnAddBatch.setOnClickListener {
+            if (isBlocked) showBlockingDialog() else batchDialogs.showAddBatchDialog()
+        }
+
+        batchViewModel.allBatches.observe(this) { batches ->
+            allBatches = batches
+            batchAdapter.submitList(batches)
+            binding.tvEmptyBatches.visibility = if (batches.isEmpty()) View.VISIBLE else View.GONE
+            binding.tvBatchHint.visibility = if (batches.isNotEmpty() && isResponsable) View.VISIBLE else View.GONE
+            refreshBatchStats()
+        }
+
+        batchViewModel.operationSuccess.observe(this) { success ->
+            if (success) {
+                Toast.makeText(this, "Opération réussie", Toast.LENGTH_SHORT).show()
+            } else if (isBlocked) {
+                showBlockingDialog()
+            } else {
+                Toast.makeText(this, "Une erreur est survenue", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        // Le tableau de bord d'une ferme sans lot propose directement « lot pondeuses » ou « lot chair ».
+        val presetType = intent.getStringExtra("presetType")
+        if (isFirstCreation && isResponsable && batchDialogs.isValidType(presetType)) {
+            binding.root.post { batchDialogs.showAddBatchDialog(presetType) }
+        }
+    }
+
+    /** Effectif réellement présent : sujets à l'arrivée moins la mortalité enregistrée sur ce lot. */
+    private fun currentHens(batch: Batch): Int {
+        val dead = mortalities.filter { it.batchId == batch.firestoreId }.sumOf { it.count }
+        return (batch.hensCount - dead).coerceAtLeast(0)
+    }
+
+    private fun refreshBatchStats() {
+        val active = allBatches.filter { it.status == "ACTIVE" }
+        binding.tvStatLots.text = active.size.toString()
+        binding.tvStatSubjects.text = active.sumOf { currentHens(it) }.toString()
+    }
+
+    private fun observeMortalities() {
         lifecycleScope.launch {
-            firebaseRepo.getBatchesFlow().collectLatest { batches ->
-                val batch = batches.find { it.status == "ACTIVE" }
-                if (batch != null) {
-                    currentBatch = batch
-                    withContext(Dispatchers.Main) {
-                        val rationG = (batch.feedRation * 1000).toInt()
-                        if (binding.etFeedRation.text.isNullOrEmpty()) {
-                            binding.etFeedRation.setText(rationG.toString())
-                        }
-                    }
+            firebaseRepo.getMortalityFlow().collectLatest { list ->
+                mortalities = list
+                withContext(Dispatchers.Main) {
+                    refreshBatchStats()
+                    updateRationCard(currentBatch)
                 }
             }
         }
     }
 
-    private fun saveManualRation() {
+    /** Nombre de personnes rattachées à la ferme (responsable + agents). */
+    private fun observeTeamSize() {
+        lifecycleScope.launch {
+            firebaseRepo.getAllUsersFlow().collectLatest { users ->
+                withContext(Dispatchers.Main) { binding.tvStatTeam.text = users.size.toString() }
+            }
+        }
+    }
+
+    private fun observeCurrentBatch() {
+        lifecycleScope.launch {
+            firebaseRepo.getBatchesFlow().collectLatest { batches ->
+                val batch = batches.find { it.status == "ACTIVE" }
+                currentBatch = batch
+                withContext(Dispatchers.Main) { updateRationCard(batch) }
+            }
+        }
+    }
+
+    private fun updateRationCard(batch: Batch?) {
+        if (batch == null) {
+            binding.tvRationValue.text = "—"
+            binding.tvRationDetail.text = "Aucun lot actif"
+            return
+        }
+        val rationG = batch.feedRation * 1000
+        binding.tvRationValue.text = if (rationG % 1.0 == 0.0) rationG.toInt().toString() else "%.1f".format(Locale.US, rationG)
+        val hens = currentHens(batch)
+        val totalKg = batch.feedRation * hens
+        binding.tvRationDetail.text = "${batch.name} · ≈ ${"%.1f".format(Locale.FRANCE, totalKg)} kg par jour pour $hens sujets actuels"
+    }
+
+    private fun showRationDialog() {
+        val batch = currentBatch ?: run {
+            Toast.makeText(this, "Aucun lot actif", Toast.LENGTH_SHORT).show()
+            return
+        }
+        showNumberDialog(
+            title = "Ration alimentaire",
+            message = "Grammes d'aliment par sujet et par jour pour « ${batch.name} ». Appliquée à partir d'aujourd'hui.",
+            currentValue = (batch.feedRation * 1000).let { if (it % 1.0 == 0.0) it.toInt().toString() else it.toString() },
+            decimal = true,
+            signed = false
+        ) { value -> saveManualRation(value) }
+    }
+
+    private fun saveManualRation(rationG: Double) {
         val batch = currentBatch ?: run {
             Toast.makeText(this, "Aucun lot sélectionné", Toast.LENGTH_SHORT).show()
             return
         }
-
-        val rationStr = binding.etFeedRation.text?.toString() ?: ""
-        if (rationStr.isEmpty()) {
-            Toast.makeText(this, "Veuillez saisir une valeur", Toast.LENGTH_SHORT).show()
-            return
-        }
-
-        val rationG = rationStr.toDoubleOrNull() ?: 0.0
         val rationKg = rationG / 1000.0
 
         // La ration ne doit s'appliquer qu'à partir d'aujourd'hui : on enregistre ce
@@ -168,7 +279,6 @@ class FarmInfoActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
                 firebaseRepo.updateBatch(updatedBatch)
                 withContext(Dispatchers.Main) {
                     Toast.makeText(this@FarmInfoActivity, "Ration mise à jour : ${rationG.toInt()}g/sujet", Toast.LENGTH_SHORT).show()
-                    binding.etFeedRation.clearFocus()
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
@@ -185,7 +295,7 @@ class FarmInfoActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
             if (blocked) {
                 withContext(Dispatchers.Main) {
                     binding.btnEditInfo.visibility = View.GONE
-                    binding.btnSaveRation.isEnabled = false
+                    binding.btnAddBatch.visibility = View.GONE
                     showBlockingDialog()
                 }
             }
@@ -223,7 +333,6 @@ class FarmInfoActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
         val menu = nav.menu
         menu.findItem(R.id.nav_users)?.isVisible = userRole == "RESPONSABLE"
         menu.findItem(R.id.nav_expenses)?.isVisible = userRole == "RESPONSABLE"
-        menu.findItem(R.id.nav_batches)?.isVisible = userRole == "RESPONSABLE"
         drawerSubmenus.applyGroupVisibility(menu)
         refreshDrawerMenuStyle()
     }
@@ -266,7 +375,7 @@ class FarmInfoActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
 
     private fun loadExistingData() {
         lifecycleScope.launch {
-            val info = firebaseRepo.getFarmInfo()
+            val info = firebaseRepo.ensureFarmLocationFromCity()
             withContext(Dispatchers.Main) {
                 if (info != null && info.farmName.isNotEmpty()) {
                     currentFarmInfo = info
@@ -302,28 +411,186 @@ class FarmInfoActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
         binding.etDewormingInternalInterval.setText(info.dewormingInternalIntervalMonths.toString())
         binding.etDewormingExternalInterval.setText(info.dewormingExternalIntervalMonths.toString())
 
-        binding.tvDisplayThresholds.text = getString(
-            R.string.thresholds_summary,
-            info.eggTraysCriticalThreshold,
-            info.feedStockCriticalDays,
-            info.feedStockWarningDays,
-            info.heatAlertTempCelsius,
-            info.lightingHoursAfterSunrise,
-            info.vaccineIntervalMonths,
-            info.dewormingInternalIntervalMonths,
-            info.dewormingExternalIntervalMonths,
-            info.weatherTempOffsetCelsius
-        )
+        renderThresholds(info)
 
-        binding.tvDisplayHensCount.visibility = View.GONE
-        binding.tvDisplayBreed.visibility = View.GONE
-        binding.tvDisplayArrival.visibility = View.GONE
-        binding.tvDisplayBirth.visibility = View.GONE
-        
-        binding.tilHensCount.visibility = View.GONE
-        binding.tilHenBreed.visibility = View.GONE
-        binding.tilArrivalDate.visibility = View.GONE
-        binding.tilBirthDate.visibility = View.GONE
+        binding.tvHeroCreated.text = formatCreationDate(info.setupDate)
+        binding.tvHeroAge.text = formatFarmAge(info.setupDate)
+        binding.tvInfoGps.text = if (info.latitude != null && info.longitude != null) {
+            "%.4f, %.4f".format(Locale.US, info.latitude, info.longitude)
+        } else {
+            "Non définie"
+        }
+        updateHeroLocation(info.locality, farmSummary?.country ?: farmSummary?.city)
+        loadFarmSummary(info)
+    }
+
+    private var farmSummary: FirebaseRepository.FarmSummary? = null
+
+    private fun loadFarmSummary(info: FarmInfo) {
+        lifecycleScope.launch {
+            val summary = firebaseRepo.getFarmSummary() ?: return@launch
+            farmSummary = summary
+            withContext(Dispatchers.Main) {
+                binding.tvInfoOwner.text = summary.ownerName ?: "—"
+                updateHeroLocation(info.locality ?: summary.city, summary.country)
+            }
+        }
+    }
+
+    private fun updateHeroLocation(place: String?, country: String?) {
+        val text = listOfNotNull(place?.takeIf { it.isNotBlank() }, country?.takeIf { it.isNotBlank() })
+            .joinToString(", ")
+        binding.tvHeroLocation.text = text.ifEmpty { "Localisation non définie" }
+    }
+
+    // ── Seuils d'alerte : lignes tactiles ────────────────────────────────────────────────
+
+    private class ThresholdSpec(
+        val label: String,
+        val hint: String?,
+        val field: EditText,
+        val display: (FarmInfo) -> String,
+        val decimal: Boolean = false,
+        val signed: Boolean = false
+    )
+
+    private fun renderThresholds(info: FarmInfo) {
+        val stock = listOf(
+            ThresholdSpec("Alvéoles d'œufs", "Alerte quand le stock passe sous ce nombre", binding.etEggTraysCritical,
+                { "${it.eggTraysCriticalThreshold} alvéoles" }),
+            ThresholdSpec("Aliment · seuil critique", "Autonomie en jours (alerte rouge)", binding.etFeedStockCriticalDays,
+                { "< ${it.feedStockCriticalDays} j" }),
+            ThresholdSpec("Aliment · seuil d'alerte", "Autonomie en jours (alerte orange)", binding.etFeedStockWarningDays,
+                { "< ${it.feedStockWarningDays} j" })
+        )
+        val climate = listOf(
+            ThresholdSpec("Alerte canicule", "Notification à partir de cette température", binding.etHeatAlertTemp,
+                { "${it.heatAlertTempCelsius} °C" }),
+            ThresholdSpec("Correction météo locale", "Ajuste la météo affichée au relevé de terrain", binding.etWeatherTempOffset,
+                { "%+.1f °C".format(Locale.US, it.weatherTempOffsetCelsius) }, decimal = true, signed = true),
+            ThresholdSpec("Éclairage artificiel", "Heures après le lever du soleil", binding.etLightingHours,
+                { "${it.lightingHoursAfterSunrise} h" })
+        )
+        val health = listOf(
+            ThresholdSpec("Mortalité anormale", "Alerte au-delà de ce multiple de la moyenne sur 7 jours", binding.etMortalitySpikeMultiplier,
+                { "× ${it.mortalitySpikeMultiplier}" }, decimal = true),
+            ThresholdSpec("Rappel vaccins", null, binding.etVaccineInterval,
+                { "tous les ${it.vaccineIntervalMonths} mois" }),
+            ThresholdSpec("Déparasitage interne", null, binding.etDewormingInternalInterval,
+                { "tous les ${it.dewormingInternalIntervalMonths} mois" }),
+            ThresholdSpec("Déparasitage externe", null, binding.etDewormingExternalInterval,
+                { "tous les ${it.dewormingExternalIntervalMonths} mois" })
+        )
+        fillThresholdGroup(binding.llThresholdsStock, stock, info, R.color.earthy_container, R.color.earthy_orange)
+        fillThresholdGroup(binding.llThresholdsClimate, climate, info, R.color.accent_blue_container, R.color.accent_blue)
+        fillThresholdGroup(binding.llThresholdsHealth, health, info, R.color.emerald_container, R.color.primary)
+    }
+
+    private fun fillThresholdGroup(
+        container: android.widget.LinearLayout,
+        specs: List<ThresholdSpec>,
+        info: FarmInfo,
+        chipBgRes: Int,
+        chipTextRes: Int
+    ) {
+        container.removeAllViews()
+        specs.forEachIndexed { index, spec ->
+            val row = ItemThresholdRowBinding.inflate(LayoutInflater.from(this), container, false)
+            row.tvThresholdLabel.text = spec.label
+            row.tvThresholdHint.text = spec.hint
+            row.tvThresholdHint.visibility = if (spec.hint == null) View.GONE else View.VISIBLE
+            row.tvThresholdValue.text = spec.display(info)
+            row.tvThresholdValue.setTextColor(ContextCompat.getColor(this, chipTextRes))
+            ViewCompat.setBackgroundTintList(row.tvThresholdValue, ContextCompat.getColorStateList(this, chipBgRes))
+            row.root.setOnClickListener {
+                if (isBlocked) { showBlockingDialog(); return@setOnClickListener }
+                showNumberDialog(
+                    title = spec.label,
+                    message = spec.hint,
+                    currentValue = spec.field.text?.toString().orEmpty(),
+                    decimal = spec.decimal,
+                    signed = spec.signed
+                ) { value ->
+                    // Le formulaire de modification porte déjà toute la logique d'enregistrement :
+                    // on y dépose la nouvelle valeur puis on enregistre, sans dupliquer la validation.
+                    spec.field.setText(if (spec.decimal) value.toString() else value.toInt().toString())
+                    saveData()
+                }
+            }
+            container.addView(row.root)
+            if (index < specs.lastIndex) {
+                container.addView(View(this).apply {
+                    layoutParams = android.widget.LinearLayout.LayoutParams(
+                        android.widget.LinearLayout.LayoutParams.MATCH_PARENT, 1
+                    ).also { it.marginStart = (16 * resources.displayMetrics.density).toInt() }
+                    setBackgroundColor(ContextCompat.getColor(this@FarmInfoActivity, R.color.off_white))
+                })
+            }
+        }
+    }
+
+    /** Petite fenêtre de saisie d'un nombre ; [onSave] reçoit une valeur déjà validée. */
+    private fun showNumberDialog(
+        title: String,
+        message: String?,
+        currentValue: String,
+        decimal: Boolean,
+        signed: Boolean,
+        onSave: (Double) -> Unit
+    ) {
+        val pad = (20 * resources.displayMetrics.density).toInt()
+        val input = EditText(this).apply {
+            inputType = InputType.TYPE_CLASS_NUMBER or
+                (if (decimal) InputType.TYPE_NUMBER_FLAG_DECIMAL else 0) or
+                (if (signed) InputType.TYPE_NUMBER_FLAG_SIGNED else 0)
+            setText(currentValue)
+            setSelection(text.length)
+            setTextColor(ContextCompat.getColor(this@FarmInfoActivity, R.color.text_primary))
+        }
+        val holder = android.widget.FrameLayout(this).apply {
+            setPadding(pad, pad / 2, pad, 0)
+            addView(input)
+        }
+        val dialog = AlertDialog.Builder(this)
+            .setTitle(title)
+            .apply { message?.let { setMessage(it) } }
+            .setView(holder)
+            .setPositiveButton("Enregistrer", null)
+            .setNegativeButton("Annuler", null)
+            .create()
+        dialog.setOnShowListener {
+            input.requestFocus()
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                val value = input.text.toString().replace(',', '.').toDoubleOrNull()
+                if (value == null || (!signed && value < 0)) {
+                    input.error = "Valeur invalide"
+                } else {
+                    dialog.dismiss()
+                    onSave(value)
+                }
+            }
+        }
+        dialog.show()
+    }
+
+    private fun formatCreationDate(millis: Long): String =
+        if (millis <= 0L) "Date inconnue"
+        else SimpleDateFormat("d MMMM yyyy", Locale.FRANCE).format(Date(millis))
+
+    private fun formatFarmAge(millis: Long): String {
+        if (millis <= 0L) return "—"
+        val days = ((System.currentTimeMillis() - millis) / (24L * 60 * 60 * 1000)).toInt().coerceAtLeast(0)
+        return when {
+            days == 0 -> "Aujourd'hui"
+            days < 31 -> if (days == 1) "1 jour" else "$days jours"
+            days < 365 -> "${days / 30} mois"
+            else -> {
+                val years = days / 365
+                val months = (days % 365) / 30
+                val y = if (years == 1) "1 an" else "$years ans"
+                if (months > 0) "$y et $months mois" else y
+            }
+        }
     }
 
     private fun updatePickedLocationSummary() {
@@ -441,12 +708,6 @@ class FarmInfoActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
                 intent.putExtra("userIdString", userId)
                 startActivity(intent)
                 finish()
-            }
-            R.id.nav_batches -> {
-                val intent = Intent(this, BatchActivity::class.java)
-                intent.putExtra("role", userRole)
-                intent.putExtra("userIdString", userId)
-                startActivity(intent)
             }
             R.id.nav_users -> {
                 val intent = Intent(this, ResponsableActivity::class.java)

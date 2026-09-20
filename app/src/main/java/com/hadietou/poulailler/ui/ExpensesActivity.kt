@@ -186,7 +186,6 @@ class ExpensesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
         val menu = nav.menu
         menu.findItem(R.id.nav_users)?.isVisible = userRole == "RESPONSABLE"
         menu.findItem(R.id.nav_expenses)?.isVisible = userRole == "RESPONSABLE"
-        menu.findItem(R.id.nav_batches)?.isVisible = userRole == "RESPONSABLE"
         drawerSubmenus.applyGroupVisibility(menu)
         refreshDrawerMenuStyle()
     }
@@ -513,12 +512,6 @@ class ExpensesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
                 intent.putExtra("userIdString", userId)
                 startActivity(intent)
                 finish()
-            }
-            R.id.nav_batches -> {
-                val intent = Intent(this, BatchActivity::class.java)
-                intent.putExtra("role", userRole)
-                intent.putExtra("userIdString", userId)
-                startActivity(intent)
             }
             R.id.nav_users -> {
                 val intent = Intent(this, ResponsableActivity::class.java)

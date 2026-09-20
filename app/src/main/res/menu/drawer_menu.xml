@@ -8,9 +8,9 @@
             android:title="Tableau de Bord" />
 
         <item
-            android:id="@+id/nav_batches"
-            android:icon="@drawable/ic_batches"
-            android:title="Gestion des Lots" />
+            android:id="@+id/nav_settings"
+            android:icon="@drawable/ic_farm"
+            android:title="Mon exploitation" />
 
         <item
             android:id="@+id/nav_expenses"
@@ -71,11 +71,6 @@
     </group>
 
     <group android:checkableBehavior="single">
-        <item
-            android:id="@+id/nav_settings"
-            android:icon="@drawable/ic_settings"
-            android:title="Paramètres" />
-
         <!-- Menu Parent Compte (déplie un sous-menu, même mécanisme que Oeufs/Santé
              ci-dessus, pour un seul système visuel de sous-menu dans tout le tiroir). -->
         <item

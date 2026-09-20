@@ -53,6 +53,7 @@ class BatchAdapter(private val onDeleteClick: (Batch) -> Unit) : RecyclerView.Ad
             binding.tvBatchArrivalDate.text = "Arrivée le ${dateFormat.format(Date(batch.arrivalDate))}"
             binding.tvBatchBirthDate.text = "Éclosion le ${dateFormat.format(Date(batch.chickBirthDate))}"
             
+            binding.root.setOnClickListener { onDeleteClick(batch) }
             binding.root.setOnLongClickListener {
                 onDeleteClick(batch)
                 true

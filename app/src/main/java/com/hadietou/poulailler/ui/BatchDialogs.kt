@@ -1,73 +1,36 @@
 package com.hadietou.poulailler.ui
 
 import android.app.DatePickerDialog
-import android.os.Bundle
 import android.view.LayoutInflater
-import android.view.View
 import android.widget.ArrayAdapter
 import android.widget.Toast
-import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import androidx.recyclerview.widget.LinearLayoutManager
 import com.hadietou.poulailler.data.Batch
-import com.hadietou.poulailler.databinding.ActivityBatchBinding
 import com.hadietou.poulailler.databinding.DialogAddBatchBinding
 import java.text.SimpleDateFormat
 import java.util.*
 
-class BatchActivity : AppCompatActivity() {
-
-    private lateinit var binding: ActivityBatchBinding
-    private val viewModel: BatchViewModel by viewModels()
+/**
+ * Dialogues de gestion des lots (création, archivage, suppression), utilisés par la page
+ * « Mon exploitation ». Regroupés ici pour ne pas alourdir l'écran qui les affiche.
+ */
+class BatchDialogs(
+    private val activity: AppCompatActivity,
+    private val viewModel: BatchViewModel
+) {
     private val calendar = Calendar.getInstance()
     private val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-    private lateinit var adapter: BatchAdapter
     private val layingBreeds = arrayOf("Lohmann Brown", "Isa Brown", "Leghorn", "Rhode Island Red", "SASSO / Améliorée")
     private val chairBreeds = arrayOf("COBB 500 (Chair)", "ROSS 308 (Chair)", "SASSO / Améliorée")
     private val batchTypes = arrayOf("PONDEUSE", "CHAIR")
 
     private fun breedsFor(type: String) = if (type == "CHAIR") chairBreeds else layingBreeds
-    private var isBlocked = false
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        binding = ActivityBatchBinding.inflate(layoutInflater)
-        setContentView(binding.root)
+    fun isValidType(type: String?) = type != null && type in batchTypes
 
-        setupToolbar()
-        setupRecyclerView()
-        setupClickListeners()
-        observeViewModel()
-
-        // Le tableau de bord d'une ferme sans lot propose directement « lot pondeuses » ou « lot chair ».
-        intent.getStringExtra("presetType")?.takeIf { it in batchTypes }?.let { showAddBatchDialog(it) }
-    }
-
-    private fun setupToolbar() {
-        setSupportActionBar(binding.toolbar)
-        supportActionBar?.setDisplayHomeAsUpEnabled(true)
-        binding.toolbar.setNavigationOnClickListener { finish() }
-    }
-
-    private fun setupRecyclerView() {
-        adapter = BatchAdapter { batch ->
-            if (isBlocked) { showBlockingDialog() }
-            else { showBatchOptions(batch) }
-        }
-        binding.rvBatches.layoutManager = LinearLayoutManager(this)
-        binding.rvBatches.adapter = adapter
-    }
-
-    private fun setupClickListeners() {
-        binding.fabAddBatch.setOnClickListener {
-            if (isBlocked) { showBlockingDialog(); return@setOnClickListener }
-            showAddBatchDialog()
-        }
-    }
-
-    private fun showBlockingDialog() {
-        AlertDialog.Builder(this)
+    fun showBlocking() {
+        AlertDialog.Builder(activity)
             .setTitle("Mode Lecture Seule")
             .setMessage("Veuillez envoyer un email à hadietou@gmail.com pour lui demander de valider la ferme afin de continuer à utiliser l'application. En attendant, vous pouvez uniquement consulter vos données.")
             .setCancelable(true)
@@ -75,20 +38,19 @@ class BatchActivity : AppCompatActivity() {
             .show()
     }
 
-    private fun showAddBatchDialog(presetType: String? = null) {
-        val dialogBinding = DialogAddBatchBinding.inflate(LayoutInflater.from(this))
-        val dialog = AlertDialog.Builder(this)
+    fun showAddBatchDialog(presetType: String? = null) {
+        val dialogBinding = DialogAddBatchBinding.inflate(LayoutInflater.from(activity))
+        val dialog = AlertDialog.Builder(activity)
             .setView(dialogBinding.root)
             .create()
 
         val initialType = presetType ?: batchTypes[0]
-        val typeAdapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, batchTypes)
-        dialogBinding.actvBatchType.setAdapter(typeAdapter)
+        dialogBinding.actvBatchType.setAdapter(ArrayAdapter(activity, android.R.layout.simple_dropdown_item_1line, batchTypes))
         dialogBinding.actvBatchType.setText(initialType, false)
 
         fun applyBreedsFor(type: String) {
             val list = breedsFor(type)
-            dialogBinding.actvHenBreed.setAdapter(ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, list))
+            dialogBinding.actvHenBreed.setAdapter(ArrayAdapter(activity, android.R.layout.simple_dropdown_item_1line, list))
             dialogBinding.actvHenBreed.setText(list[0], false)
         }
         applyBreedsFor(initialType)
@@ -123,7 +85,7 @@ class BatchActivity : AppCompatActivity() {
             val providerPhone = dialogBinding.etProviderPhone.text.toString().trim()
 
             if (name.isEmpty() || countStr.isEmpty() || breed.isEmpty() || typeLot.isEmpty()) {
-                Toast.makeText(this, "Veuillez remplir tous les champs obligatoires", Toast.LENGTH_SHORT).show()
+                Toast.makeText(activity, "Veuillez remplir tous les champs obligatoires", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
@@ -145,7 +107,7 @@ class BatchActivity : AppCompatActivity() {
 
     private fun showDatePicker(onDateSelected: (Long) -> Unit) {
         DatePickerDialog(
-            this,
+            activity,
             { _, year, month, dayOfMonth ->
                 calendar.set(year, month, dayOfMonth)
                 onDateSelected(calendar.timeInMillis)
@@ -156,14 +118,14 @@ class BatchActivity : AppCompatActivity() {
         ).show()
     }
 
-    private fun showBatchOptions(batch: Batch) {
+    fun showBatchOptions(batch: Batch) {
         val options = if (batch.status == "ACTIVE") {
             arrayOf("Archiver le lot", "Supprimer le lot")
         } else {
             arrayOf("Désarchiver le lot", "Supprimer le lot")
         }
 
-        AlertDialog.Builder(this)
+        AlertDialog.Builder(activity)
             .setTitle("Options du lot : ${batch.name}")
             .setItems(options) { _, which ->
                 when (which) {
@@ -175,7 +137,7 @@ class BatchActivity : AppCompatActivity() {
     }
 
     private fun showDeleteConfirmation(batch: Batch) {
-        AlertDialog.Builder(this)
+        AlertDialog.Builder(activity)
             .setTitle("Supprimer le lot")
             .setMessage("Voulez-vous vraiment supprimer définitivement le lot ${batch.name} ? Cette action est irréversible.")
             .setPositiveButton("Supprimer") { _, _ ->
@@ -183,36 +145,5 @@ class BatchActivity : AppCompatActivity() {
             }
             .setNegativeButton("Annuler", null)
             .show()
-    }
-
-    private fun observeViewModel() {
-        viewModel.isAccessBlocked.observe(this) { blocked ->
-            isBlocked = blocked
-            if (blocked) {
-                binding.fabAddBatch.visibility = View.GONE
-                showBlockingDialog()
-            }
-        }
-
-        viewModel.allBatches.observe(this) { batches ->
-            adapter.submitList(batches)
-        }
-
-        viewModel.operationSuccess.observe(this) { success ->
-            if (success) {
-                Toast.makeText(this, "Opération réussie", Toast.LENGTH_SHORT).show()
-            } else {
-                if (isBlocked) {
-                    showBlockingDialog()
-                } else {
-                    Toast.makeText(this, "Une erreur est survenue", Toast.LENGTH_SHORT).show()
-                }
-            }
-        }
-    }
-
-    override fun onResume() {
-        super.onResume()
-        viewModel.checkAccessStatus()
     }
 }

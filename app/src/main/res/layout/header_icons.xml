@@ -38,10 +38,10 @@
             android:layout_height="48dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:clickable="true"
-            android:contentDescription="@string/default_username"
+            android:contentDescription="Mon exploitation"
             android:focusable="true"
             android:padding="12dp"
-            android:src="@drawable/ic_profile"
+            android:src="@drawable/ic_farm"
             app:tint="@color/white" />
     </LinearLayout>
 </merge>

@@ -23,15 +23,14 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
     private val db = FirebaseFirestore.getInstance()
     private val firebaseRepo = FirebaseRepository()
 
-    // État de la vérification SMS en cours (voir startPhoneVerification / verifyOtpForSignup).
+    // État de la vérification SMS en cours (voir startPhoneVerification / verifyOtp).
     private var verificationId: String? = null
 
     /**
      * Ce numéro tenait-il déjà un compte avant cette vérification, ou vient-il d'être créé ?
-     * Un compte téléphone n'a pas de mot de passe : se reconnecter plus tard repasse par ce
-     * même écran d'inscription (un nouveau code SMS, jamais un mot de passe) — ce indicateur
-     * sert à adapter le message affiché après coup (LoginActivity) plutôt que de prétendre à
-     * tort qu'un nouveau compte est créé à chaque connexion.
+     * Un compte téléphone n'a pas de mot de passe : se reconnecter plus tard repasse par le même
+     * écran (un nouveau code SMS, jamais un mot de passe) — cet indicateur sert à adapter le
+     * message affiché après coup (LoginActivity) : « Compte créé » ou « Bon retour ».
      */
     var lastPhoneLoginWasNewAccount: Boolean = false
         private set
@@ -107,6 +106,10 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
                 }
             }
             onResult(true, profile.role, uid)
+        } else if (!auth.currentUser?.phoneNumber.isNullOrBlank()) {
+            // Compte téléphone dont le nom n'a pas encore été saisi (ex: appli fermée entre la
+            // vérification du code et la saisie du nom) : on le redemande, on ne crée rien.
+            onResult(false, NAME_REQUIRED, uid)
         } else {
             // Créer un profil si manquant (cas rare)
             firebaseRepo.createUserProfile(uid, email.split("@")[0], email, "RESPONSABLE")
@@ -192,37 +195,61 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
         PhoneAuthProvider.verifyPhoneNumber(options)
     }
 
-    /** À appeler une fois le code SMS saisi par l'utilisateur, pour finaliser l'inscription. */
-    fun verifyOtpForSignup(code: String, username: String, phoneNumber: String, email: String?, onResult: (Boolean, String, String) -> Unit) {
+    /**
+     * À appeler une fois le code SMS saisi. Le résultat est soit une connexion (compte existant),
+     * soit [NAME_REQUIRED] si le numéro est nouveau : l'écran demande alors le nom puis appelle
+     * [completePhoneSignup].
+     */
+    fun verifyOtp(code: String, onResult: (Boolean, String, String) -> Unit) {
         val vId = verificationId
         if (vId == null) {
             onResult(false, "Session expirée, redemandez un code.", "")
             return
         }
-        signInWithPhoneCredential(PhoneAuthProvider.getCredential(vId, code), username, phoneNumber, email, onResult)
+        signInWithPhoneCredential(PhoneAuthProvider.getCredential(vId, code), onResult)
     }
 
     /** Cas de récupération automatique du SMS (pas de saisie manuelle du code nécessaire). */
-    fun signUpWithAutoVerifiedCredential(credential: PhoneAuthCredential, username: String, phoneNumber: String, email: String?, onResult: (Boolean, String, String) -> Unit) {
-        signInWithPhoneCredential(credential, username, phoneNumber, email, onResult)
+    fun signInWithAutoVerifiedCredential(credential: PhoneAuthCredential, onResult: (Boolean, String, String) -> Unit) {
+        signInWithPhoneCredential(credential, onResult)
     }
 
-    private fun signInWithPhoneCredential(credential: PhoneAuthCredential, username: String, phoneNumber: String, email: String?, onResult: (Boolean, String, String) -> Unit) {
+    private fun signInWithPhoneCredential(credential: PhoneAuthCredential, onResult: (Boolean, String, String) -> Unit) {
         viewModelScope.launch {
             try {
                 val result = auth.signInWithCredential(credential).await()
                 val user = result.user
                 if (user != null) {
                     val existing = firebaseRepo.getUserProfile(user.uid)
-                    lastPhoneLoginWasNewAccount = existing == null
+                    lastPhoneLoginWasNewAccount = false
                     if (existing == null) {
-                        firebaseRepo.createMinimalUserProfile(user.uid, username, phoneNumber, email)
+                        onResult(false, NAME_REQUIRED, user.uid)
+                    } else {
+                        handleSuccessfulAuth(user.uid, existing.email ?: "", onResult)
                     }
-                    handleSuccessfulAuth(user.uid, existing?.email ?: "", onResult)
                 } else onResult(false, "Erreur de connexion", "")
             } catch (e: Exception) {
                 Log.e("LoginVM", "Phone sign-in error", e)
                 onResult(false, e.message ?: "Code invalide.", "")
+            }
+        }
+    }
+
+    /** Crée le profil d'un nouveau compte téléphone, une fois son nom saisi. */
+    fun completePhoneSignup(username: String, onResult: (Boolean, String, String) -> Unit) {
+        val user = auth.currentUser
+        if (user == null) {
+            onResult(false, "Session expirée, reconnectez-vous.", "")
+            return
+        }
+        viewModelScope.launch {
+            try {
+                firebaseRepo.createMinimalUserProfile(user.uid, username, user.phoneNumber, null)
+                lastPhoneLoginWasNewAccount = true
+                handleSuccessfulAuth(user.uid, "", onResult)
+            } catch (e: Exception) {
+                Log.e("LoginVM", "Phone signup profile error", e)
+                onResult(false, e.message ?: "Erreur lors de la création du compte.", "")
             }
         }
     }
@@ -247,5 +274,10 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
                 onResult(false, e.message ?: "Erreur lors de la liaison du numéro.")
             }
         }
+    }
+
+    companion object {
+        /** Code de résultat : numéro vérifié mais compte inexistant, le nom doit être saisi. */
+        const val NAME_REQUIRED = "NOM_REQUIS"
     }
 }

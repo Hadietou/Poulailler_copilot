@@ -20,7 +20,9 @@ import androidx.recyclerview.widget.RecyclerView
 import com.hadietou.poulailler.R
 import com.hadietou.poulailler.BuildConfig
 import com.hadietou.poulailler.databinding.ActivityResponsableBinding
+import com.hadietou.poulailler.data.Invitation
 import com.hadietou.poulailler.databinding.ItemAgentAdminBinding
+import com.hadietou.poulailler.databinding.ItemInvitationPendingBinding
 import com.hadietou.poulailler.databinding.ItemLoginHistoryBinding
 import com.hadietou.poulailler.repository.FirebaseRepository
 import com.google.android.material.navigation.NavigationView
@@ -121,6 +123,7 @@ class ResponsableActivity : AppCompatActivity(), NavigationView.OnNavigationItem
         setupDropdowns()
 
         vm.observeAgents()
+        vm.observePendingInvitations()
         vm.observeLoginHistory()
         vm.checkUserStatus()
     }
@@ -157,7 +160,7 @@ class ResponsableActivity : AppCompatActivity(), NavigationView.OnNavigationItem
 
             lifecycleScope.launch(Dispatchers.IO) {
                 try {
-                    val invitation = firebaseRepo.createInvitation(phoneNumber)
+                    val invitation = firebaseRepo.createInvitation(phoneNumber, name)
                     withContext(Dispatchers.Main) {
                         binding.etAgentName.setText("")
                         binding.etAgentPhone.setText("")
@@ -201,7 +204,6 @@ class ResponsableActivity : AppCompatActivity(), NavigationView.OnNavigationItem
         val menu = nav.menu
         menu.findItem(R.id.nav_users)?.isVisible = userRole == "RESPONSABLE"
         menu.findItem(R.id.nav_expenses)?.isVisible = userRole == "RESPONSABLE"
-        menu.findItem(R.id.nav_batches)?.isVisible = userRole == "RESPONSABLE"
         drawerSubmenus.applyGroupVisibility(menu)
         refreshDrawerMenuStyle()
     }
@@ -243,7 +245,18 @@ class ResponsableActivity : AppCompatActivity(), NavigationView.OnNavigationItem
 
     private fun setupRecyclerViews() {
         binding.rvAgents.layoutManager = LinearLayoutManager(this)
+        binding.rvPendingInvites.layoutManager = LinearLayoutManager(this)
         binding.rvLoginHistory.layoutManager = LinearLayoutManager(this)
+    }
+
+    private fun confirmCancelInvitation(invitation: Invitation) {
+        val who = invitation.agentName.ifBlank { invitation.phoneNumber }
+        AlertDialog.Builder(this)
+            .setTitle("Annuler l'invitation")
+            .setMessage("$who ne pourra plus rejoindre la ferme avec cette invitation.")
+            .setPositiveButton("Annuler l'invitation") { _, _ -> vm.cancelInvitation(invitation) }
+            .setNegativeButton("Garder", null)
+            .show()
     }
 
     private fun observeViewModel() {
@@ -264,6 +277,20 @@ class ResponsableActivity : AppCompatActivity(), NavigationView.OnNavigationItem
             }
             binding.tvEmptyAgents.visibility = if (list.isEmpty()) View.VISIBLE else View.GONE
             binding.rvAgents.visibility = if (list.isEmpty()) View.GONE else View.VISIBLE
+        }
+
+        vm.pendingInvitations.observe(this) { list ->
+            binding.layoutPendingInvites.visibility = if (list.isEmpty()) View.GONE else View.VISIBLE
+            binding.tvPendingInvitesTitle.text = "INVITATIONS EN ATTENTE (${list.size})"
+            binding.rvPendingInvites.adapter = PendingInvitationAdapter(
+                list,
+                onResend = { inv ->
+                    startActivity(firebaseRepo.buildWhatsAppInviteIntent(inv.phoneNumber, inv.farmName))
+                },
+                onCancel = { inv ->
+                    if (isBlocked) showBlockingDialog() else confirmCancelInvitation(inv)
+                }
+            )
         }
 
         vm.loginHistory.observe(this) { list ->
@@ -393,6 +420,35 @@ class ResponsableActivity : AppCompatActivity(), NavigationView.OnNavigationItem
             super.onBackPressed()
         }
     }
+}
+
+/** Invitations envoyées par la ferme et pas encore acceptées : relancer (WhatsApp) ou annuler. */
+class PendingInvitationAdapter(
+    private val items: List<Invitation>,
+    private val onResend: (Invitation) -> Unit,
+    private val onCancel: (Invitation) -> Unit
+) : RecyclerView.Adapter<PendingInvitationAdapter.ViewHolder>() {
+
+    class ViewHolder(val binding: ItemInvitationPendingBinding) : RecyclerView.ViewHolder(binding.root)
+
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) =
+        ViewHolder(ItemInvitationPendingBinding.inflate(LayoutInflater.from(parent.context), parent, false))
+
+    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+        val inv = items[position]
+        holder.binding.tvInviteName.text = inv.agentName.ifBlank { "Agent invité" }
+        holder.binding.tvInvitePhone.text = inv.phoneNumber
+        val days = ((System.currentTimeMillis() - inv.createdAt) / (24L * 60 * 60 * 1000)).toInt()
+        holder.binding.tvInviteStatus.text = when {
+            days <= 0 -> "EN ATTENTE · aujourd'hui"
+            days == 1 -> "EN ATTENTE · depuis 1 jour"
+            else -> "EN ATTENTE · depuis $days jours"
+        }
+        holder.binding.btnInviteResend.setOnClickListener { onResend(inv) }
+        holder.binding.btnInviteCancel.setOnClickListener { onCancel(inv) }
+    }
+
+    override fun getItemCount() = items.size
 }
 
 class AgentAdapter(

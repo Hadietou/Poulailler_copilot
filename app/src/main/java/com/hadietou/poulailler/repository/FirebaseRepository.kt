@@ -77,12 +77,18 @@ class FirebaseRepository {
         )
         farmRef.set(farmData).await()
         
+        val cityHit = city?.takeIf { it.isNotBlank() }?.let {
+            try { RetrofitClient.geocodingApi.search(it).results?.firstOrNull() } catch (e: Exception) { null }
+        }
         val initialFarmInfo = hashMapOf(
             "farmName" to farmName,
             "currency" to currency, 
             "setupDate" to System.currentTimeMillis(),
             "country" to country,
-            "city" to city
+            "city" to city,
+            "locality" to city?.takeIf { it.isNotBlank() },
+            "latitude" to cityHit?.latitude,
+            "longitude" to cityHit?.longitude
         )
         db.collection("fermes").document(farmId).collection("config").document("farm_info").set(initialFarmInfo).await()
 
@@ -442,7 +448,7 @@ class FirebaseRepository {
      * consulté par quiconque se connecte avec ce numéro, qui la rend visible — indépendamment
      * de l'envoi ou de la lecture du message WhatsApp (voir [buildWhatsAppInviteIntent]).
      */
-    suspend fun createInvitation(phoneNumber: String): Invitation {
+    suspend fun createInvitation(phoneNumber: String, agentName: String = ""): Invitation {
         checkAndThrowIfBlocked()
         val fId = requireFarmId()
         val info = getFarmInfo()
@@ -452,12 +458,14 @@ class FirebaseRepository {
             "farmId" to fId,
             "farmName" to (info?.farmName ?: ""),
             "invitedByUsername" to (me?.username ?: ""),
+            "agentName" to agentName,
             "status" to "PENDING",
             "createdAt" to System.currentTimeMillis()
         )
         val ref = db.collection("invitations").add(data).await()
         return Invitation(
             phoneNumber = phoneNumber,
+            agentName = agentName,
             farmId = fId,
             farmName = info?.farmName ?: "",
             invitedByUsername = me?.username ?: "",
@@ -475,20 +483,55 @@ class FirebaseRepository {
                 .whereEqualTo("phoneNumber", phoneNumber)
                 .whereEqualTo("status", "PENDING")
                 .addSnapshotListener { s, e ->
-                    val list = s?.documents?.mapNotNull { doc ->
-                        Invitation(
-                            phoneNumber = doc.getString("phoneNumber") ?: "",
-                            farmId = doc.getString("farmId") ?: "",
-                            farmName = doc.getString("farmName") ?: "",
-                            invitedByUsername = doc.getString("invitedByUsername") ?: "",
-                            status = doc.getString("status") ?: "PENDING",
-                            createdAt = doc.getLong("createdAt") ?: 0L,
-                            firestoreId = doc.id
-                        )
-                    }?.sortedByDescending { it.createdAt } ?: emptyList()
+                    val list = s?.documents?.map { mapInvitation(it) }
+                        ?.sortedByDescending { it.createdAt } ?: emptyList()
                     trySend(list)
                 }
             awaitClose { sub.remove() }
+        }
+    }
+
+    private fun mapInvitation(doc: com.google.firebase.firestore.DocumentSnapshot) = Invitation(
+        phoneNumber = doc.getString("phoneNumber") ?: "",
+        agentName = doc.getString("agentName") ?: "",
+        farmId = doc.getString("farmId") ?: "",
+        farmName = doc.getString("farmName") ?: "",
+        invitedByUsername = doc.getString("invitedByUsername") ?: "",
+        status = doc.getString("status") ?: "PENDING",
+        createdAt = doc.getLong("createdAt") ?: 0L,
+        firestoreId = doc.id
+    )
+
+    /**
+     * Invitations PENDING envoyées PAR la ferme courante (côté responsable) : permet de voir
+     * qui a été invité et n'a pas encore rejoint la ferme, puis de relancer ou d'annuler.
+     */
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    fun getFarmPendingInvitationsFlow(): Flow<List<Invitation>> {
+        if (DemoMode.enabled) return flowOf(emptyList())
+        return farmIdFlow.flatMapLatest { fId ->
+            val id = fId ?: getFarmId()
+            if (id == null) flowOf(emptyList())
+            else callbackFlow {
+                val sub = db.collection("invitations")
+                    .whereEqualTo("farmId", id)
+                    .whereEqualTo("status", "PENDING")
+                    .addSnapshotListener { s, e ->
+                        if (e != null) Log.e("FirebaseRepo", "Farm invitations listener error", e)
+                        val list = s?.documents?.map { mapInvitation(it) }
+                            ?.sortedByDescending { it.createdAt } ?: emptyList()
+                        trySend(list)
+                    }
+                awaitClose { sub.remove() }
+            }
+        }
+    }
+
+    /** Annule une invitation en attente (le numéro invité ne la verra plus). */
+    suspend fun cancelInvitation(invitation: Invitation) {
+        checkAndThrowIfBlocked()
+        invitation.firestoreId?.let {
+            db.collection("invitations").document(it).update("status", "CANCELLED").await()
         }
     }
 
@@ -536,7 +579,7 @@ class FirebaseRepository {
         id = 1,
         farmName = s.getString("farmName") ?: "",
         currency = s.getString("currency") ?: "MRU",
-        setupDate = s.getLong("setupDate") ?: System.currentTimeMillis(),
+        setupDate = s.getLong("setupDate") ?: 0L, // 0 = date de création inconnue (fermes anciennes)
         locality = s.getString("locality"),
         latitude = s.getDouble("latitude"),
         longitude = s.getDouble("longitude"),
@@ -551,6 +594,50 @@ class FirebaseRepository {
         dewormingInternalIntervalMonths = s.getLong("dewormingInternalIntervalMonths")?.toInt() ?: FarmInfo.DEFAULT_DEWORMING_INTERNAL_MONTHS,
         dewormingExternalIntervalMonths = s.getLong("dewormingExternalIntervalMonths")?.toInt() ?: FarmInfo.DEFAULT_DEWORMING_EXTERNAL_MONTHS
     )
+
+    /** Informations d'identité de la ferme courante, affichées sur la page « Mon exploitation ». */
+    data class FarmSummary(val country: String?, val city: String?, val ownerName: String?)
+
+    suspend fun getFarmSummary(): FarmSummary? {
+        if (DemoMode.enabled) return FarmSummary("Mauritanie", "Nouakchott", "Démo")
+        val id = getFarmId() ?: return null
+        return try {
+            val doc = db.collection("fermes").document(id).get().await()
+            val ownerId = doc.getString("ownerId")
+            val ownerName = ownerId?.let { getUserProfile(it)?.username }?.takeIf { it.isNotBlank() }
+            FarmSummary(doc.getString("country"), doc.getString("city"), ownerName)
+        } catch (e: Exception) { null }
+    }
+
+    /**
+     * Sans position GPS choisie, la localité météo est la ville de la ferme : on la géocode une
+     * seule fois (Open-Meteo) puis on enregistre localité + coordonnées, pour que la météo, le
+     * lever/coucher du soleil et l'alerte canicule utilisent tous la même position.
+     * Ne change rien si une position existe déjà, si la ferme n'a pas de ville, ou hors ligne.
+     */
+    suspend fun ensureFarmLocationFromCity(): FarmInfo? {
+        val info = getFarmInfo() ?: return null
+        if (DemoMode.enabled || (info.latitude != null && info.longitude != null)) return info
+        val place = info.locality?.takeIf { it.isNotBlank() }
+            ?: getFarmSummary()?.city?.takeIf { it.isNotBlank() }
+            ?: return info
+        return try {
+            val hit = RetrofitClient.geocodingApi.search(place).results?.firstOrNull() ?: return info
+            val located = info.copy(locality = place, latitude = hit.latitude, longitude = hit.longitude)
+            try {
+                val fId = requireFarmId()
+                db.collection("fermes").document(fId).collection("config").document("farm_info").set(
+                    hashMapOf("locality" to place, "latitude" to hit.latitude, "longitude" to hit.longitude),
+                    SetOptions.merge()
+                ).await()
+            } catch (e: Exception) {
+                Log.w("FirebaseRepo", "Position de la ville non enregistrée", e)
+            }
+            located
+        } catch (e: Exception) {
+            info
+        }
+    }
 
     suspend fun getFarmInfo(): FarmInfo? {
         if (DemoMode.enabled) return DemoData.farmInfo

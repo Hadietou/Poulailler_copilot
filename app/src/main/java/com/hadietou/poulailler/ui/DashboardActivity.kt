@@ -127,7 +127,7 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
     private fun fetchTodayTemperature() {
         lifecycleScope.launch {
             try {
-                val info = withContext(Dispatchers.IO) { firebaseRepo.getFarmInfo() }
+                val info = withContext(Dispatchers.IO) { firebaseRepo.ensureFarmLocationFromCity() }
                 val response = withContext(Dispatchers.IO) { WeatherUtils.fetchForecast(info?.latitude, info?.longitude) }
                 val offset = info?.weatherTempOffsetCelsius ?: FarmInfo.DEFAULT_WEATHER_TEMP_OFFSET
                 val todayTemp = response.daily.maxTemperatures.firstOrNull()?.plus(offset)
@@ -196,7 +196,7 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
         }
         
         binding.toolbar.findViewById<View>(R.id.ivHeaderProfile)?.setOnClickListener {
-            startActivity(Intent(this, FarmInfoActivity::class.java))
+            navigateTo(FarmInfoActivity::class.java)
         }
 
         binding.btnCreateLayerBatch.setOnClickListener { openBatchCreation("PONDEUSE") }
@@ -282,7 +282,7 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
     }
 
     private fun openBatchCreation(type: String) {
-        val intent = Intent(this, BatchActivity::class.java)
+        val intent = Intent(this, FarmInfoActivity::class.java)
         intent.putExtra("role", userRole)
         intent.putExtra("userIdString", userId)
         intent.putExtra("presetType", type)
@@ -311,7 +311,6 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
         val isResp = userRole == "RESPONSABLE"
         val menu = binding.navigationView.menu
         menu.findItem(R.id.nav_expenses)?.isVisible = isResp
-        menu.findItem(R.id.nav_batches)?.isVisible = isResp
 
         binding.titleFinance.visibility = if (isResp) View.VISIBLE else View.GONE
         binding.cardNetProfit.visibility = if (isResp) View.VISIBLE else View.GONE
@@ -624,7 +623,6 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
         }
         when (item.itemId) {
             R.id.nav_dashboard -> {}
-            R.id.nav_batches -> navigateTo(BatchActivity::class.java)
             R.id.nav_users -> navigateTo(ResponsableActivity::class.java)
             R.id.nav_expenses -> navigateTo(ExpensesActivity::class.java)
             R.id.nav_settings -> navigateTo(FarmInfoActivity::class.java)

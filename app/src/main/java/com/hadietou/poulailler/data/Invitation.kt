@@ -12,10 +12,11 @@ package com.hadietou.poulailler.data
  */
 data class Invitation(
     val phoneNumber: String,
+    val agentName: String = "",
     val farmId: String,
     val farmName: String,
     val invitedByUsername: String,
-    val status: String = "PENDING", // PENDING, ACCEPTED, DECLINED
+    val status: String = "PENDING", // PENDING, ACCEPTED, DECLINED, CANCELLED
     val createdAt: Long = System.currentTimeMillis(),
     val firestoreId: String? = null
 )

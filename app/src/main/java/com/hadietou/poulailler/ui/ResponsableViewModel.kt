@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
+import com.hadietou.poulailler.data.Invitation
 import com.hadietou.poulailler.repository.FirebaseRepository
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -14,6 +15,7 @@ class ResponsableViewModel(application: Application) : AndroidViewModel(applicat
 
     val agents = MutableLiveData<List<Map<String, Any>>>()
     val loginHistory = MutableLiveData<List<Map<String, Any>>>()
+    val pendingInvitations = MutableLiveData<List<Invitation>>(emptyList())
     val createAgentStatus = MutableLiveData<Pair<Boolean, String>>()
     val isUserPending = MutableLiveData<Boolean>(true)
     val isAccessBlocked = MutableLiveData<Boolean>(false)
@@ -29,6 +31,22 @@ class ResponsableViewModel(application: Application) : AndroidViewModel(applicat
                         "active" to user.active
                     )
                 })
+            }
+        }
+    }
+
+    fun observePendingInvitations() {
+        viewModelScope.launch {
+            firebaseRepo.getFarmPendingInvitationsFlow().collectLatest { pendingInvitations.postValue(it) }
+        }
+    }
+
+    fun cancelInvitation(invitation: Invitation) {
+        viewModelScope.launch {
+            try {
+                firebaseRepo.cancelInvitation(invitation)
+            } catch (e: Exception) {
+                createAgentStatus.postValue(Pair(false, e.message ?: "Impossible d'annuler l'invitation"))
             }
         }
     }

@@ -60,7 +60,7 @@ class WeatherActivity : AppCompatActivity() {
         binding.tvWeatherInfo.visibility = View.GONE
         lifecycleScope.launch(Dispatchers.IO) {
             try {
-                val info = firebaseRepo.getFarmInfo()
+                val info = firebaseRepo.ensureFarmLocationFromCity()
                 val response = WeatherUtils.fetchForecast(info?.latitude, info?.longitude)
                 val daily = response.daily
                 val offset = info?.weatherTempOffsetCelsius ?: FarmInfo.DEFAULT_WEATHER_TEMP_OFFSET
@@ -119,7 +119,7 @@ class WeatherActivity : AppCompatActivity() {
     private fun loadLightingSection() {
         lifecycleScope.launch(Dispatchers.IO) {
             try {
-                val info = firebaseRepo.getFarmInfo()
+                val info = firebaseRepo.ensureFarmLocationFromCity()
                 val lightingHours = info?.lightingHoursAfterSunrise ?: FarmInfo.DEFAULT_LIGHTING_HOURS
                 val lat = info?.latitude
                 val lon = info?.longitude

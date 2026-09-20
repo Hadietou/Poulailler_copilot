@@ -67,6 +67,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:hint="Email"
+                    android:visibility="gone"
                     style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense">
                     <com.google.android.material.textfield.TextInputEditText
         style="@style/Widget.App.TextInputEditText"
@@ -82,6 +83,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
                     android:hint="Mot de passe"
+                    android:visibility="gone"
                     app:passwordToggleEnabled="true"
                     style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense">
                     <com.google.android.material.textfield.TextInputEditText
@@ -92,47 +94,14 @@
                         android:inputType="textPassword" />
                 </com.google.android.material.textfield.TextInputLayout>
 
-                <com.google.android.material.textfield.TextInputLayout
-                    android:id="@+id/tilUsername"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:hint="Votre Nom"
-                    android:visibility="gone"
-                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense">
-                    <com.google.android.material.textfield.TextInputEditText
-        style="@style/Widget.App.TextInputEditText"
-                        android:id="@+id/etUsername"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content" />
-                </com.google.android.material.textfield.TextInputLayout>
-
-                <!-- Inscription : email optionnel, permet de récupérer le compte si le numéro
-                     de téléphone devient inaccessible (voir handleSendCode dans LoginActivity). -->
-                <com.google.android.material.textfield.TextInputLayout
-                    android:id="@+id/tilRegisterEmail"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:hint="Email (recommandé)"
-                    android:visibility="gone"
-                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense">
-                    <com.google.android.material.textfield.TextInputEditText
-                        style="@style/Widget.App.TextInputEditText"
-                        android:id="@+id/etRegisterEmail"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:inputType="textEmailAddress" />
-                </com.google.android.material.textfield.TextInputLayout>
-
-                <!-- Inscription : numéro de téléphone (identifiant du compte, vérifié par SMS) -->
+                <!-- Connexion par téléphone (écran par défaut) : le numéro est l'identifiant,
+                     vérifié par un code SMS — pour un nouveau comme pour un habitué. -->
                 <LinearLayout
                     android:id="@+id/layoutPhoneRow"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
-                    android:layout_marginTop="12dp"
-                    android:visibility="gone">
+                    android:layout_marginTop="4dp">
 
                     <com.google.android.material.textfield.TextInputLayout
                         android:layout_width="128dp"
@@ -151,7 +120,7 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:layout_marginStart="8dp"
-                        android:hint="Numéro de téléphone"
+                        android:hint="Numéro"
                         style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense">
                         <com.google.android.material.textfield.TextInputEditText
                             style="@style/Widget.App.TextInputEditText"
@@ -170,9 +139,8 @@
                     android:text="RECEVOIR UN CODE PAR SMS"
                     android:textStyle="bold"
                     app:cornerRadius="8dp"
-                    android:backgroundTint="@color/accent_blue"
-                    android:textColor="@color/white"
-                    android:visibility="gone" />
+                    android:backgroundTint="@color/accent_amber"
+                    android:textColor="@color/black" />
 
                 <!-- Inscription : saisie du code reçu par SMS -->
                 <LinearLayout
@@ -227,7 +195,8 @@
                     android:textStyle="bold"
                     app:cornerRadius="8dp"
                     android:backgroundTint="@color/accent_amber"
-                    android:textColor="@color/black" />
+                    android:textColor="@color/black"
+                    android:visibility="gone" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnToggleRegister"
@@ -235,7 +204,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
-                    android:text="Créer un compte" />
+                    android:text="Se connecter avec un email" />
 
                 <View
                     android:id="@+id/dividerDemo"

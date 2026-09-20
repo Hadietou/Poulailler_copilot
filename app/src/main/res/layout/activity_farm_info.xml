@@ -4,7 +4,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/drawerLayout"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="@color/background">
 
     <androidx.coordinatorlayout.widget.CoordinatorLayout
         android:layout_width="match_parent"
@@ -17,14 +18,14 @@
                 android:id="@+id/toolbar"
                 android:layout_width="match_parent"
                 android:layout_height="?attr/actionBarSize"
-                app:title="Ma Ferme"
+                app:title="Mon exploitation"
                 app:titleTextColor="@color/white"
                 app:navigationIcon="@drawable/ic_back"
                 app:navigationIconTint="@color/white" />
 
         </com.google.android.material.appbar.AppBarLayout>
 
-        <ScrollView
+        <androidx.core.widget.NestedScrollView
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             app:layout_behavior="@string/appbar_scrolling_view_behavior">
@@ -35,77 +36,7 @@
                 android:orientation="vertical"
                 android:padding="16dp">
 
-                <!-- Section Ration Alimentaire -->
-                <com.google.android.material.card.MaterialCardView
-                    android:id="@+id/cardFeedRation"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="16dp"
-                    app:cardBackgroundColor="@color/surface"
-                    app:cardCornerRadius="16dp"
-                    app:strokeColor="#FFD700"
-                    app:strokeWidth="1dp"
-                    app:cardElevation="0dp">
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:padding="16dp">
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="RATION ALIMENTAIRE"
-                            android:textColor="#FFD700"
-                            android:textSize="16sp"
-                            android:textStyle="bold"
-                            android:layout_marginBottom="8dp"/>
-
-                        <TextView
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:text="Définissez la ration journalière par sujet (en grammes) pour ajuster le calcul du stock."
-                            android:textColor="@color/text_secondary"
-                            android:textSize="12sp"
-                            android:layout_marginBottom="12dp"/>
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:orientation="horizontal"
-                            android:gravity="center_vertical">
-
-                            <com.google.android.material.textfield.TextInputLayout
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_weight="1"
-                                android:hint="Ration (g/sujet)"
-                                app:hintTextColor="#B0B0B0"
-                                app:boxStrokeColor="#FFD700"
-                                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense">
-                                <com.google.android.material.textfield.TextInputEditText
-        style="@style/Widget.App.TextInputEditText"
-                                    android:id="@+id/etFeedRation"
-                                    android:layout_width="match_parent"
-                                    android:layout_height="wrap_content"
-                                    android:inputType="numberDecimal"
-                                    android:textColor="@color/text_primary"
-                                    android:textSize="16sp"/>
-                            </com.google.android.material.textfield.TextInputLayout>
-
-                            <com.google.android.material.button.MaterialButton
-                                android:id="@+id/btnSaveRation"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginStart="12dp"
-                                android:text="VALIDER"
-                                app:cornerRadius="8dp"
-                                android:backgroundTint="#FFD700"
-                                android:textColor="@color/black" />
-                        </LinearLayout>
-                    </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
-
-                <!-- Mode Affichage Amélioré -->
+                <!-- ═══════════ Vue d'ensemble ═══════════ -->
                 <LinearLayout
                     android:id="@+id/layoutDisplayInfo"
                     android:layout_width="match_parent"
@@ -113,155 +44,658 @@
                     android:orientation="vertical"
                     android:visibility="gone">
 
+                    <!-- Carte d'identité de l'exploitation -->
                     <com.google.android.material.card.MaterialCardView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        app:cardBackgroundColor="@color/surface"
-                        app:cardCornerRadius="12dp"
-                        app:strokeColor="#1E90FF"
-                        app:strokeWidth="1dp">
+                        app:cardBackgroundColor="@color/primary"
+                        app:cardCornerRadius="24dp"
+                        app:cardElevation="0dp">
 
                         <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:orientation="vertical"
-                            android:padding="16dp">
+                            android:padding="20dp">
 
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="Résumé de l'exploitation"
-                                android:textColor="#1E90FF"
-                                android:textSize="18sp"
-                                android:textStyle="bold"
-                                android:layout_marginBottom="16dp"/>
-
-                            <!-- Farm Name -->
                             <LinearLayout
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:orientation="horizontal"
-                                android:layout_marginBottom="8dp">
-                                <ImageView
-                                    android:layout_width="24dp"
-                                    android:layout_height="24dp"
-                                    android:src="@drawable/ic_calendar"
-                                    app:tint="#1E90FF"
-                                    android:contentDescription="Icône ferme" />
-                                <TextView
-                                    android:id="@+id/tvDisplayFarmName"
-                                    android:layout_width="match_parent"
+                                android:gravity="center_vertical"
+                                android:orientation="horizontal">
+
+                                <FrameLayout
+                                    android:layout_width="56dp"
+                                    android:layout_height="56dp"
+                                    android:background="@drawable/bg_farm_hero_icon">
+                                    <ImageView
+                                        android:layout_width="30dp"
+                                        android:layout_height="30dp"
+                                        android:layout_gravity="center"
+                                        android:contentDescription="Exploitation"
+                                        android:src="@drawable/ic_farm"
+                                        app:tint="@color/white" />
+                                </FrameLayout>
+
+                                <LinearLayout
+                                    android:layout_width="0dp"
                                     android:layout_height="wrap_content"
-                                    android:textColor="@color/text_primary"
-                                    android:textSize="16sp"
-                                    android:layout_marginStart="12dp"
-                                    android:textStyle="bold"
-                                    android:text="Nom de la ferme"/>
+                                    android:layout_marginStart="16dp"
+                                    android:layout_weight="1"
+                                    android:orientation="vertical">
+
+                                    <TextView
+                                        android:id="@+id/tvDisplayFarmName"
+                                        android:layout_width="match_parent"
+                                        android:layout_height="wrap_content"
+                                        android:textColor="@color/white"
+                                        android:textSize="22sp"
+                                        android:textStyle="bold"
+                                        tools:text="Ferme Test Chair" />
+
+                                    <TextView
+                                        android:id="@+id/tvHeroLocation"
+                                        android:layout_width="match_parent"
+                                        android:layout_height="wrap_content"
+                                        android:layout_marginTop="2dp"
+                                        android:textColor="#CCFFFFFF"
+                                        android:textSize="14sp"
+                                        tools:text="Windhoek, Namibie" />
+                                </LinearLayout>
                             </LinearLayout>
 
-                            <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/off_white" android:layout_marginVertical="8dp"/>
+                            <View
+                                android:layout_width="match_parent"
+                                android:layout_height="1dp"
+                                android:layout_marginVertical="16dp"
+                                android:background="#33FFFFFF" />
 
-                            <!-- Hens Count & Breed (Hiding these in layout as they move to Batch) -->
-                            <GridLayout
-                                android:id="@+id/layoutDisplayBatchInfo"
+                            <LinearLayout
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:columnCount="2"
-                                android:visibility="gone">
-                                <LinearLayout android:orientation="vertical" android:layout_columnWeight="1" android:layout_width="0dp" android:layout_height="wrap_content">
-                                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Effectif initial" android:textColor="@color/text_secondary" android:textSize="12sp"/>
-                                    <TextView android:id="@+id/tvDisplayHensCount" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="@color/text_primary" android:textSize="16sp" android:textStyle="bold"/>
-                                </LinearLayout>
-                                <LinearLayout android:orientation="vertical" android:layout_columnWeight="1" android:layout_width="0dp" android:layout_height="wrap_content">
-                                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Race" android:textColor="@color/text_secondary" android:textSize="12sp"/>
-                                    <TextView android:id="@+id/tvDisplayBreed" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="@color/text_primary" android:textSize="16sp" android:textStyle="bold"/>
-                                </LinearLayout>
-                            </GridLayout>
+                                android:orientation="horizontal">
 
-                            <View android:id="@+id/divider1" android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/off_white" android:layout_marginVertical="8dp" android:visibility="gone"/>
-
-                            <!-- Dates (Hiding these in layout as they move to Batch) -->
-                            <GridLayout
-                                android:id="@+id/layoutDisplayDateInfo"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:columnCount="2"
-                                android:visibility="gone">
-                                <LinearLayout android:orientation="vertical" android:layout_columnWeight="1" android:layout_width="0dp" android:layout_height="wrap_content">
-                                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Arrivée" android:textColor="@color/text_secondary" android:textSize="12sp"/>
-                                    <TextView android:id="@+id/tvDisplayArrival" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="@color/text_primary" android:textSize="14sp"/>
+                                <LinearLayout
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="3"
+                                    android:orientation="vertical">
+                                    <TextView
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:letterSpacing="0.08"
+                                        android:text="CRÉÉE LE"
+                                        android:textColor="#B3FFFFFF"
+                                        android:textSize="11sp"
+                                        android:textStyle="bold" />
+                                    <TextView
+                                        android:id="@+id/tvHeroCreated"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:layout_marginTop="2dp"
+                                        android:textColor="@color/white"
+                                        android:textSize="16sp"
+                                        android:textStyle="bold"
+                                        tools:text="18 septembre 2026" />
                                 </LinearLayout>
-                                <LinearLayout android:orientation="vertical" android:layout_columnWeight="1" android:layout_width="0dp" android:layout_height="wrap_content">
-                                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Naissance" android:textColor="@color/text_secondary" android:textSize="12sp"/>
-                                    <TextView android:id="@+id/tvDisplayBirth" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="@color/text_primary" android:textSize="14sp"/>
+
+                                <LinearLayout
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="2"
+                                    android:orientation="vertical">
+                                    <TextView
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:letterSpacing="0.08"
+                                        android:text="ANCIENNETÉ"
+                                        android:textColor="#B3FFFFFF"
+                                        android:textSize="11sp"
+                                        android:textStyle="bold" />
+                                    <TextView
+                                        android:id="@+id/tvHeroAge"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:layout_marginTop="2dp"
+                                        android:textColor="@color/white"
+                                        android:textSize="16sp"
+                                        android:textStyle="bold"
+                                        tools:text="2 jours" />
                                 </LinearLayout>
-                            </GridLayout>
-
-                            <View android:id="@+id/divider2" android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/off_white" android:layout_marginVertical="8dp" android:visibility="gone"/>
-
-                            <!-- Currency Display -->
-                            <LinearLayout android:orientation="vertical" android:layout_width="match_parent" android:layout_height="wrap_content">
-                                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Monnaie utilisée" android:textColor="@color/text_secondary" android:textSize="12sp"/>
-                                <TextView android:id="@+id/tvDisplayCurrency" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="@color/text_primary" android:textSize="16sp" android:textStyle="bold" android:text="MRU"/>
                             </LinearLayout>
-
-                            <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/off_white" android:layout_marginVertical="8dp"/>
-
-                            <!-- Locality Display -->
-                            <LinearLayout android:orientation="vertical" android:layout_width="match_parent" android:layout_height="wrap_content">
-                                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Localité (pour la météo)" android:textColor="@color/text_secondary" android:textSize="12sp"/>
-                                <TextView android:id="@+id/tvDisplayLocality" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="@color/text_primary" android:textSize="16sp" android:textStyle="bold" android:text="Non définie"/>
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="16dp"
+                                android:orientation="horizontal">
+                                <LinearLayout
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="3"
+                                    android:orientation="vertical">
+                                    <TextView
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:letterSpacing="0.08"
+                                        android:text="RESPONSABLE"
+                                        android:textColor="#B3FFFFFF"
+                                        android:textSize="11sp"
+                                        android:textStyle="bold" />
+                                    <TextView
+                                        android:id="@+id/tvInfoOwner"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:layout_marginTop="2dp"
+                                        android:textColor="@color/white"
+                                        android:textSize="16sp"
+                                        android:textStyle="bold"
+                                        tools:text="AgentSecond" />
+                                </LinearLayout>
+                                <LinearLayout
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="2"
+                                    android:orientation="vertical">
+                                    <TextView
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:letterSpacing="0.08"
+                                        android:text="MONNAIE"
+                                        android:textColor="#B3FFFFFF"
+                                        android:textSize="11sp"
+                                        android:textStyle="bold" />
+                                    <TextView
+                                        android:id="@+id/tvDisplayCurrency"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:layout_marginTop="2dp"
+                                        android:textColor="@color/white"
+                                        android:textSize="16sp"
+                                        android:textStyle="bold"
+                                        tools:text="NAD" />
+                                </LinearLayout>
+                            </LinearLayout>
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="16dp"
+                                android:orientation="horizontal">
+                                <LinearLayout
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="1"
+                                    android:orientation="vertical">
+                                    <TextView
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:letterSpacing="0.08"
+                                        android:text="LOCALITÉ (MÉTÉO)"
+                                        android:textColor="#B3FFFFFF"
+                                        android:textSize="11sp"
+                                        android:textStyle="bold" />
+                                    <TextView
+                                        android:id="@+id/tvDisplayLocality"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:layout_marginTop="2dp"
+                                        android:textColor="@color/white"
+                                        android:textSize="16sp"
+                                        android:textStyle="bold"
+                                        tools:text="Windhoek" />
+                                </LinearLayout>
+                                <LinearLayout
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="1"
+                                    android:orientation="vertical">
+                                    <TextView
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:letterSpacing="0.08"
+                                        android:text="POSITION GPS"
+                                        android:textColor="#B3FFFFFF"
+                                        android:textSize="11sp"
+                                        android:textStyle="bold" />
+                                    <TextView
+                                        android:id="@+id/tvInfoGps"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:layout_marginTop="2dp"
+                                        android:textColor="@color/white"
+                                        android:textSize="14sp"
+                                        android:textStyle="bold"
+                                        tools:text="-22.5609, 17.0658" />
+                                </LinearLayout>
                             </LinearLayout>
                         </LinearLayout>
                     </com.google.android.material.card.MaterialCardView>
 
-                    <!-- Seuils d'alerte (résumé) -->
-                    <com.google.android.material.card.MaterialCardView
+                    <!-- Chiffres clés -->
+                    <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="12dp"
-                        app:cardBackgroundColor="@color/surface"
-                        app:cardCornerRadius="12dp"
-                        app:strokeColor="#1E90FF"
-                        app:strokeWidth="1dp">
+                        android:orientation="horizontal">
 
+                        <com.google.android.material.card.MaterialCardView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginEnd="6dp"
+                            android:layout_weight="1"
+                            app:cardCornerRadius="16dp"
+                            app:cardElevation="0dp">
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="vertical"
+                                android:padding="14dp">
+                                <TextView
+                                    android:id="@+id/tvStatLots"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:textColor="@color/primary"
+                                    android:textSize="26sp"
+                                    android:textStyle="bold"
+                                    tools:text="2" />
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Lots actifs"
+                                    android:textColor="@color/text_secondary"
+                                    android:textSize="12sp" />
+                            </LinearLayout>
+                        </com.google.android.material.card.MaterialCardView>
+
+                        <com.google.android.material.card.MaterialCardView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginHorizontal="6dp"
+                            android:layout_weight="1"
+                            app:cardCornerRadius="16dp"
+                            app:cardElevation="0dp">
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="vertical"
+                                android:padding="14dp">
+                                <TextView
+                                    android:id="@+id/tvStatSubjects"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:textColor="@color/accent_blue"
+                                    android:textSize="26sp"
+                                    android:textStyle="bold"
+                                    tools:text="500" />
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Sujets"
+                                    android:textColor="@color/text_secondary"
+                                    android:textSize="12sp" />
+                            </LinearLayout>
+                        </com.google.android.material.card.MaterialCardView>
+
+                        <com.google.android.material.card.MaterialCardView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="6dp"
+                            android:layout_weight="1"
+                            app:cardCornerRadius="16dp"
+                            app:cardElevation="0dp">
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="vertical"
+                                android:padding="14dp">
+                                <TextView
+                                    android:id="@+id/tvStatTeam"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:textColor="@color/earthy_orange"
+                                    android:textSize="26sp"
+                                    android:textStyle="bold"
+                                    tools:text="3" />
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Membres"
+                                    android:textColor="@color/text_secondary"
+                                    android:textSize="12sp" />
+                            </LinearLayout>
+                        </com.google.android.material.card.MaterialCardView>
+                    </LinearLayout>
+
+                    <!-- Lots -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="24dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:letterSpacing="0.1"
+                            android:text="LOTS"
+                            android:textColor="@color/text_primary"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnAddBatch"
+                            style="@style/Widget.MaterialComponents.Button.TextButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="+ NOUVEAU LOT"
+                            android:textColor="@color/primary" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/tvBatchHint"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="4dp"
+                        android:text="Touchez un lot pour l'archiver ou le supprimer."
+                        android:textColor="@color/text_secondary"
+                        android:textSize="12sp"
+                        android:visibility="gone" />
+
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/rvBatches"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:nestedScrollingEnabled="false"
+                        tools:itemCount="2"
+                        tools:listitem="@layout/item_batch" />
+
+                    <TextView
+                        android:id="@+id/tvEmptyBatches"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center"
+                        android:padding="16dp"
+                        android:text="Aucun lot pour le moment."
+                        android:textColor="@color/text_secondary"
+                        android:textSize="14sp"
+                        android:visibility="gone" />
+
+                    <!-- Ration alimentaire (responsable) -->
+                    <com.google.android.material.card.MaterialCardView
+                        android:id="@+id/cardFeedRation"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:clickable="true"
+                        android:focusable="true"
+                        app:cardCornerRadius="16dp"
+                        app:cardElevation="0dp">
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal"
+                            android:padding="16dp">
+                            <TextView
+                                android:layout_width="56dp"
+                                android:layout_height="56dp"
+                                android:background="@drawable/bg_icon_circle"
+                                android:backgroundTint="@color/earthy_container"
+                                android:gravity="center"
+                                android:text="🌾"
+                                android:textSize="28sp" />
+                            <LinearLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="16dp"
+                                android:layout_weight="1"
+                                android:orientation="vertical">
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:letterSpacing="0.08"
+                                    android:text="RATION ALIMENTAIRE"
+                                    android:textColor="@color/text_secondary"
+                                    android:textSize="11sp"
+                                    android:textStyle="bold" />
+                                <LinearLayout
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:baselineAligned="true"
+                                    android:orientation="horizontal">
+                                    <TextView
+                                        android:id="@+id/tvRationValue"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="—"
+                                        android:textColor="@color/earthy_orange"
+                                        android:textSize="32sp"
+                                        android:textStyle="bold" />
+                                    <TextView
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:layout_marginStart="6dp"
+                                        android:text="g / sujet / jour"
+                                        android:textColor="@color/text_primary"
+                                        android:textSize="14sp" />
+                                </LinearLayout>
+                                <TextView
+                                    android:id="@+id/tvRationDetail"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:textColor="@color/text_secondary"
+                                    android:textSize="12sp"
+                                    tools:text="Lot Chair Test · ≈ 60 kg par jour pour 500 sujets" />
+                            </LinearLayout>
+                            <ImageButton
+                                android:id="@+id/btnEditRation"
+                                android:layout_width="44dp"
+                                android:layout_height="44dp"
+                                android:background="@drawable/bg_icon_circle"
+                                android:backgroundTint="@color/emerald_container"
+                                android:contentDescription="Modifier la ration"
+                                android:src="@android:drawable/ic_menu_edit"
+                                app:tint="@color/primary" />
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <!-- Alertes et rappels -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="24dp"
+                        android:letterSpacing="0.1"
+                        android:text="ALERTES ET RAPPELS"
+                        android:textColor="@color/text_primary"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:layout_marginBottom="4dp"
+                        android:text="Touchez une valeur pour la modifier."
+                        android:textColor="@color/text_secondary"
+                        android:textSize="12sp" />
+
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        app:cardCornerRadius="16dp"
+                        app:cardElevation="0dp">
                         <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:orientation="vertical"
-                            android:padding="16dp">
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="Seuils d'alerte"
-                                android:textColor="#1E90FF"
-                                android:textSize="18sp"
-                                android:textStyle="bold"
-                                android:layout_marginBottom="12dp"/>
-
-                            <TextView
-                                android:id="@+id/tvDisplayThresholds"
+                            android:paddingBottom="6dp">
+                            <LinearLayout
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:textColor="@color/text_primary"
-                                android:textSize="14sp"
-                                android:lineSpacingExtra="4dp"
-                                tools:text="Stock alvéoles critique : 50\nStock aliment : critique &lt; 5j, alerte &lt; 10j\nCanicule : 35°C\nPhotopériode : 15h après le lever du soleil\nRappels vaccins : tous les 2 mois\nDéparasitage interne : tous les 3 mois\nDéparasitage externe : tous les 2 mois" />
+                                android:gravity="center_vertical"
+                                android:orientation="horizontal"
+                                android:padding="16dp">
+                                <TextView
+                                    android:layout_width="40dp"
+                                    android:layout_height="40dp"
+                                    android:background="@drawable/bg_icon_circle"
+                                    android:backgroundTint="@color/earthy_container"
+                                    android:gravity="center"
+                                    android:text="📦"
+                                    android:textSize="20sp" />
+                                <LinearLayout
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginStart="12dp"
+                                    android:layout_weight="1"
+                                    android:orientation="vertical">
+                                    <TextView
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="Stocks"
+                                        android:textColor="@color/text_primary"
+                                        android:textSize="16sp"
+                                        android:textStyle="bold" />
+                                    <TextView
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="Quand prévenir d'un stock trop bas"
+                                        android:textColor="@color/text_secondary"
+                                        android:textSize="12sp" />
+                                </LinearLayout>
+                            </LinearLayout>
+                            <LinearLayout
+                                android:id="@+id/llThresholdsStock"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="vertical" />
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        app:cardCornerRadius="16dp"
+                        app:cardElevation="0dp">
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:paddingBottom="6dp">
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:gravity="center_vertical"
+                                android:orientation="horizontal"
+                                android:padding="16dp">
+                                <TextView
+                                    android:layout_width="40dp"
+                                    android:layout_height="40dp"
+                                    android:background="@drawable/bg_icon_circle"
+                                    android:backgroundTint="@color/accent_blue_container"
+                                    android:gravity="center"
+                                    android:text="☀️"
+                                    android:textSize="20sp" />
+                                <LinearLayout
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginStart="12dp"
+                                    android:layout_weight="1"
+                                    android:orientation="vertical">
+                                    <TextView
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="Climat et éclairage"
+                                        android:textColor="@color/text_primary"
+                                        android:textSize="16sp"
+                                        android:textStyle="bold" />
+                                    <TextView
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="Météo locale et photopériode"
+                                        android:textColor="@color/text_secondary"
+                                        android:textSize="12sp" />
+                                </LinearLayout>
+                            </LinearLayout>
+                            <LinearLayout
+                                android:id="@+id/llThresholdsClimate"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="vertical" />
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        app:cardCornerRadius="16dp"
+                        app:cardElevation="0dp">
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:paddingBottom="6dp">
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:gravity="center_vertical"
+                                android:orientation="horizontal"
+                                android:padding="16dp">
+                                <TextView
+                                    android:layout_width="40dp"
+                                    android:layout_height="40dp"
+                                    android:background="@drawable/bg_icon_circle"
+                                    android:backgroundTint="@color/emerald_container"
+                                    android:gravity="center"
+                                    android:text="💉"
+                                    android:textSize="20sp" />
+                                <LinearLayout
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginStart="12dp"
+                                    android:layout_weight="1"
+                                    android:orientation="vertical">
+                                    <TextView
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="Santé"
+                                        android:textColor="@color/text_primary"
+                                        android:textSize="16sp"
+                                        android:textStyle="bold" />
+                                    <TextView
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="Mortalité et rappels sanitaires"
+                                        android:textColor="@color/text_secondary"
+                                        android:textSize="12sp" />
+                                </LinearLayout>
+                            </LinearLayout>
+                            <LinearLayout
+                                android:id="@+id/llThresholdsHealth"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="vertical" />
                         </LinearLayout>
                     </com.google.android.material.card.MaterialCardView>
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnEditInfo"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                         android:layout_width="match_parent"
                         android:layout_height="56dp"
-                        android:text="MODIFIER LES INFORMATIONS"
-                        android:layout_marginTop="12dp"
-                        app:cornerRadius="8dp"
+                        android:layout_marginTop="16dp"
+                        android:text="MODIFIER LES INFORMATIONS DE LA FERME"
+                        android:textColor="@color/primary"
+                        app:cornerRadius="12dp"
                         app:icon="@android:drawable/ic_menu_edit"
-                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                        android:textColor="#1E90FF"
-                        app:strokeColor="#1E90FF"/>
+                        app:iconTint="@color/primary"
+                        app:strokeColor="@color/primary" />
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="24dp" />
                 </LinearLayout>
 
                 <!-- Mode Saisie/Modification -->
@@ -275,7 +709,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Configuration de la ferme"
+                        android:text="Modifier l'exploitation"
                         android:textColor="@color/text_primary"
                         android:textSize="18sp"
                         android:textStyle="bold"
@@ -287,90 +721,13 @@
                         android:hint="Nom de la ferme"
                         style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
                         android:layout_marginBottom="12dp"
-                        app:hintTextColor="@color/white"
-                        app:boxStrokeColor="@color/white">
+                        app:hintTextColor="@color/emerald_soft"
+                        app:boxStrokeColor="@color/emerald_soft">
                         <com.google.android.material.textfield.TextInputEditText
         style="@style/Widget.App.TextInputEditText"
                             android:id="@+id/etFarmName"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:textColor="@color/text_primary" />
-                    </com.google.android.material.textfield.TextInputLayout>
-
-                    <com.google.android.material.textfield.TextInputLayout
-                        android:id="@+id/tilHensCount"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:hint="Nombre de poules au depart"
-                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
-                        android:layout_marginBottom="12dp"
-                        android:visibility="gone"
-                        app:hintTextColor="@color/white"
-                        app:boxStrokeColor="@color/white">
-                        <com.google.android.material.textfield.TextInputEditText
-        style="@style/Widget.App.TextInputEditText"
-                            android:id="@+id/etHensCount"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:inputType="number"
-                            android:textColor="@color/text_primary" />
-                    </com.google.android.material.textfield.TextInputLayout>
-
-                    <com.google.android.material.textfield.TextInputLayout
-                        android:id="@+id/tilHenBreed"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:hint="Race des poules"
-                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
-                        android:layout_marginBottom="12dp"
-                        android:visibility="gone"
-                        app:hintTextColor="@color/white"
-                        app:boxStrokeColor="@color/white">
-                        <com.google.android.material.textfield.TextInputEditText
-        style="@style/Widget.App.TextInputEditText"
-                            android:id="@+id/etHenBreed"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:textColor="@color/text_primary" />
-                    </com.google.android.material.textfield.TextInputLayout>
-
-                    <com.google.android.material.textfield.TextInputLayout
-                        android:id="@+id/tilArrivalDate"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:hint="Date d'arrivée"
-                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
-                        android:layout_marginBottom="12dp"
-                        android:visibility="gone"
-                        app:hintTextColor="@color/white"
-                        app:boxStrokeColor="@color/white">
-                        <com.google.android.material.textfield.TextInputEditText
-        style="@style/Widget.App.TextInputEditText"
-                            android:id="@+id/etArrivalDate"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:focusable="false"
-                            android:clickable="true"
-                            android:textColor="@color/text_primary" />
-                    </com.google.android.material.textfield.TextInputLayout>
-
-                    <com.google.android.material.textfield.TextInputLayout
-                        android:id="@+id/tilBirthDate"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:hint="Date de naissance"
-                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
-                        android:layout_marginBottom="12dp"
-                        android:visibility="gone"
-                        app:hintTextColor="@color/white"
-                        app:boxStrokeColor="@color/white">
-                        <com.google.android.material.textfield.TextInputEditText
-        style="@style/Widget.App.TextInputEditText"
-                            android:id="@+id/etBirthDate"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:focusable="false"
-                            android:clickable="true"
                             android:textColor="@color/text_primary" />
                     </com.google.android.material.textfield.TextInputLayout>
 
@@ -386,8 +743,8 @@
                             android:layout_height="wrap_content"
                             android:hint="Localité (ville/village)"
                             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
-                            app:hintTextColor="@color/white"
-                            app:boxStrokeColor="@color/white">
+                            app:hintTextColor="@color/emerald_soft"
+                            app:boxStrokeColor="@color/emerald_soft">
                             <com.google.android.material.textfield.TextInputEditText
         style="@style/Widget.App.TextInputEditText"
                                 android:id="@+id/etLocality"
@@ -404,7 +761,7 @@
                             android:text="CARTE"
                             app:icon="@drawable/ic_location"
                             app:cornerRadius="8dp"
-                            android:backgroundTint="#1E90FF" />
+                            android:backgroundTint="@color/primary" />
                     </LinearLayout>
 
                     <TextView
@@ -424,8 +781,8 @@
                         android:layout_height="wrap_content"
                         android:hint="Choix Monnaie"
                         android:layout_marginBottom="24dp"
-                        app:hintTextColor="@color/white"
-                        app:boxStrokeColor="@color/white">
+                        app:hintTextColor="@color/emerald_soft"
+                        app:boxStrokeColor="@color/emerald_soft">
                         <AutoCompleteTextView
                             android:id="@+id/actvCurrency"
                             android:layout_width="match_parent"
@@ -449,7 +806,7 @@
                             android:hint="Alvéoles critique (nb)"
                             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
                             android:layout_marginEnd="6dp" android:layout_marginBottom="12dp"
-                            app:hintTextColor="@color/white" app:boxStrokeColor="@color/white">
+                            app:hintTextColor="@color/emerald_soft" app:boxStrokeColor="@color/emerald_soft">
                             <com.google.android.material.textfield.TextInputEditText
         style="@style/Widget.App.TextInputEditText"
                                 android:id="@+id/etEggTraysCritical" android:layout_width="match_parent" android:layout_height="wrap_content"
@@ -460,7 +817,7 @@
                             android:hint="Canicule (°C)"
                             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
                             android:layout_marginStart="6dp" android:layout_marginBottom="12dp"
-                            app:hintTextColor="@color/white" app:boxStrokeColor="@color/white">
+                            app:hintTextColor="@color/emerald_soft" app:boxStrokeColor="@color/emerald_soft">
                             <com.google.android.material.textfield.TextInputEditText
         style="@style/Widget.App.TextInputEditText"
                                 android:id="@+id/etHeatAlertTemp" android:layout_width="match_parent" android:layout_height="wrap_content"
@@ -473,7 +830,7 @@
                         android:hint="Seuil alerte mortalité (x moyenne 7 jours)"
                         style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
                         android:layout_marginBottom="4dp"
-                        app:hintTextColor="@color/white" app:boxStrokeColor="@color/white">
+                        app:hintTextColor="@color/emerald_soft" app:boxStrokeColor="@color/emerald_soft">
                         <com.google.android.material.textfield.TextInputEditText
         style="@style/Widget.App.TextInputEditText"
                             android:id="@+id/etMortalitySpikeMultiplier" android:layout_width="match_parent" android:layout_height="wrap_content"
@@ -492,7 +849,7 @@
                         android:hint="Correction météo locale (°C)"
                         style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
                         android:layout_marginBottom="4dp"
-                        app:hintTextColor="@color/white" app:boxStrokeColor="@color/white">
+                        app:hintTextColor="@color/emerald_soft" app:boxStrokeColor="@color/emerald_soft">
                         <com.google.android.material.textfield.TextInputEditText
         style="@style/Widget.App.TextInputEditText"
                             android:id="@+id/etWeatherTempOffset" android:layout_width="match_parent" android:layout_height="wrap_content"
@@ -512,7 +869,7 @@
                             android:hint="Aliment critique (jours)"
                             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
                             android:layout_marginEnd="6dp" android:layout_marginBottom="12dp"
-                            app:hintTextColor="@color/white" app:boxStrokeColor="@color/white">
+                            app:hintTextColor="@color/emerald_soft" app:boxStrokeColor="@color/emerald_soft">
                             <com.google.android.material.textfield.TextInputEditText
         style="@style/Widget.App.TextInputEditText"
                                 android:id="@+id/etFeedStockCriticalDays" android:layout_width="match_parent" android:layout_height="wrap_content"
@@ -523,7 +880,7 @@
                             android:hint="Aliment alerte (jours)"
                             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
                             android:layout_marginStart="6dp" android:layout_marginBottom="12dp"
-                            app:hintTextColor="@color/white" app:boxStrokeColor="@color/white">
+                            app:hintTextColor="@color/emerald_soft" app:boxStrokeColor="@color/emerald_soft">
                             <com.google.android.material.textfield.TextInputEditText
         style="@style/Widget.App.TextInputEditText"
                                 android:id="@+id/etFeedStockWarningDays" android:layout_width="match_parent" android:layout_height="wrap_content"
@@ -537,7 +894,7 @@
                             android:hint="Photopériode (h)"
                             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
                             android:layout_marginEnd="6dp" android:layout_marginBottom="12dp"
-                            app:hintTextColor="@color/white" app:boxStrokeColor="@color/white">
+                            app:hintTextColor="@color/emerald_soft" app:boxStrokeColor="@color/emerald_soft">
                             <com.google.android.material.textfield.TextInputEditText
         style="@style/Widget.App.TextInputEditText"
                                 android:id="@+id/etLightingHours" android:layout_width="match_parent" android:layout_height="wrap_content"
@@ -548,7 +905,7 @@
                             android:hint="Vaccins (mois)"
                             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
                             android:layout_marginStart="6dp" android:layout_marginBottom="12dp"
-                            app:hintTextColor="@color/white" app:boxStrokeColor="@color/white">
+                            app:hintTextColor="@color/emerald_soft" app:boxStrokeColor="@color/emerald_soft">
                             <com.google.android.material.textfield.TextInputEditText
         style="@style/Widget.App.TextInputEditText"
                                 android:id="@+id/etVaccineInterval" android:layout_width="match_parent" android:layout_height="wrap_content"
@@ -562,7 +919,7 @@
                             android:hint="Déparasitage interne (mois)"
                             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
                             android:layout_marginEnd="6dp" android:layout_marginBottom="24dp"
-                            app:hintTextColor="@color/white" app:boxStrokeColor="@color/white">
+                            app:hintTextColor="@color/emerald_soft" app:boxStrokeColor="@color/emerald_soft">
                             <com.google.android.material.textfield.TextInputEditText
         style="@style/Widget.App.TextInputEditText"
                                 android:id="@+id/etDewormingInternalInterval" android:layout_width="match_parent" android:layout_height="wrap_content"
@@ -573,7 +930,7 @@
                             android:hint="Déparasitage externe (mois)"
                             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
                             android:layout_marginStart="6dp" android:layout_marginBottom="24dp"
-                            app:hintTextColor="@color/white" app:boxStrokeColor="@color/white">
+                            app:hintTextColor="@color/emerald_soft" app:boxStrokeColor="@color/emerald_soft">
                             <com.google.android.material.textfield.TextInputEditText
         style="@style/Widget.App.TextInputEditText"
                                 android:id="@+id/etDewormingExternalInterval" android:layout_width="match_parent" android:layout_height="wrap_content"
@@ -600,7 +957,7 @@
                         android:visibility="gone"/>
                 </LinearLayout>
             </LinearLayout>
-        </ScrollView>
+        </androidx.core.widget.NestedScrollView>
     </androidx.coordinatorlayout.widget.CoordinatorLayout>
 
     <com.google.android.material.navigation.NavigationView

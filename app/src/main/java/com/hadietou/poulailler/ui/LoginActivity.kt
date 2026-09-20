@@ -32,7 +32,8 @@ class LoginActivity : AppCompatActivity() {
     private lateinit var binding: ActivityLoginBinding
     private val vm: LoginViewModel by viewModels()
     private val firebaseRepo = FirebaseRepository()
-    private var isRegisterMode = false
+    /** Faux : connexion par téléphone (écran par défaut). Vrai : ancien compte email + mot de passe. */
+    private var isEmailMode = false
     private var isCodeSent = false
     /** Numéro (E.164) pour lequel un code a été envoyé — capturé au moment de l'envoi. */
     private var pendingPhoneNumber: String? = null
@@ -113,6 +114,8 @@ class LoginActivity : AppCompatActivity() {
         vm.checkExistingSession { success, msgOrRole, userId ->
             if (success) {
                 goToDashboard(msgOrRole, userId)
+            } else if (msgOrRole == LoginViewModel.NAME_REQUIRED) {
+                showNameDialog()
             } else if (msgOrRole == "COMPTE_DESACTIVE" || msgOrRole == "VALIDATION_REQUIS_EXPIRRE") {
                 val errorMsg = if (msgOrRole == "COMPTE_DESACTIVE") "Votre compte a été désactivé."
                     else "Validation requise. Le délai de 20 jours est dépassé. Contactez hadietou@gmail.com"
@@ -123,14 +126,17 @@ class LoginActivity : AppCompatActivity() {
 
     private fun setupUI() {
         binding.btnToggleRegister.setOnClickListener {
-            isRegisterMode = !isRegisterMode
-            isCodeSent = false
+            isEmailMode = !isEmailMode
             updateUIState()
         }
 
         binding.btnLogin.setOnClickListener {
             val email = binding.etEmail.text.toString().trim()
             val password = binding.etPassword.text.toString().trim()
+            if (looksLikePhoneNumber(email)) {
+                offerPhoneLogin(email)
+                return@setOnClickListener
+            }
             if (email.isEmpty() || password.isEmpty()) {
                 Toast.makeText(this, "Veuillez remplir email et mot de passe", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
@@ -154,39 +160,70 @@ class LoginActivity : AppCompatActivity() {
     }
 
     private fun updateUIState() {
-        // Le mode démo n'a de sens qu'à l'écran de connexion, pas au milieu d'une inscription.
-        val demoVisibility = if (isRegisterMode) View.GONE else View.VISIBLE
-        binding.dividerDemo.visibility = demoVisibility
-        binding.btnViewDemo.visibility = demoVisibility
-        binding.tvDemoHint.visibility = demoVisibility
-
-        if (!isRegisterMode) {
-            // Mode Connexion (email/mot de passe, inchangé)
-            binding.tvTitle.text = "Connexion"
-            binding.tilUsername.visibility = View.GONE
-            binding.tilRegisterEmail.visibility = View.GONE
+        if (isEmailMode) {
+            // Anciens comptes créés par email + mot de passe.
+            binding.tvTitle.text = "Connexion par email"
             binding.layoutPhoneRow.visibility = View.GONE
             binding.btnSendCode.visibility = View.GONE
             binding.layoutOtpSection.visibility = View.GONE
             binding.tilEmail.visibility = View.VISIBLE
             binding.tilPassword.visibility = View.VISIBLE
             binding.btnLogin.visibility = View.VISIBLE
-            binding.btnToggleRegister.text = "Créer un compte"
+            binding.btnToggleRegister.text = "Se connecter avec mon numéro de téléphone"
         } else {
-            // Mode téléphone : sert à la fois pour créer un compte ET pour se reconnecter
-            // (un compte téléphone n'a pas de mot de passe — voir lastPhoneLoginWasNewAccount) ;
-            // le titre reste donc neutre plutôt que de présumer une inscription.
-            binding.tvTitle.text = "Connexion par téléphone"
-            binding.btnToggleRegister.text = "Déjà un compte ? Se connecter"
+            // Écran par défaut : le numéro de téléphone est l'identifiant, un code SMS le vérifie.
+            // Même parcours pour un nouveau compte et pour un habitué (aucun mot de passe).
+            binding.tvTitle.text = "Connexion"
             binding.tilEmail.visibility = View.GONE
             binding.tilPassword.visibility = View.GONE
             binding.btnLogin.visibility = View.GONE
-            binding.tilUsername.visibility = View.VISIBLE
-            binding.tilRegisterEmail.visibility = View.VISIBLE
             binding.layoutPhoneRow.visibility = View.VISIBLE
             binding.btnSendCode.visibility = View.VISIBLE
             binding.layoutOtpSection.visibility = if (isCodeSent) View.VISIBLE else View.GONE
+            binding.btnToggleRegister.text = "Se connecter avec un email"
         }
+    }
+
+    /** Un numéro (chiffres, espaces, +, tirets…) saisi dans le champ email : compte créé par téléphone. */
+    private fun looksLikePhoneNumber(input: String): Boolean {
+        if (input.contains('@')) return false
+        val digits = input.count { it.isDigit() }
+        return digits >= 6 && input.all { it.isDigit() || it in "+ -.()" }
+    }
+
+    /**
+     * Un compte créé par téléphone n'a pas de mot de passe : il se connecte par code SMS. Plutôt
+     * que « Identifiants incorrects », on bascule sur l'écran téléphone avec le numéro déjà saisi.
+     */
+    private fun offerPhoneLogin(input: String) {
+        AlertDialog.Builder(this)
+            .setTitle("Connexion par téléphone")
+            .setMessage("Un compte créé avec un numéro de téléphone n'a pas de mot de passe : il se connecte avec un code reçu par SMS.")
+            .setPositiveButton("Recevoir un code par SMS") { _, _ ->
+                isEmailMode = false
+                isCodeSent = false
+                updateUIState()
+                prefillPhone(input)
+            }
+            .setNegativeButton("Annuler", null)
+            .show()
+    }
+
+    /** Remplit indicatif + numéro à partir d'une saisie du type « +222 12 34 56 78 » ou « 0022212345678 ». */
+    private fun prefillPhone(input: String) {
+        val international = input.trim().startsWith("+") || input.trim().startsWith("00")
+        var digits = input.filter { it.isDigit() }
+        if (international) {
+            if (input.trim().startsWith("00")) digits = digits.removePrefix("00")
+            val match = countryDialOptions
+                .filter { digits.startsWith(it.second.removePrefix("+")) }
+                .maxByOrNull { it.second.length }
+            if (match != null) {
+                binding.actvCountryCode.setText(match.first, false)
+                digits = digits.removePrefix(match.second.removePrefix("+"))
+            }
+        }
+        binding.etPhoneNumber.setText(digits)
     }
 
     private fun handleLogin(email: String, password: String) {
@@ -215,34 +252,11 @@ class LoginActivity : AppCompatActivity() {
     }
 
     private fun handleSendCode() {
-        val username = binding.etUsername.text.toString().trim()
-        if (username.isEmpty()) {
-            Toast.makeText(this, "Nom requis", Toast.LENGTH_SHORT).show()
-            return
-        }
         val phone = buildE164PhoneNumber()
         if (phone == null) {
             Toast.makeText(this, "Numéro de téléphone requis", Toast.LENGTH_SHORT).show()
             return
         }
-
-        val email = binding.etRegisterEmail.text.toString().trim()
-        if (email.isEmpty()) {
-            // Un compte téléphone n'a pas de mot de passe : sans email, il n'y a aucun moyen
-            // de récupérer le compte si ce numéro devient inaccessible. On le rappelle une
-            // fois, mais on n'en fait pas un blocage — l'utilisateur peut continuer sans.
-            AlertDialog.Builder(this)
-                .setTitle("Ajouter un email ?")
-                .setMessage("Sans email, vous ne pourrez récupérer votre compte qu'avec ce numéro de téléphone. Nous vous recommandons d'en ajouter un.")
-                .setPositiveButton("Ajouter un email") { _, _ -> binding.etRegisterEmail.requestFocus() }
-                .setNegativeButton("Continuer sans email") { _, _ -> proceedWithSendCode(username, phone, null) }
-                .show()
-            return
-        }
-        proceedWithSendCode(username, phone, email)
-    }
-
-    private fun proceedWithSendCode(username: String, phone: String, email: String?) {
         pendingPhoneNumber = phone
         binding.btnSendCode.isEnabled = false
         vm.startPhoneVerification(
@@ -259,13 +273,8 @@ class LoginActivity : AppCompatActivity() {
             },
             onAutoVerified = { credential ->
                 runOnUiThread { binding.btnSendCode.isEnabled = true }
-                vm.signUpWithAutoVerifiedCredential(credential, username, phone, email) { success, msgOrRole, uid ->
-                    runOnUiThread {
-                        if (success) {
-                            showWelcomeToast()
-                            goToDashboard(msgOrRole, uid)
-                        } else Toast.makeText(this, msgOrRole, Toast.LENGTH_LONG).show()
-                    }
+                vm.signInWithAutoVerifiedCredential(credential) { success, msgOrRole, uid ->
+                    runOnUiThread { handleAuthResult(success, msgOrRole, uid) }
                 }
             },
             onFailed = { message ->
@@ -278,11 +287,8 @@ class LoginActivity : AppCompatActivity() {
     }
 
     private fun handleVerifyCode() {
-        val username = binding.etUsername.text.toString().trim()
-        val phone = pendingPhoneNumber
-        val email = binding.etRegisterEmail.text.toString().trim().ifEmpty { null }
         val code = binding.etOtpCode.text.toString().trim()
-        if (phone == null) {
+        if (pendingPhoneNumber == null) {
             Toast.makeText(this, "Redemandez un code.", Toast.LENGTH_SHORT).show()
             return
         }
@@ -290,12 +296,56 @@ class LoginActivity : AppCompatActivity() {
             Toast.makeText(this, "Code requis", Toast.LENGTH_SHORT).show()
             return
         }
-        vm.verifyOtpForSignup(code, username, phone, email) { success, msgOrRole, uid ->
-            if (success) {
+        vm.verifyOtp(code) { success, msgOrRole, uid -> handleAuthResult(success, msgOrRole, uid) }
+    }
+
+    private fun handleAuthResult(success: Boolean, msgOrRole: String, uid: String) {
+        when {
+            success -> {
                 showWelcomeToast()
                 goToDashboard(msgOrRole, uid)
-            } else Toast.makeText(this, msgOrRole, Toast.LENGTH_LONG).show()
+            }
+            msgOrRole == LoginViewModel.NAME_REQUIRED -> showNameDialog()
+            else -> Toast.makeText(this, msgOrRole, Toast.LENGTH_LONG).show()
         }
+    }
+
+    /** Numéro nouveau : le nom n'est demandé qu'ici, une fois le code vérifié. */
+    private fun showNameDialog() {
+        val input = android.widget.EditText(this).apply {
+            hint = "Votre nom"
+            inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_FLAG_CAP_WORDS
+            setSingleLine()
+        }
+        val container = android.widget.FrameLayout(this).apply {
+            val pad = (20 * resources.displayMetrics.density).toInt()
+            setPadding(pad, pad / 2, pad, 0)
+            addView(input)
+        }
+        val dialog = AlertDialog.Builder(this)
+            .setTitle("Bienvenue ! Comment vous appelez-vous ?")
+            .setView(container)
+            .setCancelable(false)
+            .setPositiveButton("Continuer", null)
+            .create()
+        // Bouton branché après show() pour que la boîte reste ouverte tant que le nom est vide.
+        dialog.setOnShowListener {
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                val name = input.text.toString().trim()
+                if (name.isEmpty()) {
+                    input.error = "Nom requis"
+                    return@setOnClickListener
+                }
+                dialog.dismiss()
+                vm.completePhoneSignup(name) { success, msgOrRole, uid ->
+                    if (success) {
+                        showWelcomeToast()
+                        goToDashboard(msgOrRole, uid)
+                    } else Toast.makeText(this, msgOrRole, Toast.LENGTH_LONG).show()
+                }
+            }
+        }
+        dialog.show()
     }
 
     /** Message différencié selon qu'un compte vient d'être créé ou qu'on retrouve un compte existant. */
