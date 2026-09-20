@@ -27,6 +27,8 @@ import com.hadietou.poulailler.databinding.DialogCreateFarmBinding
 import com.hadietou.poulailler.databinding.DialogLinkPhoneBinding
 import com.hadietou.poulailler.repository.FirebaseRepository
 import com.hadietou.poulailler.data.FarmInfo
+import com.hadietou.poulailler.data.FarmValidation
+import com.hadietou.poulailler.data.ValidationReminder
 import com.hadietou.poulailler.util.CountryData
 import com.hadietou.poulailler.util.SunUtils
 import com.hadietou.poulailler.util.ReportUtils
@@ -100,6 +102,7 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
                             updateNavHeader(profile.username, profile.role)
                             viewModel.loadData()
                         }
+                        if (profile.role == "RESPONSABLE") checkValidationReminder()
                     }
                 } catch (e: Exception) {
                     Log.e("Dashboard", "Error loading profile", e)
@@ -107,6 +110,54 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
             }
         } catch (e: Exception) {
             Log.e("Dashboard", "Crash in onCreate", e)
+        }
+    }
+
+    /**
+     * Tant que la ferme n'est pas validée, rappelle au responsable, tous les 3 mois d'essai,
+     * de demander la validation. Chaque rappel n'est montré qu'une fois par appareil.
+     */
+    private suspend fun checkValidationReminder() {
+        val validation = withContext(Dispatchers.IO) { firebaseRepo.getFarmValidation() } ?: return
+        val prefs = getSharedPreferences("validation_reminders", MODE_PRIVATE)
+        val key = "last_${validation.farmId}"
+        val now = System.currentTimeMillis()
+        val index = ValidationReminder.dueIndex(validation, now, prefs.getInt(key, 0)) ?: return
+        prefs.edit().putInt(key, index).apply()
+        withContext(Dispatchers.Main) { showValidationReminder(validation, now) }
+    }
+
+    private fun showValidationReminder(validation: FarmValidation, now: Long) {
+        if (isFinishing) return
+        val endDate = validation.trialEndsAt?.let { java.text.SimpleDateFormat("d MMMM yyyy", Locale.FRANCE).format(Date(it)) }
+        val farm = validation.farmName.ifBlank { "Votre ferme" }
+        val message = if (validation.isTrialExpired(now)) {
+            "La période d'essai de « $farm » est terminée. Tant qu'elle n'est pas validée, vous pouvez consulter vos données mais plus en saisir ni en modifier.\n\nEnvoyez une demande de validation pour retrouver l'accès complet."
+        } else {
+            "« $farm » est en période d'essai${endDate?.let { " jusqu'au $it" } ?: ""}. Pour continuer à saisir vos données après cette date, la ferme doit être validée.\n\nEnvoyez dès maintenant une demande de validation."
+        }
+        AlertDialog.Builder(this)
+            .setTitle("Validation de votre ferme")
+            .setMessage(message)
+            .setPositiveButton("Demander la validation") { _, _ -> sendValidationRequest(validation) }
+            .setNegativeButton("Plus tard", null)
+            .show()
+    }
+
+    /** Ouvre l'application de messagerie avec une demande pré-remplie : rien n'est envoyé sans l'accord de l'utilisateur. */
+    private fun sendValidationRequest(validation: FarmValidation) {
+        val subject = "Validation de la ferme ${validation.farmName}"
+        val body = "Bonjour,\n\nMerci de valider ma ferme « ${validation.farmName} ».\nIdentifiant de la ferme : ${validation.farmId}\n"
+        val intent = Intent(Intent.ACTION_SENDTO).apply {
+            data = Uri.parse("mailto:")
+            putExtra(Intent.EXTRA_EMAIL, arrayOf("hadietou@gmail.com"))
+            putExtra(Intent.EXTRA_SUBJECT, subject)
+            putExtra(Intent.EXTRA_TEXT, body)
+        }
+        try {
+            startActivity(intent)
+        } catch (e: Exception) {
+            Toast.makeText(this, "Aucune application de messagerie. Écrivez à hadietou@gmail.com", Toast.LENGTH_LONG).show()
         }
     }
 

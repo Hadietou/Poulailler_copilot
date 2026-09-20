@@ -96,15 +96,6 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
                 onResult(false, "COMPTE_DESACTIVE", "")
                 return
             }
-            if (profile.role == "RESPONSABLE" && profile.isPending) {
-                val now = System.currentTimeMillis()
-                val twentyDaysMillis = 20L * 24 * 60 * 60 * 1000
-                if (now - profile.createdAt > twentyDaysMillis) {
-                    auth.signOut()
-                    onResult(false, "VALIDATION_REQUIS_EXPIRRE", "")
-                    return
-                }
-            }
             onResult(true, profile.role, uid)
         } else if (!auth.currentUser?.phoneNumber.isNullOrBlank()) {
             // Compte téléphone dont le nom n'a pas encore été saisi (ex: appli fermée entre la

@@ -116,10 +116,8 @@ class LoginActivity : AppCompatActivity() {
                 goToDashboard(msgOrRole, userId)
             } else if (msgOrRole == LoginViewModel.NAME_REQUIRED) {
                 showNameDialog()
-            } else if (msgOrRole == "COMPTE_DESACTIVE" || msgOrRole == "VALIDATION_REQUIS_EXPIRRE") {
-                val errorMsg = if (msgOrRole == "COMPTE_DESACTIVE") "Votre compte a été désactivé."
-                    else "Validation requise. Le délai de 20 jours est dépassé. Contactez hadietou@gmail.com"
-                Toast.makeText(this, errorMsg, Toast.LENGTH_LONG).show()
+            } else if (msgOrRole == "COMPTE_DESACTIVE") {
+                Toast.makeText(this, "Votre compte a été désactivé.", Toast.LENGTH_LONG).show()
             }
         }
     }
@@ -231,7 +229,6 @@ class LoginActivity : AppCompatActivity() {
             if (!success) {
                 val errorMsg = when (msgOrRole) {
                     "COMPTE_DESACTIVE" -> "Votre compte a été désactivé."
-                    "VALIDATION_REQUIS_EXPIRRE" -> "Validation requise. Le délai de 20 jours est dépassé. Contactez hadietou@gmail.com"
                     else -> msgOrRole
                 }
                 Toast.makeText(this, errorMsg, Toast.LENGTH_LONG).show()

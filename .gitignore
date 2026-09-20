@@ -28,3 +28,7 @@ key_store_path
 # Sorties de build (AAB/APK) et dossier de signature locale : jamais dans le dépôt,
 # ce dossier a déjà contenu une copie du keystore de signature par le passé.
 /app/release/
+
+# Clé de compte de service Firebase (script de migration) : ne jamais committer
+*-firebase-adminsdk-*.json
+*serviceAccount*.json

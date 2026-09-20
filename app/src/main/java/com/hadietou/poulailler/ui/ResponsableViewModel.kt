@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
+import com.hadietou.poulailler.data.FarmValidation
 import com.hadietou.poulailler.data.Invitation
 import com.hadietou.poulailler.repository.FirebaseRepository
 import kotlinx.coroutines.flow.collectLatest
@@ -66,8 +67,7 @@ class ResponsableViewModel(application: Application) : AndroidViewModel(applicat
 
     fun checkUserStatus() {
         viewModelScope.launch {
-            val profile = firebaseRepo.getCurrentUserProfile()
-            isUserPending.postValue(profile?.isPending ?: true)
+            isUserPending.postValue(firebaseRepo.getFarmValidation()?.status == FarmValidation.STATUS_PENDING)
             
             val blocked = firebaseRepo.isFarmAccessBlocked()
             isAccessBlocked.postValue(blocked)

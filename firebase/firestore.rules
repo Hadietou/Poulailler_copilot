@@ -1,0 +1,158 @@
+rules_version = '2';
+
+// ─────────────────────────────────────────────────────────────────────────────────────────
+//  BROUILLON — NON DÉPLOYÉ. À tester avec l'émulateur Firestore avant toute mise en ligne
+//  (voir firebase/README.md). Ces règles remplacent celles de la console : les déployer sans
+//  test peut bloquer les utilisateurs.
+//
+//  Ce qu'elles imposent :
+//   1. Une ferme est en essai (PENDING, 1 an fixé par le serveur) ou validée (ACTIVE).
+//      Sinon (essai terminé, SUSPENDED, ou ferme sans statut) : LECTURE SEULE.
+//   2. Aucun client ne peut modifier status / trialEndsAt / ownerId d'une ferme.
+//   3. Chaque utilisateur ne voit que les données de sa ferme.
+//
+//  Limite connue (à traiter avec des Cloud Functions) : users/{uid}.farmId / role sont encore
+//  écrits par l'app elle-même. Un client malveillant pourrait donc se rattacher à une ferme
+//  qui n'est pas la sienne. Voir « Phase 2 » dans firebase/README.md.
+// ─────────────────────────────────────────────────────────────────────────────────────────
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function userPath(uid) {
+      return /databases/$(database)/documents/users/$(uid);
+    }
+
+    function farmPath(farmId) {
+      return /databases/$(database)/documents/fermes/$(farmId);
+    }
+
+    // Ferme active de l'utilisateur connecté (users/{uid}.farmId) et son rôle.
+    function myFarmId() {
+      return get(userPath(request.auth.uid)).data.get('farmId', '');
+    }
+
+    function myRole() {
+      return get(userPath(request.auth.uid)).data.get('role', '');
+    }
+
+    function isOwner(farmId) {
+      return signedIn() && get(farmPath(farmId)).data.get('ownerId', '') == request.auth.uid;
+    }
+
+    // Le propriétaire compte comme membre dès la création (users/{uid}.farmId n'est écrit qu'après).
+    function isMember(farmId) {
+      return signedIn() && farmId != '' && farmId != null
+        && ((exists(userPath(request.auth.uid)) && myFarmId() == farmId) || isOwner(farmId));
+    }
+
+    // Écriture autorisée : ferme validée, ou essai en cours (heure du SERVEUR). Sans statut : refusé.
+    function farmWritable(farmId) {
+      let f = get(farmPath(farmId)).data;
+      return f.get('status', '') == 'ACTIVE'
+        || (f.get('status', '') == 'PENDING' && f.get('trialEndsAt', request.time) > request.time);
+    }
+
+    // Collections de données de ferme (documents avec un champ farmId).
+    function farmCollections() {
+      return ['egg_entries', 'mortality', 'sales', 'expenses', 'vaccines', 'treatments',
+              'disease_cases', 'health_observations', 'vet_visits', 'lab_analyses',
+              'biosecurity_tasks', 'health_reminders', 'health_reminder_logs'];
+    }
+
+    // ── Utilisateurs ─────────────────────────────────────────────────────────────────────
+    match /users/{uid} {
+      allow read: if signedIn() && (
+        request.auth.uid == uid
+        || (exists(userPath(request.auth.uid)) && myFarmId() != ''
+            && resource.data.get('farmId', '') == myFarmId()));
+
+      allow create: if signedIn() && request.auth.uid == uid;
+
+      // Soi-même ; ou le responsable de la ferme qui active/désactive un agent (champ « active » seulement).
+      allow update: if signedIn() && (
+        request.auth.uid == uid
+        || (myRole() == 'RESPONSABLE'
+            && resource.data.get('farmId', '') == myFarmId()
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['active'])));
+
+      allow delete: if false;
+
+      match /memberships/{farmId} {
+        allow read, write: if signedIn() && request.auth.uid == uid;
+      }
+    }
+
+    // ── Invitations d'agents ─────────────────────────────────────────────────────────────
+    match /invitations/{id} {
+      allow read: if signedIn() && (
+        resource.data.phoneNumber == request.auth.token.phone_number
+        || isMember(resource.data.farmId));
+
+      allow create: if signedIn()
+        && isMember(request.resource.data.farmId)
+        && myRole() == 'RESPONSABLE'
+        && request.resource.data.status == 'PENDING'
+        && farmWritable(request.resource.data.farmId);
+
+      // Le numéro invité accepte / refuse ; le responsable annule. Seul « status » change.
+      allow update: if signedIn()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
+        && (resource.data.phoneNumber == request.auth.token.phone_number
+            || (isMember(resource.data.farmId) && myRole() == 'RESPONSABLE'));
+
+      allow delete: if false;
+    }
+
+    // ── Fermes ───────────────────────────────────────────────────────────────────────────
+    match /fermes/{farmId} {
+      allow read: if isMember(farmId);
+
+      // Création : essai d'un an (± 1 jour de décalage d'horloge du téléphone), statut PENDING imposé.
+      allow create: if signedIn()
+        && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.status == 'PENDING'
+        && request.resource.data.trialEndsAt > request.time + duration.value(364, 'd')
+        && request.resource.data.trialEndsAt < request.time + duration.value(366, 'd');
+
+      // Le statut et la durée d'essai ne sont modifiables que par l'administrateur (console / Admin SDK).
+      allow update: if isOwner(farmId)
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['status', 'trialEndsAt', 'ownerId']);
+
+      allow delete: if false;
+
+      // config (farm_info, alertes…) et batches.
+      match /{sub}/{docId} {
+        allow read: if isMember(farmId);
+        allow write: if isMember(farmId) && farmWritable(farmId);
+      }
+    }
+
+    // ── Données de ferme (collections à plat, filtrées par farmId) ───────────────────────
+    match /{coll}/{docId} {
+      allow read: if coll in farmCollections() && isMember(resource.data.farmId);
+
+      allow create: if coll in farmCollections()
+        && isMember(request.resource.data.farmId)
+        && farmWritable(request.resource.data.farmId);
+
+      allow update: if coll in farmCollections()
+        && isMember(resource.data.farmId)
+        && farmWritable(resource.data.farmId)
+        && request.resource.data.farmId == resource.data.farmId;
+
+      allow delete: if coll in farmCollections()
+        && isMember(resource.data.farmId)
+        && farmWritable(resource.data.farmId);
+    }
+
+    // Historique de connexion : consultable par la ferme, écrit à la connexion (même en lecture seule).
+    match /login_history/{docId} {
+      allow read: if isMember(resource.data.farmId);
+      allow create: if isMember(request.resource.data.farmId);
+    }
+  }
+}

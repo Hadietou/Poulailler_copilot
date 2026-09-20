@@ -3,6 +3,8 @@ package com.hadietou.poulailler.repository
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import com.google.firebase.Timestamp
+import java.util.concurrent.TimeUnit
 import android.util.Log
 import com.hadietou.poulailler.data.*
 import com.hadietou.poulailler.demo.DemoData
@@ -73,7 +75,11 @@ class FirebaseRepository {
             "code" to farmCode, 
             "ownerId" to uid,
             "country" to country,
-            "city" to city
+            "city" to city,
+            // Essai d'un an, puis validation obligatoire. Les règles Firestore refusent tout
+            // client qui s'attribuerait un autre statut ou une durée plus longue.
+            "status" to FarmValidation.STATUS_PENDING,
+            "trialEndsAt" to Timestamp(Date(System.currentTimeMillis() + TimeUnit.DAYS.toMillis(FarmValidation.TRIAL_DAYS)))
         )
         farmRef.set(farmData).await()
         
@@ -98,13 +104,14 @@ class FirebaseRepository {
             "farmId" to farmId, 
             "role" to "RESPONSABLE", 
             "active" to true,
-            "isPending" to true,
+            // Champ hérité (anciennes versions de l'app) : la validation se lit désormais sur la ferme.
+            "isPending" to false,
             "createdAt" to System.currentTimeMillis()
         )
         db.collection("users").document(uid).set(userData, SetOptions.merge()).await()
         addOrUpdateMembership(uid, farmId, farmName, "RESPONSABLE")
 
-        sendValidationEmailViaBrevo(farmName, uid, email, country, city)
+        sendValidationEmailViaBrevo(farmName, farmId, uid, email, country, city)
 
         _farmIdFlow.value = farmId
         return farmCode
@@ -152,7 +159,7 @@ class FirebaseRepository {
         _farmIdFlow.value = farmId
     }
 
-    private suspend fun sendValidationEmailViaBrevo(farmName: String, uid: String, email: String, country: String? = null, city: String? = null) {
+    private suspend fun sendValidationEmailViaBrevo(farmName: String, farmId: String, uid: String, email: String, country: String? = null, city: String? = null) {
         try {
             val emailRequest = BrevoEmailRequest(
                 sender = BrevoSender("KOURKOUROU App", "kourkourou@gmail.com"),
@@ -162,15 +169,16 @@ class FirebaseRepository {
                     <html>
                     <body>
                         <h1>Nouvelle Ferme Créée</h1>
-                        <p>Une nouvelle ferme a été créée et attend votre validation.</p>
+                        <p>Une nouvelle ferme a été créée. Elle bénéficie d'un essai d'un an ; sans validation de votre part, elle passera en lecture seule à la fin de cette période.</p>
                         <ul>
                             <li><b>Nom de la ferme :</b> $farmName</li>
                             <li><b>Lieu :</b> ${city ?: "N/A"}, ${country ?: "N/A"}</li>
+                            <li><b>ID Ferme :</b> $farmId</li>
                             <li><b>ID Responsable :</b> $uid</li>
                             <li><b>Email Responsable :</b> $email</li>
                         </ul>
-                        <p>Pour valider, connectez-vous à la console Firebase et passez <b>isPending</b> à <b>false</b> pour cet utilisateur.</p>
-                        <p> https://console.firebase.google.com/u/0/project/pondeuses-eec3f/firestore/databases/-default-/data/~2Fusers~2F$uid </p>
+                        <p>Pour valider, ouvrez la ferme dans la console Firebase et passez <b>status</b> à <b>ACTIVE</b> (ou <b>SUSPENDED</b> pour la suspendre).</p>
+                        <p> https://console.firebase.google.com/u/0/project/pondeuses-eec3f/firestore/databases/-default-/data/~2Ffermes~2F$farmId </p>
                     </body>
                     </html>
                 """.trimIndent()
@@ -359,33 +367,41 @@ class FirebaseRepository {
         return auth.currentUser?.uid?.let { getUserProfile(it) }
     }
 
+    /**
+     * Statut de validation de la ferme courante. Une ferme sans statut (créée avant ce système)
+     * est traitée comme en essai, avec un an à partir de sa date de création si elle est connue.
+     */
+    suspend fun getFarmValidation(): FarmValidation? {
+        if (DemoMode.enabled) return null
+        val fId = getFarmId() ?: return null
+        return try {
+            val doc = db.collection("fermes").document(fId).get().await()
+            if (!doc.exists()) return null
+            val status = doc.getString("status") ?: FarmValidation.STATUS_PENDING
+            val trialEnd = doc.getTimestamp("trialEndsAt")?.toDate()?.time
+                ?: doc.getLong("trialEndsAt")
+                ?: getFarmInfo()?.setupDate?.takeIf { it > 0L }
+                    ?.plus(TimeUnit.DAYS.toMillis(FarmValidation.TRIAL_DAYS))
+            FarmValidation(fId, doc.getString("name") ?: "", status, trialEnd)
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    /**
+     * Sert à prévenir l'utilisateur AVANT que le serveur ne refuse une écriture ; l'autorité reste
+     * les règles Firestore (horloge du serveur). En cas d'erreur de lecture on ne bloque pas ici :
+     * si la ferme est réellement bloquée, c'est le serveur qui refusera.
+     */
     suspend fun isFarmAccessBlocked(): Boolean {
         if (DemoMode.enabled) return false
-        val fId = getFarmId() ?: return false
-        return try {
-            val farmDoc = db.collection("fermes").document(fId).get().await()
-            val ownerId = farmDoc.getString("ownerId") ?: return false
-            val ownerDoc = db.collection("users").document(ownerId).get().await()
-            
-            val isPending = ownerDoc.getBoolean("isPending") ?: false
-            val createdAt = ownerDoc.getLong("createdAt") ?: 0L
-            
-            if (isPending) {
-                val twentyDaysMillis = 20L * 24 * 60 * 60 * 1000
-                if (System.currentTimeMillis() - createdAt > twentyDaysMillis) {
-                    return true
-                }
-            }
-            false
-        } catch (e: Exception) {
-            false
-        }
+        return getFarmValidation()?.isBlocked(System.currentTimeMillis()) ?: false
     }
 
     private suspend fun checkAndThrowIfBlocked() {
         if (DemoMode.enabled) throw Exception(DemoMode.READ_ONLY_MESSAGE)
         if (isFarmAccessBlocked()) {
-            throw Exception("Accès bloqué : validation requise après 20 jours.")
+            throw Exception("Accès bloqué : la ferme doit être validée (essai terminé ou ferme suspendue).")
         }
     }
 

@@ -298,12 +298,6 @@ class ResponsableActivity : AppCompatActivity(), NavigationView.OnNavigationItem
             binding.rvLoginHistory.adapter = LoginHistoryAdapter(filteredList)
         }
 
-        vm.isUserPending.observe(this) { isPending ->
-            if (isPending && !isBlocked) {
-                Toast.makeText(this, "Note : Votre ferme est en attente de validation.", Toast.LENGTH_SHORT).show()
-            }
-        }
-
         vm.createAgentStatus.observe(this) { status ->
             val (success, msg) = status
             if (!success) {

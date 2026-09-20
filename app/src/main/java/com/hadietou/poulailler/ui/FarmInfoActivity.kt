@@ -25,6 +25,7 @@ import com.hadietou.poulailler.R
 import com.hadietou.poulailler.BuildConfig
 import com.hadietou.poulailler.data.Batch
 import com.hadietou.poulailler.data.FarmInfo
+import com.hadietou.poulailler.data.FarmValidation
 import com.hadietou.poulailler.data.Mortality
 import com.hadietou.poulailler.data.FeedRationChange
 import com.hadietou.poulailler.data.parseFeedRationHistory
@@ -426,8 +427,28 @@ class FarmInfoActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
 
     private var farmSummary: FirebaseRepository.FarmSummary? = null
 
+    private fun showValidationBadge(validation: FarmValidation?) {
+        val badge = binding.tvHeroValidation
+        if (validation == null) { badge.visibility = View.GONE; return }
+        val now = System.currentTimeMillis()
+        val (text, bg) = when {
+            validation.isActive -> "✓ FERME VALIDÉE" to R.color.accent_green
+            validation.isSuspended -> "FERME SUSPENDUE" to R.color.error
+            validation.isTrialExpired(now) -> "ESSAI TERMINÉ · LECTURE SEULE" to R.color.error
+            else -> {
+                val end = validation.trialEndsAt?.let { SimpleDateFormat("d MMM yyyy", Locale.FRANCE).format(Date(it)) }
+                (if (end != null) "ESSAI · jusqu'au $end" else "EN ESSAI") to R.color.accent_amber
+            }
+        }
+        badge.text = text
+        badge.setTextColor(ContextCompat.getColor(this, if (bg == R.color.accent_amber) R.color.black else R.color.white))
+        ViewCompat.setBackgroundTintList(badge, ContextCompat.getColorStateList(this, bg))
+        badge.visibility = View.VISIBLE
+    }
+
     private fun loadFarmSummary(info: FarmInfo) {
         lifecycleScope.launch {
+            showValidationBadge(firebaseRepo.getFarmValidation())
             val summary = firebaseRepo.getFarmSummary() ?: return@launch
             farmSummary = summary
             withContext(Dispatchers.Main) {
