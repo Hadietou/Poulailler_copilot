@@ -22,8 +22,8 @@ android {
         applicationId = "com.hadietou.poulailler"
         minSdk = 24
         targetSdk = 36
-        versionCode = 19
-        versionName = "15.09.2026"
+        versionCode = 20
+        versionName = "20.09.2026"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
