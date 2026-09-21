@@ -69,18 +69,20 @@ class FirebaseRepository {
         val farmRef = db.collection("fermes").document()
         val farmId = farmRef.id
         
-        val farmData = hashMapOf(
+        val farmData = hashMapOf<String, Any?>(
             "id" to farmId, 
             "name" to farmName, 
             "code" to farmCode, 
             "ownerId" to uid,
             "country" to country,
             "city" to city,
-            // Essai d'un an, puis validation obligatoire. Les règles Firestore refusent tout
-            // client qui s'attribuerait un autre statut ou une durée plus longue.
-            "status" to FarmValidation.STATUS_PENDING,
-            "trialEndsAt" to Timestamp(Date(System.currentTimeMillis() + TimeUnit.DAYS.toMillis(FarmValidation.TRIAL_DAYS)))
+            // Application gratuite : ferme directement active, sans essai. Si l'application devient
+            // payante (FarmValidation.ENFORCEMENT_ENABLED), la ferme démarre en essai d'un an.
+            "status" to if (FarmValidation.ENFORCEMENT_ENABLED) FarmValidation.STATUS_PENDING else FarmValidation.STATUS_ACTIVE
         )
+        if (FarmValidation.ENFORCEMENT_ENABLED) {
+            farmData["trialEndsAt"] = Timestamp(Date(System.currentTimeMillis() + TimeUnit.DAYS.toMillis(FarmValidation.TRIAL_DAYS)))
+        }
         farmRef.set(farmData).await()
         
         val cityHit = city?.takeIf { it.isNotBlank() }?.let {
@@ -169,7 +171,7 @@ class FirebaseRepository {
                     <html>
                     <body>
                         <h1>Nouvelle Ferme Créée</h1>
-                        <p>Une nouvelle ferme a été créée. Elle bénéficie d'un essai d'un an ; sans validation de votre part, elle passera en lecture seule à la fin de cette période.</p>
+                        <p>Une nouvelle ferme a été créée (application gratuite : aucune validation n'est nécessaire).</p>
                         <ul>
                             <li><b>Nom de la ferme :</b> $farmName</li>
                             <li><b>Lieu :</b> ${city ?: "N/A"}, ${country ?: "N/A"}</li>
@@ -177,7 +179,7 @@ class FirebaseRepository {
                             <li><b>ID Responsable :</b> $uid</li>
                             <li><b>Email Responsable :</b> $email</li>
                         </ul>
-                        <p>Pour valider, ouvrez la ferme dans la console Firebase et passez <b>status</b> à <b>ACTIVE</b> (ou <b>SUSPENDED</b> pour la suspendre).</p>
+                        <p>Pour suspendre cette ferme en cas d'abus, passez son champ <b>status</b> à <b>SUSPENDED</b> dans la console Firebase.</p>
                         <p> https://console.firebase.google.com/u/0/project/pondeuses-eec3f/firestore/databases/-default-/data/~2Ffermes~2F$farmId </p>
                     </body>
                     </html>
@@ -372,7 +374,8 @@ class FirebaseRepository {
      * est traitée comme en essai, avec un an à partir de sa date de création si elle est connue.
      */
     suspend fun getFarmValidation(): FarmValidation? {
-        if (DemoMode.enabled) return null
+        // Gratuit : aucun statut à afficher ni à faire respecter (pastille, rappels et blocage inactifs).
+        if (DemoMode.enabled || !FarmValidation.ENFORCEMENT_ENABLED) return null
         val fId = getFarmId() ?: return null
         return try {
             val doc = db.collection("fermes").document(fId).get().await()

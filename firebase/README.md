@@ -1,5 +1,16 @@
 # Validation des fermes : mise en place
 
+> **État actuel : application GRATUITE, sans essai ni validation.**
+> - App : `FarmValidation.ENFORCEMENT_ENABLED = false` (aucune pastille, aucun rappel, aucun blocage).
+> - Règles : `farmWritable()` n'interdit l'écriture que si la ferme est `SUSPENDED`. Une ferme sans champ
+>   `status` fonctionne normalement.
+> - Tout ce qui suit décrit le modèle « essai d'un an puis validation », **conservé pour le jour où
+>   l'application devient payante** : passer l'interrupteur à `true`, remettre le corps de `farmWritable()`
+>   dans sa version « essai » (donnée en commentaire dans `firestore.rules`), puis migrer les fermes avec
+>   `tools/migrate_farm_status.py`.
+> - Les règles ont été vérifiées avec l'émulateur Firestore (21 cas : ferme sans statut, ACTIVE, SUSPENDED,
+>   isolation entre fermes, création, protection du statut, invitations).
+
 ## Principe
 
 - Chaque ferme (`fermes/{id}`) porte un **statut** : `PENDING` (essai), `ACTIVE` (validée), `SUSPENDED`.

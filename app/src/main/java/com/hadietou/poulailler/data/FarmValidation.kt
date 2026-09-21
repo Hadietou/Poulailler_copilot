@@ -33,6 +33,14 @@ data class FarmValidation(
     fun isBlocked(now: Long) = isSuspended || isTrialExpired(now)
 
     companion object {
+        /**
+         * Phase actuelle : application GRATUITE et entièrement accessible, sans essai ni blocage.
+         * Passer à `true` réactive, côté app, le statut de validation, la pastille « Essai »,
+         * les rappels de validation et le mode lecture seule. À utiliser le jour où un modèle
+         * payant est mis en place (voir aussi firebase/firestore.rules, fonction farmWritable).
+         */
+        const val ENFORCEMENT_ENABLED = false
+
         const val STATUS_PENDING = "PENDING"
         const val STATUS_ACTIVE = "ACTIVE"
         const val STATUS_SUSPENDED = "SUSPENDED"

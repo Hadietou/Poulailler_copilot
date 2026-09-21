@@ -5,11 +5,13 @@ rules_version = '2';
 //  (voir firebase/README.md). Ces règles remplacent celles de la console : les déployer sans
 //  test peut bloquer les utilisateurs.
 //
-//  Ce qu'elles imposent :
-//   1. Une ferme est en essai (PENDING, 1 an fixé par le serveur) ou validée (ACTIVE).
-//      Sinon (essai terminé, SUSPENDED, ou ferme sans statut) : LECTURE SEULE.
+//  Ce qu'elles imposent (PHASE GRATUITE) :
+//   1. Une ferme est pleinement utilisable, avec ou sans champ « status », sauf si elle est
+//      SUSPENDED (lecture seule). Aucun essai, aucune validation.
 //   2. Aucun client ne peut modifier status / trialEndsAt / ownerId d'une ferme.
 //   3. Chaque utilisateur ne voit que les données de sa ferme.
+//
+//  Modèle payant plus tard : voir farmWritable() et FarmValidation.ENFORCEMENT_ENABLED.
 //
 //  Limite connue (à traiter avec des Cloud Functions) : users/{uid}.farmId / role sont encore
 //  écrits par l'app elle-même. Un client malveillant pourrait donc se rattacher à une ferme
@@ -49,11 +51,16 @@ service cloud.firestore {
         && ((exists(userPath(request.auth.uid)) && myFarmId() == farmId) || isOwner(farmId));
     }
 
-    // Écriture autorisée : ferme validée, ou essai en cours (heure du SERVEUR). Sans statut : refusé.
+    // Écriture autorisée. PHASE GRATUITE : tout est permis tant que la ferme n'est pas SUSPENDED
+    // (une ferme sans statut, ACTIVE ou PENDING reste pleinement utilisable). Le jour où
+    // l'application devient payante, remplacer le corps de cette fonction par la version
+    // « essai d'un an » ci-dessous (et passer FarmValidation.ENFORCEMENT_ENABLED à true dans l'app) :
+    //
+    //   let f = get(farmPath(farmId)).data;
+    //   return f.get('status', '') == 'ACTIVE'
+    //     || (f.get('status', '') == 'PENDING' && f.get('trialEndsAt', request.time) > request.time);
     function farmWritable(farmId) {
-      let f = get(farmPath(farmId)).data;
-      return f.get('status', '') == 'ACTIVE'
-        || (f.get('status', '') == 'PENDING' && f.get('trialEndsAt', request.time) > request.time);
+      return get(farmPath(farmId)).data.get('status', 'ACTIVE') != 'SUSPENDED';
     }
 
     // Collections de données de ferme (documents avec un champ farmId).
@@ -111,12 +118,11 @@ service cloud.firestore {
     match /fermes/{farmId} {
       allow read: if isMember(farmId);
 
-      // Création : essai d'un an (± 1 jour de décalage d'horloge du téléphone), statut PENDING imposé.
+      // Création : le créateur est le propriétaire ; statut ACTIVE (version gratuite) ou PENDING
+      // (version 20, qui ajoute une fin d'essai). Jamais SUSPENDED.
       allow create: if signedIn()
         && request.resource.data.ownerId == request.auth.uid
-        && request.resource.data.status == 'PENDING'
-        && request.resource.data.trialEndsAt > request.time + duration.value(364, 'd')
-        && request.resource.data.trialEndsAt < request.time + duration.value(366, 'd');
+        && request.resource.data.get('status', 'ACTIVE') in ['ACTIVE', 'PENDING'];
 
       // Le statut et la durée d'essai ne sont modifiables que par l'administrateur (console / Admin SDK).
       allow update: if isOwner(farmId)
