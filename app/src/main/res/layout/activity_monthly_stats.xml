@@ -33,6 +33,19 @@
             android:orientation="vertical"
             android:padding="16dp">
 
+            <!-- Titre de la 1re partie (pages à deux parties : production / ventes) -->
+            <TextView
+                android:id="@+id/tvPrimaryTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                android:textColor="@color/primary"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:visibility="gone"
+                tools:text="Production d'œufs"
+                tools:visibility="visible" />
+
             <!-- Chiffres clés du mois (affichés avant les graphiques) -->
 
             <!-- Case 1 : Total d'œufs en stock -->
@@ -93,7 +106,7 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Case 3 : Production Total d'œufs (uniquement pour le suivi de production) -->
+            <!-- Case 3 : Production totale d'œufs (page production) -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cardTotalGeneral"
                 android:layout_width="match_parent"
@@ -111,7 +124,7 @@
                         <ImageView android:layout_width="22dp" android:layout_height="22dp" android:layout_gravity="center" android:src="@drawable/ic_egg" app:tint="@color/white" />
                     </com.google.android.material.card.MaterialCardView>
                     <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="14dp" android:orientation="vertical">
-                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="PRODUCTION TOTAL D'ŒUFS" android:textColor="@color/text_secondary" android:textSize="11sp" android:textStyle="bold" android:letterSpacing="0.06" />
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="PRODUCTION TOTALE (DEPUIS LE DÉBUT)" android:textColor="@color/text_secondary" android:textSize="11sp" android:textStyle="bold" android:letterSpacing="0.06" />
                         <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="2dp" android:orientation="horizontal" android:gravity="bottom">
                             <TextView android:id="@+id/tvTotalGeneral" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="@color/accent_blue" android:textSize="26sp" android:textStyle="bold" tools:text="416" />
                             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="6dp" android:layout_marginBottom="3dp" android:text="Plateaux d'œufs" android:textColor="@color/text_secondary" android:textSize="12sp" android:textStyle="bold" />
@@ -140,7 +153,7 @@
                             <ImageView android:layout_width="22dp" android:layout_height="22dp" android:layout_gravity="center" android:src="@drawable/ic_finance" app:tint="@color/white" />
                         </com.google.android.material.card.MaterialCardView>
                         <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="14dp" android:orientation="vertical">
-                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="VENTE TOTAL" android:textColor="@color/text_secondary" android:textSize="11sp" android:textStyle="bold" android:letterSpacing="0.06" />
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="VENTES TOTALES (DEPUIS LE DÉBUT)" android:textColor="@color/text_secondary" android:textSize="11sp" android:textStyle="bold" android:letterSpacing="0.06" />
                             <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="2dp" android:orientation="horizontal" android:gravity="bottom">
                                 <TextView android:id="@+id/tvSalesTotalValue" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="@color/accent_blue" android:textSize="26sp" android:textStyle="bold" tools:text="165" />
                                 <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="6dp" android:layout_marginBottom="3dp" android:text="Plateaux vendus" android:textColor="@color/text_secondary" android:textSize="12sp" android:textStyle="bold" />
@@ -153,47 +166,6 @@
 
                     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="DÉTAIL PAR PRIX DE VENTE" android:textColor="@color/text_secondary" android:textSize="10sp" android:textStyle="bold" android:letterSpacing="0.06" android:layout_marginBottom="6dp" />
                     <TextView android:id="@+id/tvSalesPriceBreakdown" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="@color/text_primary" android:textSize="13sp" android:lineSpacingExtra="4dp" tools:text="120 plateaux à 500 MRU/plateau\n45 plateaux à 550 MRU/plateau" />
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-
-            <!-- Case 5 : Œufs cassés (uniquement pour le suivi de production) -->
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/cardBrokenEggs"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                android:visibility="gone"
-                app:cardBackgroundColor="@color/surface"
-                app:cardCornerRadius="18dp"
-                app:cardElevation="0dp"
-                app:strokeColor="@color/error_container"
-                app:strokeWidth="1dp"
-                tools:visibility="visible">
-                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="16dp">
-                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical">
-                        <com.google.android.material.card.MaterialCardView android:layout_width="44dp" android:layout_height="44dp" app:cardCornerRadius="22dp" app:cardElevation="0dp" app:cardBackgroundColor="@color/error">
-                            <ImageView android:layout_width="22dp" android:layout_height="22dp" android:layout_gravity="center" android:src="@drawable/ic_egg" app:tint="@color/white" />
-                        </com.google.android.material.card.MaterialCardView>
-                        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="14dp" android:text="Œufs cassés" android:textColor="@color/text_primary" android:textSize="14sp" android:textStyle="bold" />
-                    </LinearLayout>
-
-                    <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/background" android:layout_marginVertical="12dp" />
-
-                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
-                        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
-                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="CE MOIS" android:textColor="@color/text_secondary" android:textSize="10sp" android:textStyle="bold" android:letterSpacing="0.06" />
-                            <TextView android:id="@+id/tvBrokenMonthly" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="2dp" android:textColor="@color/error" android:textSize="26sp" android:textStyle="bold" tools:text="15" />
-                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="œufs cassés" android:textColor="@color/text_secondary" android:textSize="11sp" />
-                        </LinearLayout>
-
-                        <View android:layout_width="1dp" android:layout_height="match_parent" android:background="@color/background" />
-
-                        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="16dp" android:orientation="vertical">
-                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="TOTAL GÉNÉRAL" android:textColor="@color/text_secondary" android:textSize="10sp" android:textStyle="bold" android:letterSpacing="0.06" />
-                            <TextView android:id="@+id/tvBrokenGeneral" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="2dp" android:textColor="@color/error" android:textSize="26sp" android:textStyle="bold" tools:text="87" />
-                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="œufs cassés" android:textColor="@color/text_secondary" android:textSize="11sp" />
-                        </LinearLayout>
-                    </LinearLayout>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
@@ -230,6 +202,7 @@
 
             <!-- Section 1 : Evolution quotidienne du mois en cours -->
             <TextView
+                android:id="@+id/tvEvolutionTitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="24dp"
@@ -267,6 +240,7 @@
 
             <!-- Section 2 : Historique par mois -->
             <TextView
+                android:id="@+id/tvHistoryTitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="32dp"
@@ -296,6 +270,174 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
+
+            <!-- ═══ 2e partie : Œufs cassés (page production) ou Recettes (page ventes) ═══ -->
+            <LinearLayout
+                android:id="@+id/layoutSecondary"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone"
+                tools:visibility="visible">
+
+                <View android:layout_width="match_parent" android:layout_height="1dp" android:layout_marginTop="36dp" android:background="@color/off_white" />
+
+                <TextView
+                    android:id="@+id/tvSecondaryTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="24dp"
+                    android:textColor="@color/primary"
+                    android:textSize="20sp"
+                    android:textStyle="bold"
+                    tools:text="Œufs cassés" />
+
+                <TextView
+                    android:id="@+id/tvSecondarySubtitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="12sp"
+                    tools:text="Pertes du mois et évolution" />
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardBrokenEggs"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:visibility="gone"
+                app:cardBackgroundColor="@color/surface"
+                app:cardCornerRadius="18dp"
+                app:cardElevation="0dp"
+                app:strokeColor="@color/error_container"
+                app:strokeWidth="1dp"
+                tools:visibility="visible">
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="16dp">
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical">
+                        <com.google.android.material.card.MaterialCardView android:layout_width="44dp" android:layout_height="44dp" app:cardCornerRadius="22dp" app:cardElevation="0dp" app:cardBackgroundColor="@color/error">
+                            <ImageView android:layout_width="22dp" android:layout_height="22dp" android:layout_gravity="center" android:src="@drawable/ic_egg" app:tint="@color/white" />
+                        </com.google.android.material.card.MaterialCardView>
+                        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="14dp" android:text="Bilan des œufs cassés" android:textColor="@color/text_primary" android:textSize="14sp" android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/background" android:layout_marginVertical="12dp" />
+
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
+                        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="CE MOIS" android:textColor="@color/text_secondary" android:textSize="10sp" android:textStyle="bold" android:letterSpacing="0.06" />
+                            <TextView android:id="@+id/tvBrokenMonthly" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="2dp" android:textColor="@color/error" android:textSize="24sp" android:textStyle="bold" tools:text="15" />
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="œufs cassés" android:textColor="@color/text_secondary" android:textSize="11sp" />
+                        </LinearLayout>
+
+                        <View android:layout_width="1dp" android:layout_height="match_parent" android:background="@color/background" />
+
+                        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="16dp" android:orientation="vertical">
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="DEPUIS LE DÉBUT" android:textColor="@color/text_secondary" android:textSize="10sp" android:textStyle="bold" android:letterSpacing="0.06" />
+                            <TextView android:id="@+id/tvBrokenGeneral" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="2dp" android:textColor="@color/error" android:textSize="24sp" android:textStyle="bold" tools:text="87" />
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="œufs cassés" android:textColor="@color/text_secondary" android:textSize="11sp" />
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/background" android:layout_marginVertical="12dp" />
+                    <TextView android:id="@+id/tvBrokenInfo" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="@color/text_primary" android:textSize="13sp" android:lineSpacingExtra="3dp" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardRevenue"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:visibility="gone"
+                app:cardBackgroundColor="@color/surface"
+                app:cardCornerRadius="18dp"
+                app:cardElevation="0dp"
+                app:strokeColor="@color/accent_blue_container"
+                app:strokeWidth="1dp"
+                tools:visibility="visible">
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="16dp">
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical">
+                        <com.google.android.material.card.MaterialCardView android:layout_width="44dp" android:layout_height="44dp" app:cardCornerRadius="22dp" app:cardElevation="0dp" app:cardBackgroundColor="@color/accent_blue">
+                            <ImageView android:layout_width="22dp" android:layout_height="22dp" android:layout_gravity="center" android:src="@drawable/ic_finance" app:tint="@color/white" />
+                        </com.google.android.material.card.MaterialCardView>
+                        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="14dp" android:text="Bilan des recettes" android:textColor="@color/text_primary" android:textSize="14sp" android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/background" android:layout_marginVertical="12dp" />
+
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
+                        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="CE MOIS" android:textColor="@color/text_secondary" android:textSize="10sp" android:textStyle="bold" android:letterSpacing="0.06" />
+                            <TextView android:id="@+id/tvRevenueMonthly" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="2dp" android:textColor="@color/accent_blue" android:textSize="24sp" android:textStyle="bold" tools:text="15" />
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:id="@+id/tvRevenueMonthlyUnit" android:text="recette du mois" android:textColor="@color/text_secondary" android:textSize="11sp" />
+                        </LinearLayout>
+
+                        <View android:layout_width="1dp" android:layout_height="match_parent" android:background="@color/background" />
+
+                        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="16dp" android:orientation="vertical">
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="DEPUIS LE DÉBUT" android:textColor="@color/text_secondary" android:textSize="10sp" android:textStyle="bold" android:letterSpacing="0.06" />
+                            <TextView android:id="@+id/tvRevenueGeneral" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="2dp" android:textColor="@color/accent_blue" android:textSize="24sp" android:textStyle="bold" tools:text="87" />
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:id="@+id/tvRevenueGeneralUnit" android:text="recette totale" android:textColor="@color/text_secondary" android:textSize="11sp" />
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/background" android:layout_marginVertical="12dp" />
+                    <TextView android:id="@+id/tvRevenueInfo" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="@color/text_primary" android:textSize="13sp" android:lineSpacingExtra="3dp" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <TextView
+                android:id="@+id/tvSecondaryEvolutionTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:text="Évolution du mois"
+                android:textColor="@color/primary"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                app:cardBackgroundColor="@color/surface"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="2dp">
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="16dp">
+                    <com.github.mikephil.charting.charts.LineChart
+                        android:id="@+id/secondaryLineChart"
+                        android:layout_width="match_parent"
+                        android:layout_height="250dp" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <TextView
+                android:id="@+id/tvSecondaryHistoryTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="28dp"
+                android:text="Historique mensuel"
+                android:textColor="@color/primary"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                app:cardBackgroundColor="@color/surface"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="2dp">
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="16dp">
+                    <com.github.mikephil.charting.charts.BarChart
+                        android:id="@+id/secondaryHistoricalChart"
+                        android:layout_width="match_parent"
+                        android:layout_height="300dp" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            </LinearLayout>
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 </LinearLayout>

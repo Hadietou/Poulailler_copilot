@@ -291,14 +291,12 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
 
     private fun showEggProductionMenu(anchor: View) = ActionMenuPopup.show(anchor, listOf(
         ActionMenuItem(R.drawable.ic_egg, "+ Saisir la ponte") { navigateTo(AgentActivity::class.java) },
-        ActionMenuItem(R.drawable.ic_chart_line, "Suivi de la production") { navigateToStats("COLLECTION") },
-        ActionMenuItem(R.drawable.ic_chart_line, "Suivi des œufs cassés") { navigateToStats("BROKEN") }
+        ActionMenuItem(R.drawable.ic_chart_line, "Production et œufs cassés") { navigateToStats("COLLECTION") }
     ))
 
     private fun showSalesMenu(anchor: View) = ActionMenuPopup.show(anchor, listOf(
         ActionMenuItem(R.drawable.ic_sell, "Saisie des ventes") { navigateTo(SalesActivity::class.java) },
-        ActionMenuItem(R.drawable.ic_chart_line, "Suivi des ventes") { navigateToStats("SALES") },
-        ActionMenuItem(R.drawable.ic_finance, "Suivi de la recette") { navigateToStats("REVENUE") }
+        ActionMenuItem(R.drawable.ic_chart_line, "Ventes et recettes") { navigateToStats("SALES") }
     ))
 
     private fun showExpensesMenu(anchor: View) = ActionMenuPopup.show(anchor, listOf(
