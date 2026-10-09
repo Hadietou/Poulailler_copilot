@@ -39,29 +39,75 @@
             app:iconTint="@color/primary"
             android:layout_marginBottom="12dp"/>
 
-        <com.google.android.material.textfield.TextInputLayout
+        <!-- Saisie comme on la reçoit : plateaux complets + œufs restants (1 plateau = 30 œufs) -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Total œufs pondus (Sains + Cassés)"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
-            android:layout_marginBottom="12dp"
-            app:hintTextColor="@color/text_secondary"
-            app:boxStrokeColor="@color/primary"
-            app:startIconDrawable="@drawable/ic_add"
-            app:startIconTint="@color/primary">
-            <com.google.android.material.textfield.TextInputEditText
-        style="@style/Widget.App.TextInputEditText"
-                android:id="@+id/etEggsCount"
-                android:layout_width="match_parent"
+            android:orientation="horizontal">
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilTrays"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:inputType="number"
-                android:textColor="@color/text_primary" />
-        </com.google.android.material.textfield.TextInputLayout>
+                android:layout_marginEnd="6dp"
+                android:layout_weight="1"
+                android:hint="Plateaux"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
+                app:hintTextColor="@color/text_secondary"
+                app:boxStrokeColor="@color/primary">
+                <com.google.android.material.textfield.TextInputEditText
+                    style="@style/Widget.App.TextInputEditText"
+                    android:id="@+id/etTrays"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="number"
+                    android:maxLength="5"
+                    android:textColor="@color/text_primary" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilExtraEggs"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:layout_weight="1"
+                android:hint="+ œufs"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
+                app:hintTextColor="@color/text_secondary"
+                app:boxStrokeColor="@color/primary">
+                <com.google.android.material.textfield.TextInputEditText
+                    style="@style/Widget.App.TextInputEditText"
+                    android:id="@+id/etExtraEggs"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="number"
+                    android:maxLength="3"
+                    android:textColor="@color/text_primary" />
+            </com.google.android.material.textfield.TextInputLayout>
+        </LinearLayout>
+
+        <!-- Total calculé en direct : permet de repérer une erreur de saisie avant d'enregistrer -->
+        <TextView
+            android:id="@+id/tvEggTotal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:layout_marginBottom="12dp"
+            android:background="@drawable/bg_value_chip"
+            android:backgroundTint="@color/emerald_container"
+            android:gravity="center"
+            android:paddingVertical="8dp"
+            android:text="Total : 0 œuf"
+            android:textColor="@color/primary"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+
 
         <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Nombre d'œufs cassés (déjà inclus dans le total)"
+            android:id="@+id/tilBroken"
+            android:hint="Dont œufs cassés"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
             android:layout_marginBottom="12dp"
             app:hintTextColor="@color/text_secondary"

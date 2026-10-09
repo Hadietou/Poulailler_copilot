@@ -15,6 +15,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
 import com.google.firebase.firestore.Query
+import com.google.android.gms.tasks.Task
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.tasks.await
@@ -22,6 +23,22 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 class FirebaseRepository {
+
+    /**
+     * Écriture Firestore « fire-and-forget » : le SDK applique le changement au cache local
+     * immédiatement (visible aussitôt dans toutes les lectures et flux, même hors connexion)
+     * puis le synchronise avec le serveur dès que la connexion revient. On n'attend PAS ici la
+     * confirmation du serveur : contrairement à une lecture, la Task renvoyée par set()/update()/
+     * add()/delete() ne se termine qu'une fois la synchronisation effectuée — ce qui bloquerait
+     * (parfois indéfiniment) l'écran appelant tant que l'appareil est hors connexion. C'est ce qui
+     * empêchait toute saisie (collecte, vente, dépense…) de fonctionner sans réseau.
+     * En cas d'échec définitif (rare, ex. accès refusé une fois reconnecté), l'erreur est
+     * seulement journalisée : l'utilisateur a déjà eu sa confirmation, la donnée reste dans la
+     * file d'attente locale de Firestore qui retentera automatiquement.
+     */
+    private fun Task<*>.fireAndForget(tag: String) {
+        addOnFailureListener { e -> Log.e("FirebaseRepo", "Écriture différée échouée ($tag)", e) }
+    }
     private val auth = FirebaseAuth.getInstance()
     private val db = FirebaseFirestore.getInstance()
 
@@ -68,11 +85,11 @@ class FirebaseRepository {
         val farmCode = (1..6).map { "ABCDEFGHJKLMNPQRSTUVWXYZ23456789".random() }.joinToString("")
         val farmRef = db.collection("fermes").document()
         val farmId = farmRef.id
-        
+
         val farmData = hashMapOf<String, Any?>(
-            "id" to farmId, 
-            "name" to farmName, 
-            "code" to farmCode, 
+            "id" to farmId,
+            "name" to farmName,
+            "code" to farmCode,
             "ownerId" to uid,
             "country" to country,
             "city" to city,
@@ -83,14 +100,14 @@ class FirebaseRepository {
         if (FarmValidation.ENFORCEMENT_ENABLED) {
             farmData["trialEndsAt"] = Timestamp(Date(System.currentTimeMillis() + TimeUnit.DAYS.toMillis(FarmValidation.TRIAL_DAYS)))
         }
-        farmRef.set(farmData).await()
-        
+        farmRef.set(farmData).fireAndForget("createFarmExtended:farm")
+
         val cityHit = city?.takeIf { it.isNotBlank() }?.let {
             try { RetrofitClient.geocodingApi.search(it).results?.firstOrNull() } catch (e: Exception) { null }
         }
         val initialFarmInfo = hashMapOf(
             "farmName" to farmName,
-            "currency" to currency, 
+            "currency" to currency,
             "setupDate" to System.currentTimeMillis(),
             "country" to country,
             "city" to city,
@@ -98,19 +115,19 @@ class FirebaseRepository {
             "latitude" to cityHit?.latitude,
             "longitude" to cityHit?.longitude
         )
-        db.collection("fermes").document(farmId).collection("config").document("farm_info").set(initialFarmInfo).await()
+        db.collection("fermes").document(farmId).collection("config").document("farm_info").set(initialFarmInfo).fireAndForget("createFarmExtended:farmInfo")
 
         val userData = hashMapOf(
             "username" to username,
             "email" to email,
-            "farmId" to farmId, 
-            "role" to "RESPONSABLE", 
+            "farmId" to farmId,
+            "role" to "RESPONSABLE",
             "active" to true,
             // Champ hérité (anciennes versions de l'app) : la validation se lit désormais sur la ferme.
             "isPending" to false,
             "createdAt" to System.currentTimeMillis()
         )
-        db.collection("users").document(uid).set(userData, SetOptions.merge()).await()
+        db.collection("users").document(uid).set(userData, SetOptions.merge()).fireAndForget("createFarmExtended:user")
         addOrUpdateMembership(uid, farmId, farmName, "RESPONSABLE")
 
         sendValidationEmailViaBrevo(farmName, farmId, uid, email, country, city)
@@ -126,10 +143,10 @@ class FirebaseRepository {
      * l'app (aucun autre écran n'a besoin de changer) ; users/{uid}/memberships/{farmId}
      * garde la liste complète pour le sélecteur "Changer de ferme".
      */
-    private suspend fun addOrUpdateMembership(uid: String, farmId: String, farmName: String, role: String) {
+    private fun addOrUpdateMembership(uid: String, farmId: String, farmName: String, role: String) {
         db.collection("users").document(uid).collection("memberships").document(farmId).set(
             hashMapOf("farmId" to farmId, "farmName" to farmName, "role" to role)
-        ).await()
+        ).fireAndForget("addOrUpdateMembership")
     }
 
     suspend fun getMemberships(): List<Membership> {
@@ -157,7 +174,7 @@ class FirebaseRepository {
         db.collection("users").document(uid).set(
             hashMapOf("farmId" to farmId, "role" to role) as Map<String, Any>,
             SetOptions.merge()
-        ).await()
+        ).fireAndForget("switchActiveFarm")
         _farmIdFlow.value = farmId
     }
 
@@ -223,7 +240,7 @@ class FirebaseRepository {
 
             Log.d("HeatAlert", "Envoi d'une alerte à $responsibleEmail pour $roundedTemp°C le $day")
             val emailRequest = BrevoEmailRequest(
-                sender = BrevoSender("KOURKOUROU App", "kourkourou@gmail.com"), 
+                sender = BrevoSender("KOURKOUROU App", "kourkourou@gmail.com"),
                 to = listOf(BrevoReceiver(responsibleEmail)),
                 subject = "⚠️ ALERTE CHALEUR - $farmName",
                 htmlContent = """
@@ -266,7 +283,7 @@ class FirebaseRepository {
         val fId = getFarmId() ?: return
         val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
         val configRef = db.collection("fermes").document(fId).collection("config").document("stock_alerts")
-        
+
         try {
             val lastAlert = configRef.get().await()
             if (lastAlert.exists() && lastAlert.getString("lastAlertDate") == today) {
@@ -349,11 +366,11 @@ class FirebaseRepository {
             val fId = doc.getString("farmId")
             if (fId != null) _farmIdFlow.value = fId
             User(
-                id = 0L, 
-                uid = uid, 
-                username = doc.getString("username") ?: "Utilisateur", 
+                id = 0L,
+                uid = uid,
+                username = doc.getString("username") ?: "Utilisateur",
                 email = doc.getString("email") ?: "",
-                password = "", 
+                password = "",
                 role = doc.getString("role") ?: "AGENT",
                 active = doc.getBoolean("active") ?: true,
                 farmId = fId,
@@ -417,7 +434,7 @@ class FirebaseRepository {
             "isPending" to isPending,
             "createdAt" to System.currentTimeMillis()
         )
-        db.collection("users").document(uid).set(data, SetOptions.merge()).await()
+        db.collection("users").document(uid).set(data, SetOptions.merge()).fireAndForget("createUserProfile")
     }
 
     /**
@@ -442,7 +459,7 @@ class FirebaseRepository {
             "phoneNumber" to phoneNumber,
             "email" to email
         )
-        db.collection("users").document(uid).set(data, SetOptions.merge()).await()
+        db.collection("users").document(uid).set(data, SetOptions.merge()).fireAndForget("createMinimalUserProfile")
     }
 
     /**
@@ -455,7 +472,7 @@ class FirebaseRepository {
     suspend fun linkPhoneToCurrentAccount(credential: com.google.firebase.auth.PhoneAuthCredential, phoneNumber: String) {
         val user = auth.currentUser ?: throw Exception("Non connecté")
         user.linkWithCredential(credential).await()
-        db.collection("users").document(user.uid).update("phoneNumber", phoneNumber).await()
+        db.collection("users").document(user.uid).update("phoneNumber", phoneNumber).fireAndForget("linkPhoneToCurrentAccount")
     }
 
 
@@ -481,7 +498,10 @@ class FirebaseRepository {
             "status" to "PENDING",
             "createdAt" to System.currentTimeMillis()
         )
-        val ref = db.collection("invitations").add(data).await()
+        // L'identifiant est généré localement (aucun réseau nécessaire) ; l'écriture elle-même
+        // n'est pas attendue, voir fireAndForget().
+        val ref = db.collection("invitations").document()
+        ref.set(data).fireAndForget("createInvitation")
         return Invitation(
             phoneNumber = phoneNumber,
             agentName = agentName,
@@ -550,7 +570,7 @@ class FirebaseRepository {
     suspend fun cancelInvitation(invitation: Invitation) {
         checkAndThrowIfBlocked()
         invitation.firestoreId?.let {
-            db.collection("invitations").document(it).update("status", "CANCELLED").await()
+            db.collection("invitations").document(it).update("status", "CANCELLED").fireAndForget("cancelInvitation")
         }
     }
 
@@ -565,17 +585,17 @@ class FirebaseRepository {
                 "isPending" to false
             ) as Map<String, Any>,
             SetOptions.merge()
-        ).await()
+        ).fireAndForget("acceptInvitation:user")
         addOrUpdateMembership(uid, invitation.farmId, invitation.farmName, "AGENT")
         invitation.firestoreId?.let {
-            db.collection("invitations").document(it).update("status", "ACCEPTED").await()
+            db.collection("invitations").document(it).update("status", "ACCEPTED").fireAndForget("acceptInvitation:invitation")
         }
         _farmIdFlow.value = invitation.farmId
     }
 
     suspend fun declineInvitation(invitation: Invitation) {
         invitation.firestoreId?.let {
-            db.collection("invitations").document(it).update("status", "DECLINED").await()
+            db.collection("invitations").document(it).update("status", "DECLINED").fireAndForget("declineInvitation")
         }
     }
 
@@ -648,7 +668,7 @@ class FirebaseRepository {
                 db.collection("fermes").document(fId).collection("config").document("farm_info").set(
                     hashMapOf("locality" to place, "latitude" to hit.latitude, "longitude" to hit.longitude),
                     SetOptions.merge()
-                ).await()
+                ).fireAndForget("ensureFarmLocationFromCity")
             } catch (e: Exception) {
                 Log.w("FirebaseRepo", "Position de la ville non enregistrée", e)
             }
@@ -893,7 +913,7 @@ class FirebaseRepository {
                 "dewormingExternalIntervalMonths" to info.dewormingExternalIntervalMonths
             ),
             SetOptions.merge()
-        ).await()
+        ).fireAndForget("saveFarmInfo")
     }
 
     suspend fun addBatch(batch: Batch) {
@@ -909,13 +929,13 @@ class FirebaseRepository {
             "typeLot" to batch.typeLot,
             "feedRation" to batch.feedRation,
             "feedRationHistory" to batch.feedRationHistory
-        )).await()
+        )).fireAndForget("addBatch")
     }
 
     suspend fun updateBatch(batch: Batch) {
         checkAndThrowIfBlocked()
         val fId = requireFarmId()
-        batch.firestoreId?.let { 
+        batch.firestoreId?.let {
             db.collection("fermes").document(fId).collection("batches").document(it).update(hashMapOf(
                 "name" to batch.name,
                 "hensCount" to batch.hensCount,
@@ -926,22 +946,22 @@ class FirebaseRepository {
                 "typeLot" to batch.typeLot,
                 "feedRation" to batch.feedRation,
                 "feedRationHistory" to batch.feedRationHistory
-            ) as Map<String, Any>).await()
+            ) as Map<String, Any>).fireAndForget("updateBatch")
         }
     }
 
     suspend fun deleteBatch(batchId: String) {
         checkAndThrowIfBlocked()
         val fId = requireFarmId()
-        db.collection("fermes").document(fId).collection("batches").document(batchId).delete().await()
+        db.collection("fermes").document(fId).collection("batches").document(batchId).delete().fireAndForget("deleteBatch")
     }
 
     suspend fun addEggEntry(e: EggEntry) {
         checkAndThrowIfBlocked()
         val fId = requireFarmId()
-        db.collection("egg_entries").add(hashMapOf("userId" to auth.currentUser?.uid, "date" to e.date, "eggsCount" to e.eggsCount, "brokenEggsCount" to e.brokenEggsCount, "remarks" to e.remarks, "farmId" to fId, "batchId" to e.batchId)).await()
+        db.collection("egg_entries").add(hashMapOf("userId" to auth.currentUser?.uid, "date" to e.date, "eggsCount" to e.eggsCount, "brokenEggsCount" to e.brokenEggsCount, "remarks" to e.remarks, "farmId" to fId, "batchId" to e.batchId)).fireAndForget("addEggEntry")
     }
-    
+
     suspend fun updateEggEntry(e: EggEntry) {
         checkAndThrowIfBlocked()
         e.firestoreId?.let {
@@ -950,13 +970,13 @@ class FirebaseRepository {
                 "eggsCount" to e.eggsCount,
                 "brokenEggsCount" to e.brokenEggsCount,
                 "remarks" to e.remarks
-            ) as Map<String, Any>).await()
+            ) as Map<String, Any>).fireAndForget("updateEggEntry")
         }
     }
-    
+
     suspend fun deleteEggEntry(id: String) {
         checkAndThrowIfBlocked()
-        db.collection("egg_entries").document(id).delete().await()
+        db.collection("egg_entries").document(id).delete().fireAndForget("deleteEggEntry")
     }
 
     suspend fun addMortality(c: Int, d: Long, batchId: String?, cause: String? = null, zone: String? = null) {
@@ -969,7 +989,7 @@ class FirebaseRepository {
             "batchId" to batchId,
             "cause" to cause,
             "zone" to zone
-        )).await()
+        )).fireAndForget("addMortality")
     }
 
     suspend fun updateMortality(m: Mortality) {
@@ -981,21 +1001,21 @@ class FirebaseRepository {
                 "cause" to m.cause,
                 "zone" to m.zone,
                 "confirmedCause" to m.confirmedCause
-            ) as Map<String, Any>).await()
+            ) as Map<String, Any>).fireAndForget("updateMortality")
         }
     }
 
     suspend fun deleteMortality(id: String) {
         checkAndThrowIfBlocked()
-        db.collection("mortality").document(id).delete().await()
+        db.collection("mortality").document(id).delete().fireAndForget("deleteMortality")
     }
 
     suspend fun addSale(s: EggSale) {
         checkAndThrowIfBlocked()
         val fId = requireFarmId()
-        db.collection("sales").add(hashMapOf("userId" to auth.currentUser?.uid, "date" to s.date, "quantity" to s.quantity, "pricePerUnit" to s.pricePerUnit, "totalPrice" to s.totalPrice, "buyer" to s.buyer, "phoneNumber" to s.phoneNumber, "isPaid" to s.isPaid, "farmId" to fId, "batchId" to s.batchId)).await()
+        db.collection("sales").add(hashMapOf("userId" to auth.currentUser?.uid, "date" to s.date, "quantity" to s.quantity, "pricePerUnit" to s.pricePerUnit, "totalPrice" to s.totalPrice, "buyer" to s.buyer, "phoneNumber" to s.phoneNumber, "isPaid" to s.isPaid, "farmId" to fId, "batchId" to s.batchId)).fireAndForget("addSale")
     }
-    
+
     suspend fun updateSale(s: EggSale) {
         checkAndThrowIfBlocked()
         s.firestoreId?.let {
@@ -1007,13 +1027,13 @@ class FirebaseRepository {
                 "buyer" to s.buyer,
                 "phoneNumber" to s.phoneNumber,
                 "isPaid" to s.isPaid
-            ) as Map<String, Any>).await()
+            ) as Map<String, Any>).fireAndForget("updateSale")
         }
     }
 
     suspend fun deleteSale(saleId: String) {
         checkAndThrowIfBlocked()
-        db.collection("sales").document(saleId).delete().await()
+        db.collection("sales").document(saleId).delete().fireAndForget("deleteSale")
     }
 
     suspend fun addExpense(e: Expense) {
@@ -1028,7 +1048,7 @@ class FirebaseRepository {
             "description" to e.description,
             "farmId" to fId,
             "batchId" to e.batchId
-        )).await()
+        )).fireAndForget("addExpense")
     }
 
     suspend fun updateExpense(e: Expense) {
@@ -1041,13 +1061,13 @@ class FirebaseRepository {
                 "amount" to e.amount,
                 "quantityKg" to e.quantityKg,
                 "description" to e.description
-            ) as Map<String, Any>).await()
+            ) as Map<String, Any>).fireAndForget("updateExpense")
         }
     }
 
     suspend fun deleteExpense(id: String) {
         checkAndThrowIfBlocked()
-        db.collection("expenses").document(id).delete().await()
+        db.collection("expenses").document(id).delete().fireAndForget("deleteExpense")
     }
 
     suspend fun addVaccine(v: VaccineEntry) {
@@ -1067,7 +1087,7 @@ class FirebaseRepository {
             "route" to v.route,
             "targetCount" to v.targetCount,
             "administeredBy" to v.administeredBy
-        )).await()
+        )).fireAndForget("addVaccine")
     }
 
     suspend fun updateVaccine(v: VaccineEntry) {
@@ -1085,13 +1105,13 @@ class FirebaseRepository {
                 "route" to v.route,
                 "targetCount" to v.targetCount,
                 "administeredBy" to v.administeredBy
-            ) as Map<String, Any>).await()
+            ) as Map<String, Any>).fireAndForget("updateVaccine")
         }
     }
 
     suspend fun deleteVaccine(id: String) {
         checkAndThrowIfBlocked()
-        db.collection("vaccines").document(id).delete().await()
+        db.collection("vaccines").document(id).delete().fireAndForget("deleteVaccine")
     }
 
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
@@ -1145,7 +1165,7 @@ class FirebaseRepository {
             "notes" to t.notes,
             "farmId" to fId,
             "batchId" to t.batchId
-        )).await()
+        )).fireAndForget("addTreatment")
     }
 
     suspend fun updateTreatment(t: Treatment) {
@@ -1164,13 +1184,13 @@ class FirebaseRepository {
                 "eggWithdrawalDays" to t.eggWithdrawalDays,
                 "slaughterWithdrawalDays" to t.slaughterWithdrawalDays,
                 "notes" to t.notes
-            ) as Map<String, Any>).await()
+            ) as Map<String, Any>).fireAndForget("updateTreatment")
         }
     }
 
     suspend fun deleteTreatment(id: String) {
         checkAndThrowIfBlocked()
-        db.collection("treatments").document(id).delete().await()
+        db.collection("treatments").document(id).delete().fireAndForget("deleteTreatment")
     }
 
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
@@ -1225,7 +1245,7 @@ class FirebaseRepository {
             "evolutionNotes" to d.evolutionNotes,
             "farmId" to fId,
             "batchId" to d.batchId
-        )).await()
+        )).fireAndForget("addDiseaseCase")
     }
 
     suspend fun updateDiseaseCase(d: DiseaseCase) {
@@ -1244,13 +1264,13 @@ class FirebaseRepository {
                 "vetDiagnosis" to d.vetDiagnosis,
                 "actionsTaken" to d.actionsTaken,
                 "evolutionNotes" to d.evolutionNotes
-            ) as Map<String, Any>).await()
+            ) as Map<String, Any>).fireAndForget("updateDiseaseCase")
         }
     }
 
     suspend fun deleteDiseaseCase(id: String) {
         checkAndThrowIfBlocked()
-        db.collection("disease_cases").document(id).delete().await()
+        db.collection("disease_cases").document(id).delete().fireAndForget("deleteDiseaseCase")
     }
 
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
@@ -1298,12 +1318,12 @@ class FirebaseRepository {
             "recordedBy" to o.recordedBy,
             "farmId" to fId,
             "batchId" to o.batchId
-        )).await()
+        )).fireAndForget("addHealthObservation")
     }
 
     suspend fun deleteHealthObservation(id: String) {
         checkAndThrowIfBlocked()
-        db.collection("health_observations").document(id).delete().await()
+        db.collection("health_observations").document(id).delete().fireAndForget("deleteHealthObservation")
     }
 
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
@@ -1351,12 +1371,12 @@ class FirebaseRepository {
             "nextVisitDate" to v.nextVisitDate,
             "farmId" to fId,
             "batchId" to v.batchId
-        )).await()
+        )).fireAndForget("addVetVisit")
     }
 
     suspend fun deleteVetVisit(id: String) {
         checkAndThrowIfBlocked()
-        db.collection("vet_visits").document(id).delete().await()
+        db.collection("vet_visits").document(id).delete().fireAndForget("deleteVetVisit")
     }
 
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
@@ -1394,12 +1414,12 @@ class FirebaseRepository {
             "notes" to a.notes,
             "farmId" to fId,
             "batchId" to a.batchId
-        )).await()
+        )).fireAndForget("addLabAnalysis")
     }
 
     suspend fun deleteLabAnalysis(id: String) {
         checkAndThrowIfBlocked()
-        db.collection("lab_analyses").document(id).delete().await()
+        db.collection("lab_analyses").document(id).delete().fireAndForget("deleteLabAnalysis")
     }
 
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
@@ -1435,7 +1455,7 @@ class FirebaseRepository {
             "lastDoneDate" to t.lastDoneDate,
             "doneBy" to t.doneBy,
             "farmId" to fId
-        )).await()
+        )).fireAndForget("addBiosecurityTask")
     }
 
     suspend fun updateBiosecurityTask(t: BiosecurityTask) {
@@ -1444,13 +1464,13 @@ class FirebaseRepository {
             db.collection("biosecurity_tasks").document(it).update(hashMapOf(
                 "lastDoneDate" to t.lastDoneDate,
                 "doneBy" to t.doneBy
-            ) as Map<String, Any>).await()
+            ) as Map<String, Any>).fireAndForget("updateBiosecurityTask")
         }
     }
 
     suspend fun deleteBiosecurityTask(id: String) {
         checkAndThrowIfBlocked()
-        db.collection("biosecurity_tasks").document(id).delete().await()
+        db.collection("biosecurity_tasks").document(id).delete().fireAndForget("deleteBiosecurityTask")
     }
 
     suspend fun addHealthReminder(r: HealthReminder) {
@@ -1467,7 +1487,7 @@ class FirebaseRepository {
             "recurring" to r.recurring,
             "frequencyMonths" to r.frequencyMonths,
             "farmId" to fId
-        )).await()
+        )).fireAndForget("addHealthReminder")
     }
 
     suspend fun updateHealthReminder(r: HealthReminder) {
@@ -1477,13 +1497,13 @@ class FirebaseRepository {
                 "dueDate" to r.dueDate,
                 "isDone" to r.isDone,
                 "doneDate" to r.doneDate
-            ) as Map<String, Any>).await()
+            ) as Map<String, Any>).fireAndForget("updateHealthReminder")
         }
     }
 
     suspend fun deleteHealthReminder(id: String) {
         checkAndThrowIfBlocked()
-        db.collection("health_reminders").document(id).delete().await()
+        db.collection("health_reminders").document(id).delete().fireAndForget("deleteHealthReminder")
     }
 
     /**
@@ -1502,7 +1522,7 @@ class FirebaseRepository {
             db.collection("health_reminders").document(it).update(hashMapOf(
                 "isDone" to true,
                 "doneDate" to now
-            ) as Map<String, Any>).await()
+            ) as Map<String, Any>).fireAndForget("markHealthReminderDone:reminder")
         }
 
         db.collection("health_reminder_logs").add(hashMapOf(
@@ -1513,7 +1533,7 @@ class FirebaseRepository {
             "doneDate" to now,
             "batchId" to r.batchId,
             "farmId" to fId
-        )).await()
+        )).fireAndForget("markHealthReminderDone:log")
     }
 
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
@@ -1568,7 +1588,7 @@ class FirebaseRepository {
 
     suspend fun updateUserStatus(userId: String, active: Boolean) {
         checkAndThrowIfBlocked()
-        db.collection("users").document(userId).update("active", active).await()
+        db.collection("users").document(userId).update("active", active).fireAndForget("updateUserStatus")
     }
 
     fun shareAgentCredentials(context: Context, login: String, pass: String) {

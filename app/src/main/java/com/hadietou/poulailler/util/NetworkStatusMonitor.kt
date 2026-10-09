@@ -12,11 +12,18 @@ import androidx.lifecycle.LifecycleOwner
 import com.google.android.material.snackbar.Snackbar
 
 /**
- * Affiche un bandeau persistant "Pas de connexion internet" tant que l'appareil n'a pas
- * de connectivité active, et le masque dès qu'elle revient. L'app dépendant entièrement
- * de Firebase, l'utilisateur doit savoir immédiatement pourquoi rien ne se charge/synchronise.
+ * Prévient brièvement l'utilisateur quand la connexion se coupe, puis se masque tout seul.
+ *
+ * Les saisies (collecte, vente, dépense…) fonctionnent normalement hors connexion : Firestore
+ * les garde en attente sur l'appareil et les synchronise dès que le réseau revient, sans action
+ * de l'utilisateur (voir FirebaseRepository.fireAndForget). Ce bandeau n'est donc qu'une
+ * information de confort, plus un avertissement bloquant — d'où une durée limitée (quelques
+ * secondes) plutôt que permanente, pour ne pas gêner l'écran tant que la coupure dure.
  */
 object NetworkStatusMonitor {
+
+    /** Durée d'affichage du bandeau (ms) : visible assez longtemps pour être lu, sans s'incruster. */
+    private const val BANNER_DURATION_MS = 4000
 
     /** À appeler une fois dans onCreate() avec la vue racine de l'écran (ex: binding.root). */
     fun observe(activity: AppCompatActivity, rootView: View) {
@@ -38,7 +45,16 @@ object NetworkStatusMonitor {
             override fun onLost(network: Network) {
                 activity.runOnUiThread {
                     if (offlineSnackbar == null) {
-                        offlineSnackbar = Snackbar.make(rootView, "Pas de connexion internet", Snackbar.LENGTH_INDEFINITE)
+                        offlineSnackbar = Snackbar.make(
+                            rootView,
+                            "Hors connexion : vos saisies seront synchronisées au retour du réseau.",
+                            BANNER_DURATION_MS
+                        )
+                        offlineSnackbar?.addCallback(object : Snackbar.Callback() {
+                            override fun onDismissed(transientBottomBar: Snackbar?, event: Int) {
+                                offlineSnackbar = null
+                            }
+                        })
                         offlineSnackbar?.show()
                     }
                 }

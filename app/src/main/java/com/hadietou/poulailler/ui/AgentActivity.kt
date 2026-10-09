@@ -14,6 +14,7 @@ import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.GravityCompat
+import androidx.core.widget.doAfterTextChanged
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -35,6 +36,9 @@ import java.util.*
 import com.hadietou.poulailler.util.DrawerSubmenuController
 import com.hadietou.poulailler.util.NavMenuStyler
 import com.hadietou.poulailler.util.NetworkStatusMonitor
+
+/** Un plateau d'œufs = 30 œufs. */
+private const val EGGS_PER_TRAY = 30
 
 class AgentActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelectedListener {
 
@@ -180,6 +184,47 @@ class AgentActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
         }
     }
 
+    // ── Saisie « plateaux + œufs » ──────────────────────────────────────────────────────
+    // On reçoit la quantité à collecter en plateaux complets + œufs restants ; la saisie suit la
+    // même logique pour éviter la conversion mentale (plateaux × 30). Seul le TOTAL d'œufs est
+    // enregistré, donc stocks, graphiques et historique existants restent inchangés.
+
+    private fun eggTotal(b: DialogAddCollectionBinding): Int {
+        val trays = b.etTrays.text.toString().toIntOrNull() ?: 0
+        val extra = b.etExtraEggs.text.toString().toIntOrNull() ?: 0
+        return trays * EGGS_PER_TRAY + extra
+    }
+
+    /** Affiche le total calculé en direct et signale tout de suite une saisie incohérente. */
+    private fun setupEggInputs(b: DialogAddCollectionBinding) {
+        val refresh = {
+            val total = eggTotal(b)
+            b.tvEggTotal.text = "Total : $total ${if (total <= 1) "œuf" else "œufs"}"
+            validateEggInputs(b, showErrors = true)
+        }
+        b.etTrays.doAfterTextChanged { refresh() }
+        b.etExtraEggs.doAfterTextChanged { refresh() }
+        b.etBrokenEggsCount.doAfterTextChanged { refresh() }
+    }
+
+    /** Garde-fous : « œufs en plus » < 30, et pas plus d'œufs cassés que d'œufs pondus. */
+    private fun validateEggInputs(b: DialogAddCollectionBinding, showErrors: Boolean = true): Boolean {
+        val extra = b.etExtraEggs.text.toString().toIntOrNull() ?: 0
+        val broken = b.etBrokenEggsCount.text.toString().toIntOrNull() ?: 0
+        val total = eggTotal(b)
+
+        val extraError = if (extra >= EGGS_PER_TRAY) {
+            "Max 29 : 30 œufs = 1 plateau"
+        } else null
+        val brokenError = if (broken > total) "Plus de cassés ($broken) que d'œufs pondus ($total)" else null
+
+        if (showErrors) {
+            b.tilExtraEggs.error = extraError
+            b.tilBroken.error = brokenError
+        }
+        return extraError == null && brokenError == null
+    }
+
     private fun showAddCollectionDialog() {
         val dialogBinding = DialogAddCollectionBinding.inflate(LayoutInflater.from(this))
         val dialog = AlertDialog.Builder(this)
@@ -199,8 +244,10 @@ class AgentActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
             }, calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH), calendar.get(Calendar.DAY_OF_MONTH)).show()
         }
 
+        setupEggInputs(dialogBinding)
+
         dialogBinding.btnAddEntry.setOnClickListener {
-            val count = dialogBinding.etEggsCount.text.toString().toIntOrNull() ?: 0
+            val count = eggTotal(dialogBinding)
             val broken = dialogBinding.etBrokenEggsCount.text.toString().toIntOrNull() ?: 0
             val remarks = dialogBinding.etRemarks.text.toString()
 
@@ -208,6 +255,7 @@ class AgentActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
                 Toast.makeText(this, "Veuillez saisir au moins une donnée", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
+            if (!validateEggInputs(dialogBinding)) return@setOnClickListener
 
             viewModel.addEntry(
                 userId = userId ?: "",
@@ -232,7 +280,9 @@ class AgentActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
             .setView(dialogBinding.root)
             .create()
 
-        dialogBinding.etEggsCount.setText(entry.eggsCount.toString())
+        setupEggInputs(dialogBinding)
+        dialogBinding.etTrays.setText((entry.eggsCount / EGGS_PER_TRAY).toString())
+        dialogBinding.etExtraEggs.setText((entry.eggsCount % EGGS_PER_TRAY).toString())
         dialogBinding.etBrokenEggsCount.setText(entry.brokenEggsCount.toString())
         dialogBinding.etRemarks.setText(entry.remarks ?: "")
         
@@ -252,7 +302,7 @@ class AgentActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
 
         dialogBinding.btnAddEntry.text = "MODIFIER"
         dialogBinding.btnAddEntry.setOnClickListener {
-            val count = dialogBinding.etEggsCount.text.toString().toIntOrNull() ?: 0
+            val count = eggTotal(dialogBinding)
             val broken = dialogBinding.etBrokenEggsCount.text.toString().toIntOrNull() ?: 0
             val remarks = dialogBinding.etRemarks.text.toString()
 
@@ -260,6 +310,7 @@ class AgentActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
                 Toast.makeText(this, "Champs vides", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
+            if (!validateEggInputs(dialogBinding)) return@setOnClickListener
 
             lifecycleScope.launch(Dispatchers.IO) {
                 try {

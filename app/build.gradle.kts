@@ -22,7 +22,7 @@ android {
         applicationId = "com.hadietou.poulailler"
         minSdk = 24
         targetSdk = 36
-        versionCode = 22
+        versionCode = 23
         versionName = "20.09.2026"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
