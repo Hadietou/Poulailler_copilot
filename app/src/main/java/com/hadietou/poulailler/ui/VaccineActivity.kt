@@ -39,6 +39,7 @@ import java.util.*
 import com.hadietou.poulailler.util.DrawerSubmenuController
 import com.hadietou.poulailler.util.NavMenuStyler
 import com.hadietou.poulailler.util.NetworkStatusMonitor
+import com.hadietou.poulailler.util.HealthReminderUtils
 
 class VaccineActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelectedListener {
 
@@ -55,6 +56,7 @@ class VaccineActivity : AppCompatActivity(), NavigationView.OnNavigationItemSele
 
     private var allVaccines: List<VaccineEntry> = emptyList()
     private var allHealthReminders: List<HealthReminder> = emptyList()
+    private var allReminderLogs: List<HealthReminderLog> = emptyList()
     private var isShowingAll = false
     private var isBlocked = false
 
@@ -161,36 +163,64 @@ class VaccineActivity : AppCompatActivity(), NavigationView.OnNavigationItemSele
     }
 
     private fun setupHealthReminders() {
-        reminderAdapter = HealthReminderAdapter { reminder ->
-            lifecycleScope.launch {
-                try {
-                    firebaseRepo.markHealthReminderDone(reminder)
-                } catch (e: Exception) {
+        reminderAdapter = HealthReminderAdapter(
+            onDoneClick = { reminder -> closeReminder(reminder, ignored = false) },
+            onIgnoreClick = { reminder ->
+                HealthReminderUtils.confirmIgnore(this, reminder) { closeReminder(reminder, ignored = true) }
+            }
+        )
+        binding.rvHealthReminders.layoutManager = LinearLayoutManager(this)
+        binding.rvHealthReminders.adapter = reminderAdapter
+    }
+
+    private fun closeReminder(reminder: HealthReminder, ignored: Boolean) {
+        lifecycleScope.launch {
+            try {
+                if (ignored) firebaseRepo.markHealthReminderIgnored(reminder)
+                else firebaseRepo.markHealthReminderDone(reminder)
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(this@VaccineActivity, HealthReminderUtils.actionMessage(reminder, ignored), Toast.LENGTH_LONG).show()
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
                     Toast.makeText(this@VaccineActivity, e.message ?: "Erreur", Toast.LENGTH_SHORT).show()
                 }
             }
         }
-        binding.rvHealthReminders.layoutManager = LinearLayoutManager(this)
-        binding.rvHealthReminders.adapter = reminderAdapter
     }
 
     private fun setupHealthReminderHistory() {
         reminderLogAdapter = HealthReminderLogAdapter()
         binding.rvHealthReminderHistory.layoutManager = LinearLayoutManager(this)
         binding.rvHealthReminderHistory.adapter = reminderLogAdapter
+        binding.chipGroupReminderHistory.setOnCheckedStateChangeListener { _, _ -> refreshReminderHistoryDisplay() }
     }
 
     private fun observeHealthReminderLogs() {
         lifecycleScope.launch {
             firebaseRepo.getHealthReminderLogsFlow().collectLatest { list ->
-                val filtered = if (selectedBatchId != null) list.filter { it.batchId == selectedBatchId } else list
-                withContext(Dispatchers.Main) {
-                    binding.rvHealthReminderHistory.visibility = if (filtered.isEmpty()) View.GONE else View.VISIBLE
-                    binding.tvNoReminderHistory.visibility = if (filtered.isEmpty()) View.VISIBLE else View.GONE
-                    reminderLogAdapter.submitList(filtered)
-                }
+                allReminderLogs = if (selectedBatchId != null) list.filter { it.batchId == selectedBatchId } else list
+                withContext(Dispatchers.Main) { refreshReminderHistoryDisplay() }
             }
         }
+    }
+
+    /** Historique filtré selon le choix Tous / Faits / Ignorés, trié du plus récent au plus ancien. */
+    private fun refreshReminderHistoryDisplay() {
+        val doneCount = allReminderLogs.count { !it.isIgnored }
+        val ignoredCount = allReminderLogs.count { it.isIgnored }
+        binding.tvReminderHistorySummary.text =
+            "$doneCount fait${if (doneCount > 1) "s" else ""} · $ignoredCount ignoré${if (ignoredCount > 1) "s" else ""}"
+
+        val filtered = when (binding.chipGroupReminderHistory.checkedChipId) {
+            R.id.chipHistoryDone -> allReminderLogs.filter { !it.isIgnored }
+            R.id.chipHistoryIgnored -> allReminderLogs.filter { it.isIgnored }
+            else -> allReminderLogs
+        }.sortedByDescending { it.doneDate }
+
+        binding.rvHealthReminderHistory.visibility = if (filtered.isEmpty()) View.GONE else View.VISIBLE
+        binding.tvNoReminderHistory.visibility = if (filtered.isEmpty()) View.VISIBLE else View.GONE
+        reminderLogAdapter.submitList(filtered)
     }
 
     private fun observeVaccines() {

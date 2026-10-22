@@ -130,7 +130,7 @@
                         android:textSize="13sp" />
                 </com.google.android.material.card.MaterialCardView>
 
-                <!-- ── HISTORIQUE DES RAPPELS (dates des rappels marqués FAIT) ── -->
+                <!-- ── HISTORIQUE DES RAPPELS (rappels FAITS et IGNORÉS, avec leurs dates) ── -->
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -140,6 +140,46 @@
                     android:textSize="12sp"
                     android:textStyle="bold"
                     android:letterSpacing="0.1" />
+
+                <TextView
+                    android:id="@+id/tvReminderHistorySummary"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="12sp"
+                    tools:text="5 faits · 2 ignorés" />
+
+                <com.google.android.material.chip.ChipGroup
+                    android:id="@+id/chipGroupReminderHistory"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    app:singleSelection="true"
+                    app:selectionRequired="true">
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipHistoryAll"
+                        style="@style/Widget.MaterialComponents.Chip.Choice"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="true"
+                        android:text="Tous" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipHistoryDone"
+                        style="@style/Widget.MaterialComponents.Chip.Choice"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Faits" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipHistoryIgnored"
+                        style="@style/Widget.MaterialComponents.Chip.Choice"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Ignorés" />
+                </com.google.android.material.chip.ChipGroup>
 
                 <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/rvHealthReminderHistory"
@@ -156,7 +196,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="10dp"
-                    android:text="Aucun rappel marqué comme fait pour l'instant."
+                    android:text="Aucun rappel fait ou ignoré pour l'instant."
                     android:textColor="@color/text_secondary"
                     android:textSize="12sp"
                     android:gravity="center" />

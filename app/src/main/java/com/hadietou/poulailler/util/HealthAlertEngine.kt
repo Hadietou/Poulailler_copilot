@@ -16,7 +16,12 @@ enum class AlertLevel { CRITIQUE, ATTENTION }
 data class HealthAlert(
     val level: AlertLevel,
     val title: String,
-    val message: String
+    val message: String,
+    /**
+     * Identifiant stable de la situation signalée (indépendant du texte, qui change chaque jour
+     * pour les retards) : sert à mémoriser les alertes que l'éleveur choisit d'ignorer.
+     */
+    val key: String
 )
 
 /**
@@ -61,7 +66,8 @@ object HealthAlertEngine {
         return if (todayCount >= avg * spikeMultiplier) HealthAlert(
             AlertLevel.CRITIQUE,
             "Mortalité anormalement élevée",
-            "$todayCount morts aujourd'hui contre ${"%.1f".format(avg)}/jour en moyenne cette semaine — vérifier température, eau et signes de maladie."
+            "$todayCount morts aujourd'hui contre ${"%.1f".format(avg)}/jour en moyenne cette semaine — vérifier température, eau et signes de maladie.",
+            "spike:$todayStart"
         ) else null
     }
 
@@ -75,7 +81,8 @@ object HealthAlertEngine {
         return if (d0 > d1 && d1 > d2 && d0 > 0) HealthAlert(
             AlertLevel.ATTENTION,
             "Mortalité en hausse",
-            "Hausse progressive depuis 3 jours ($d2 → $d1 → $d0) — à surveiller de près."
+            "Hausse progressive depuis 3 jours ($d2 → $d1 → $d0) — à surveiller de près.",
+            "trend:$todayStart"
         ) else null
     }
 
@@ -83,6 +90,7 @@ object HealthAlertEngine {
     fun checkReminders(reminders: List<HealthReminder>, now: Long = System.currentTimeMillis()): List<HealthAlert> {
         val alerts = mutableListOf<HealthAlert>()
         reminders.filter { !it.isDone }.forEach {
+            val rid = it.firestoreId ?: it.id.toString()
             val diff = it.dueDate - now
             when {
                 diff < 0 -> {
@@ -90,13 +98,15 @@ object HealthAlertEngine {
                     alerts += HealthAlert(
                         AlertLevel.CRITIQUE,
                         "${it.title} en retard",
-                        if (daysLate <= 0) "Prévu aujourd'hui, toujours pas fait." else "Prévu il y a $daysLate jour(s), toujours pas fait."
+                        if (daysLate <= 0) "Prévu aujourd'hui, toujours pas fait." else "Prévu il y a $daysLate jour(s), toujours pas fait.",
+                        "reminder-late:$rid"
                     )
                 }
                 diff <= 2 * DAY_MS -> alerts += HealthAlert(
                     AlertLevel.ATTENTION,
                     "${it.title} à venir",
-                    "Prévu dans moins de 48h."
+                    "Prévu dans moins de 48h.",
+                    "reminder-soon:$rid"
                 )
             }
         }
@@ -108,18 +118,21 @@ object HealthAlertEngine {
         val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
         val alerts = mutableListOf<HealthAlert>()
         treatments.forEach { t ->
+            val tid = t.firestoreId ?: t.id.toString()
             t.eggWithdrawalUntil?.let { until ->
                 if (until > now) alerts += HealthAlert(
                     AlertLevel.CRITIQUE,
                     "Délai d'attente œufs en cours",
-                    "${t.medicationName} : ne pas commercialiser les œufs avant le ${sdf.format(Date(until))}."
+                    "${t.medicationName} : ne pas commercialiser les œufs avant le ${sdf.format(Date(until))}.",
+                    "withdrawal-egg:$tid:$until"
                 )
             }
             t.slaughterWithdrawalUntil?.let { until ->
                 if (until > now) alerts += HealthAlert(
                     AlertLevel.CRITIQUE,
                     "Délai d'attente abattage en cours",
-                    "${t.medicationName} : éviter l'abattage avant le ${sdf.format(Date(until))}."
+                    "${t.medicationName} : éviter l'abattage avant le ${sdf.format(Date(until))}.",
+                    "withdrawal-slaughter:$tid:$until"
                 )
             }
         }
@@ -136,21 +149,25 @@ object HealthAlertEngine {
         val alerts = mutableListOf<HealthAlert>()
         val recent = cases.filter { now - it.dateReported <= 7 * DAY_MS }
         recent.forEach { case ->
+            val cid = case.firestoreId ?: case.id.toString()
             when {
                 case.status == "DIAGNOSTIC_CONFIRME" -> alerts += HealthAlert(
                     AlertLevel.CRITIQUE,
                     "Diagnostic vétérinaire confirmé",
-                    "${case.vetDiagnosis ?: case.suspectedDisease ?: "Cas"} — vérifier que le traitement recommandé est bien suivi."
+                    "${case.vetDiagnosis ?: case.suspectedDisease ?: "Cas"} — vérifier que le traitement recommandé est bien suivi.",
+                    "case-confirmed:$cid"
                 )
                 case.symptoms.size >= 2 && case.status != "DIAGNOSTIC_CONFIRME" -> alerts += HealthAlert(
                     AlertLevel.CRITIQUE,
                     "Plusieurs symptômes signalés ensemble",
-                    "${case.symptoms.joinToString(", ")} — contacter un vétérinaire si la situation ne s'améliore pas."
+                    "${case.symptoms.joinToString(", ")} — contacter un vétérinaire si la situation ne s'améliore pas.",
+                    "case-symptoms:$cid"
                 )
                 case.status == "MALADIE_SUSPECTEE" -> alerts += HealthAlert(
                     AlertLevel.ATTENTION,
                     "Maladie suspectée à surveiller",
-                    (case.suspectedDisease ?: "Cas signalé") + " — à confirmer par un vétérinaire si les symptômes persistent."
+                    (case.suspectedDisease ?: "Cas signalé") + " — à confirmer par un vétérinaire si les symptômes persistent.",
+                    "case-suspected:$cid"
                 )
             }
         }
@@ -165,7 +182,8 @@ object HealthAlertEngine {
                 HealthAlert(
                     AlertLevel.ATTENTION,
                     "Anomalie relevée à l'observation quotidienne",
-                    obs.anomalyFields.joinToString(" · ") { (k, v) -> "$k : $v" }
+                    obs.anomalyFields.joinToString(" · ") { (k, v) -> "$k : $v" },
+                    "obs:${obs.firestoreId ?: obs.id}"
                 )
             }
     }
@@ -176,7 +194,8 @@ object HealthAlertEngine {
             HealthAlert(
                 AlertLevel.ATTENTION,
                 "Tâche de biosécurité en retard",
-                task.task
+                task.task,
+                "bio:${task.firestoreId ?: task.id}"
             )
         }
     }

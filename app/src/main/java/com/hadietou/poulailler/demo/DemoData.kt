@@ -222,6 +222,14 @@ object DemoData {
                     description = "Traitement effectué.",
                     dueDate = n - 92 * DAY, doneDate = n - 90 * DAY, batchId = BATCH_ID,
                     firestoreId = "demo-log-2"
+                ),
+                HealthReminderLog(
+                    title = "Newcastle (ND)", type = "VACCIN",
+                    description = "Vaccination de rappel recommandée (tous les 2 mois).",
+                    dueDate = n - 55 * DAY, doneDate = n - 54 * DAY, batchId = BATCH_ID,
+                    firestoreId = "demo-log-3",
+                    status = HealthReminderLog.STATUS_IGNORED,
+                    nextDueDate = n + 5 * DAY
                 )
             )
         }

@@ -50,6 +50,9 @@ android {
         release {
             isMinifyEnabled = true
             isShrinkResources = true
+            // Symboles du code natif inclus dans le bundle : lève l'avertissement de la Play Console
+            // et rend les rapports de plantage plus lisibles.
+            ndk { debugSymbolLevel = "SYMBOL_TABLE" }
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

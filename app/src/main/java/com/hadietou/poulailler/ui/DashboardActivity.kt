@@ -31,6 +31,7 @@ import com.hadietou.poulailler.data.FarmValidation
 import com.hadietou.poulailler.data.ValidationReminder
 import com.hadietou.poulailler.util.CountryData
 import com.hadietou.poulailler.util.SunUtils
+import com.hadietou.poulailler.util.HealthReminderUtils
 import com.hadietou.poulailler.util.ReportUtils
 import com.google.android.material.navigation.NavigationView
 import com.google.firebase.auth.FirebaseAuth
@@ -162,9 +163,18 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
     }
 
     private fun setupHealthReminders() {
-        reminderAdapter = HealthReminderAdapter { reminder ->
-            viewModel.markReminderDone(reminder)
-        }
+        reminderAdapter = HealthReminderAdapter(
+            onDoneClick = { reminder ->
+                viewModel.markReminderDone(reminder)
+                Toast.makeText(this, HealthReminderUtils.actionMessage(reminder, ignored = false), Toast.LENGTH_LONG).show()
+            },
+            onIgnoreClick = { reminder ->
+                HealthReminderUtils.confirmIgnore(this, reminder) {
+                    viewModel.markReminderIgnored(reminder)
+                    Toast.makeText(this, HealthReminderUtils.actionMessage(reminder, ignored = true), Toast.LENGTH_LONG).show()
+                }
+            }
+        )
         binding.rvHealthReminders.layoutManager = LinearLayoutManager(this)
         binding.rvHealthReminders.adapter = reminderAdapter
 

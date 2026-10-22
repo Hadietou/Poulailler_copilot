@@ -1,5 +1,6 @@
 package com.hadietou.poulailler.repository
 
+import com.hadietou.poulailler.util.HealthReminderUtils
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -851,7 +852,7 @@ class FirebaseRepository {
     }
 
     /**
-     * Historique permanent des rappels de santé marqués FAIT (voir [HealthReminderLog]).
+     * Historique permanent des rappels de santé marqués FAIT ou IGNORÉS (voir [HealthReminderLog]).
      */
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     fun getHealthReminderLogsFlow(): Flow<List<HealthReminderLog>> = if (DemoMode.enabled) flowOf(DemoData.healthReminderLogs) else farmIdFlow.flatMapLatest { fId ->
@@ -868,7 +869,10 @@ class FirebaseRepository {
                             dueDate = doc.getLong("dueDate") ?: 0L,
                             doneDate = doc.getLong("doneDate") ?: 0L,
                             batchId = doc.getString("batchId"),
-                            firestoreId = doc.id
+                            firestoreId = doc.id,
+                            // Les anciennes entrées (avant l'ajout d'« Ignorer ») n'ont pas de statut : ce sont des FAIT.
+                            status = doc.getString("status") ?: HealthReminderLog.STATUS_DONE,
+                            nextDueDate = doc.getLong("nextDueDate")
                         )
                     }?.sortedByDescending { it.doneDate } ?: emptyList()
                     trySend(list)
@@ -1509,11 +1513,24 @@ class FirebaseRepository {
     /**
      * Marque un rappel de santé comme FAIT : met à jour son état courant et,
      * surtout, conserve une trace permanente dans l'historique ([HealthReminderLog]),
-     * seul endroit où retrouver la liste et les dates des rappels déjà effectués
+     * seul endroit où retrouver la liste et les dates des rappels déjà traités
      * (le document [HealthReminder] lui-même est réinitialisé au cycle suivant
      * pour les rappels récurrents).
      */
-    suspend fun markHealthReminderDone(r: HealthReminder) {
+    suspend fun markHealthReminderDone(r: HealthReminder) =
+        closeHealthReminder(r, HealthReminderLog.STATUS_DONE)
+
+    /**
+     * IGNORE un rappel de santé : il disparaît des rappels actifs sans être compté comme
+     * fait, et la trace est conservée dans l'historique avec le statut IGNORE.
+     * Pour un rappel cyclique, la série n'est PAS arrêtée : le rappel est réactivé
+     * automatiquement à la prochaine échéance (voir DashboardViewModel.checkAndGenerateReminders),
+     * exactement comme après un FAIT.
+     */
+    suspend fun markHealthReminderIgnored(r: HealthReminder) =
+        closeHealthReminder(r, HealthReminderLog.STATUS_IGNORED)
+
+    private suspend fun closeHealthReminder(r: HealthReminder, status: String) {
         checkAndThrowIfBlocked()
         val fId = requireFarmId()
         val now = System.currentTimeMillis()
@@ -1521,8 +1538,9 @@ class FirebaseRepository {
         r.firestoreId?.let {
             db.collection("health_reminders").document(it).update(hashMapOf(
                 "isDone" to true,
-                "doneDate" to now
-            ) as Map<String, Any>).fireAndForget("markHealthReminderDone:reminder")
+                "doneDate" to now,
+                "lastAction" to status
+            ) as Map<String, Any>).fireAndForget("closeHealthReminder:reminder")
         }
 
         db.collection("health_reminder_logs").add(hashMapOf(
@@ -1532,8 +1550,10 @@ class FirebaseRepository {
             "dueDate" to r.dueDate,
             "doneDate" to now,
             "batchId" to r.batchId,
+            "status" to status,
+            "nextDueDate" to HealthReminderUtils.nextDueDate(r, now),
             "farmId" to fId
-        )).fireAndForget("markHealthReminderDone:log")
+        )).fireAndForget("closeHealthReminder:log")
     }
 
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)

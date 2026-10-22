@@ -235,6 +235,16 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         }
     }
 
+    fun markReminderIgnored(reminder: HealthReminder) {
+        viewModelScope.launch {
+            try {
+                firebaseRepo.markHealthReminderIgnored(reminder)
+            } catch (e: Exception) {
+                Log.e("DashboardVM", "Error ignoring reminder", e)
+            }
+        }
+    }
+
     /**
      * Nettoie les doublons de rappels de santé accumulés par l'ancienne race condition
      * (voir le commentaire dans [checkAndGenerateReminders]) : pour chaque titre en

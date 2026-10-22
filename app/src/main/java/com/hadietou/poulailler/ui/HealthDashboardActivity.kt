@@ -20,10 +20,12 @@ import com.hadietou.poulailler.repository.FirebaseRepository
 import com.hadietou.poulailler.util.AlertLevel
 import com.hadietou.poulailler.util.DrawerSubmenuController
 import com.hadietou.poulailler.util.HealthAlertEngine
+import com.hadietou.poulailler.util.IgnoredHealthAlerts
 import com.hadietou.poulailler.util.NavMenuStyler
 import com.hadietou.poulailler.util.NetworkStatusMonitor
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.navigation.NavigationView
+import com.google.android.material.snackbar.Snackbar
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
@@ -356,7 +358,10 @@ class HealthDashboardActivity : AppCompatActivity(), NavigationView.OnNavigation
         val mortalities = viewModel.allMortalities.value.orEmpty()
         val reminders = viewModel.activeHealthReminders.value.orEmpty()
         val spikeMultiplier = viewModel.farmInfo.value?.mortalitySpikeMultiplier ?: com.hadietou.poulailler.data.FarmInfo.DEFAULT_MORTALITY_SPIKE_MULTIPLIER
-        val alerts = HealthAlertEngine.computeAll(mortalities, reminders, allTreatments, allDiseaseCases, allObservations, allBiosecurityTasks, spikeMultiplier)
+        val computed = HealthAlertEngine.computeAll(mortalities, reminders, allTreatments, allDiseaseCases, allObservations, allBiosecurityTasks, spikeMultiplier)
+        val ignoredKeys = IgnoredHealthAlerts.all(this)
+        val alerts = computed.filter { it.key !in ignoredKeys }
+        val ignoredCount = computed.size - alerts.size
 
         binding.containerAlerts.removeAllViews()
         if (alerts.isEmpty()) {
@@ -366,7 +371,6 @@ class HealthDashboardActivity : AppCompatActivity(), NavigationView.OnNavigation
                 bgColorRes = R.color.emerald_container,
                 textColorRes = R.color.emerald_soft
             ))
-            return
         }
         alerts.forEach { alert ->
             val isCrit = alert.level == AlertLevel.CRITIQUE
@@ -374,12 +378,40 @@ class HealthDashboardActivity : AppCompatActivity(), NavigationView.OnNavigation
                 title = (if (isCrit) "🔴 " else "🟠 ") + alert.title,
                 message = alert.message,
                 bgColorRes = if (isCrit) R.color.error_container else R.color.earthy_container,
-                textColorRes = if (isCrit) R.color.error else R.color.earthy_orange
+                textColorRes = if (isCrit) R.color.error else R.color.earthy_orange,
+                onIgnore = { ignoreAlert(alert.key) }
             ))
+        }
+        if (ignoredCount > 0) {
+            binding.containerAlerts.addView(TextView(this).apply {
+                text = if (ignoredCount == 1) "1 alerte ignorée · Réafficher" else "$ignoredCount alertes ignorées · Réafficher"
+                setTextColor(getColor(R.color.primary))
+                textSize = 12f
+                setTypeface(typeface, android.graphics.Typeface.BOLD)
+                gravity = Gravity.END
+                val pad = (8 * resources.displayMetrics.density).toInt()
+                setPadding(pad, pad, pad, pad)
+                setOnClickListener {
+                    IgnoredHealthAlerts.restoreAll(this@HealthDashboardActivity)
+                    refreshAlerts()
+                }
+            })
         }
     }
 
-    private fun buildAlertCard(title: String, message: String, bgColorRes: Int, textColorRes: Int): MaterialCardView {
+    /** Masque l'alerte et propose de l'annuler tout de suite en cas de mauvaise manipulation. */
+    private fun ignoreAlert(key: String) {
+        IgnoredHealthAlerts.ignore(this, key)
+        refreshAlerts()
+        Snackbar.make(binding.root, "Alerte ignorée", Snackbar.LENGTH_LONG)
+            .setAction("Annuler") {
+                IgnoredHealthAlerts.restore(this, key)
+                refreshAlerts()
+            }
+            .show()
+    }
+
+    private fun buildAlertCard(title: String, message: String, bgColorRes: Int, textColorRes: Int, onIgnore: (() -> Unit)? = null): MaterialCardView {
         val card = MaterialCardView(this).apply {
             layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
                 bottomMargin = (8 * resources.displayMetrics.density).toInt()
@@ -407,6 +439,18 @@ class HealthDashboardActivity : AppCompatActivity(), NavigationView.OnNavigation
         }
         inner.addView(tvTitle)
         inner.addView(tvMessage)
+        onIgnore?.let { ignore ->
+            inner.addView(TextView(this).apply {
+                text = "Ignorer"
+                setTextColor(getColor(textColorRes))
+                textSize = 12f
+                setTypeface(typeface, android.graphics.Typeface.BOLD)
+                gravity = Gravity.END
+                val pad = (6 * resources.displayMetrics.density).toInt()
+                setPadding(pad, pad * 2, pad, 0)
+                setOnClickListener { ignore() }
+            })
+        }
         card.addView(inner)
         return card
     }
