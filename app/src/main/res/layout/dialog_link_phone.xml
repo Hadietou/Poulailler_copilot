@@ -36,11 +36,15 @@
                 android:layout_width="128dp"
                 android:layout_height="wrap_content"
                 android:hint="Indicatif"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu">
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense.ExposedDropdownMenu"
+            app:endIconMinSize="32dp">
                 <AutoCompleteTextView
                     android:id="@+id/actvLinkCountryCode"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:minHeight="0dp"
+                    android:paddingTop="8dp"
+                    android:paddingBottom="8dp"
                     android:inputType="none" />
             </com.google.android.material.textfield.TextInputLayout>
 

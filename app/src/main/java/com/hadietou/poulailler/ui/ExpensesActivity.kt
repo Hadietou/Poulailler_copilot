@@ -21,6 +21,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.hadietou.poulailler.R
 import com.hadietou.poulailler.BuildConfig
 import com.hadietou.poulailler.data.Expense
+import com.hadietou.poulailler.data.Treatment
 import com.hadietou.poulailler.databinding.ActivityExpensesBinding
 import com.hadietou.poulailler.databinding.DialogAddExpenseBinding
 import com.hadietou.poulailler.databinding.ItemExpenseBinding
@@ -34,7 +35,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.*
+import androidx.core.widget.doAfterTextChanged
 import com.hadietou.poulailler.util.DrawerSubmenuController
+import com.hadietou.poulailler.util.MedicationPurchases
+import com.hadietou.poulailler.util.MedicationType
 import com.hadietou.poulailler.util.NavMenuStyler
 import com.hadietou.poulailler.util.NetworkStatusMonitor
 
@@ -51,6 +55,7 @@ class ExpensesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
     private lateinit var adapter: ExpenseAdapter
     
     private var allExpenses: List<Expense> = emptyList()
+    private var allTreatments: List<Treatment> = emptyList()
     private var isShowingAll = false
     private var isBlocked = false
     private var selectedCategoryFilter: String? = null
@@ -91,6 +96,7 @@ class ExpensesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
      * sinon la quantité saisie n'est jamais enregistrée (cf. quantityKg dans btnSaveExpense).
      */
     private fun updateQuantityFieldVisibility(dialogBinding: DialogAddExpenseBinding, category: String, subCategory: String?) {
+        updateProductNameField(dialogBinding, category, subCategory)
         when {
             category == "Aliment" -> {
                 dialogBinding.tilQuantityKg.hint = "Quantité (kg)"
@@ -104,6 +110,70 @@ class ExpensesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
                 dialogBinding.tilQuantityKg.visibility = View.GONE
             }
         }
+    }
+
+    /**
+     * Pour les achats de santé (Cheptel & Santé), un champ dédié permet de saisir le nom du produit
+     * acheté ; il est obligatoire pour les médicaments. La description reste un champ libre à part.
+     */
+    private fun productNameLabel(category: String, subCategory: String?): String? =
+        if (category != "Cheptel & Santé") null else when (subCategory) {
+            "Médicaments" -> "Nom du médicament"
+            "Vaccins" -> "Nom du vaccin"
+            "Vitamines" -> "Nom de la vitamine"
+            "Désinfectants" -> "Nom du désinfectant"
+            else -> null
+        }
+
+    private fun updateProductNameField(dialogBinding: DialogAddExpenseBinding, category: String, subCategory: String?) {
+        val label = productNameLabel(category, subCategory)
+        if (label == null) {
+            dialogBinding.tilProductName.visibility = View.GONE
+            dialogBinding.etProductName.setText("", false)
+        } else {
+            dialogBinding.tilProductName.hint = if (subCategory == "Médicaments") "$label *" else label
+            dialogBinding.tilProductName.visibility = View.VISIBLE
+        }
+        dialogBinding.tilProductName.error = null
+
+        // Le type (antibiotique, vitamine…) ne concerne que les médicaments et les vitamines.
+        val typed = category == "Cheptel & Santé" && (subCategory == "Médicaments" || subCategory == "Vitamines")
+        dialogBinding.tilMedicationType.visibility = if (typed) View.VISIBLE else View.GONE
+        if (!typed) dialogBinding.autoCompleteMedicationType.setText("", false)
+    }
+
+    /**
+     * Suggestions du nom (produits déjà achetés ou déjà utilisés dans un traitement) et liste des types.
+     * Quand le nom correspond à un produit connu, son type est proposé automatiquement s'il n'est pas déjà choisi.
+     */
+    private fun setupMedicationInputs(dialogBinding: DialogAddExpenseBinding) {
+        dialogBinding.etProductName.setAdapter(
+            ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, MedicationPurchases.knownNames(allExpenses, allTreatments))
+        )
+        dialogBinding.autoCompleteMedicationType.setAdapter(
+            ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, MedicationType.entries.map { it.label })
+        )
+        dialogBinding.etProductName.doAfterTextChanged { text ->
+            if (dialogBinding.tilMedicationType.visibility == View.VISIBLE && dialogBinding.autoCompleteMedicationType.text.isNullOrBlank()) {
+                MedicationPurchases.knownType(allExpenses, allTreatments, text?.toString())?.let {
+                    dialogBinding.autoCompleteMedicationType.setText(it.label, false)
+                }
+            }
+        }
+    }
+
+    private fun selectedMedicationType(dialogBinding: DialogAddExpenseBinding): String? =
+        if (dialogBinding.tilMedicationType.visibility == View.VISIBLE)
+            MedicationType.fromLabel(dialogBinding.autoCompleteMedicationType.text.toString())?.name
+        else null
+
+    /** Faux si le nom du médicament, obligatoire pour cette sous-catégorie, n'est pas renseigné. */
+    private fun validateProductName(dialogBinding: DialogAddExpenseBinding, category: String, subCategory: String?): Boolean {
+        if (category == "Cheptel & Santé" && subCategory == "Médicaments" && dialogBinding.etProductName.text.isNullOrBlank()) {
+            dialogBinding.tilProductName.error = "Saisissez le nom du médicament"
+            return false
+        }
+        return true
     }
 
     private fun isQuantityTracked(category: String, subCategory: String?) =
@@ -241,6 +311,9 @@ class ExpensesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
 
     private fun observeExpenses() {
         lifecycleScope.launch {
+            firebaseRepo.getTreatmentsFlow().collectLatest { allTreatments = it }
+        }
+        lifecycleScope.launch {
             firebaseRepo.getExpensesFlow().collectLatest { list ->
                 allExpenses = if (selectedBatchId != null) {
                     list.filter { it.batchId == selectedBatchId }
@@ -257,7 +330,7 @@ class ExpensesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
             allExpenses.filter { it.category == category }
         } ?: allExpenses
         if (searchQuery.isNotBlank()) {
-            filtered = filtered.filter { it.description?.contains(searchQuery, ignoreCase = true) == true }
+            filtered = filtered.filter { it.description?.contains(searchQuery, ignoreCase = true) == true || it.productName?.contains(searchQuery, ignoreCase = true) == true }
         }
         val toDisplay = if (isShowingAll) filtered else filtered.take(10)
         adapter.updateCurrency(currency)
@@ -310,6 +383,7 @@ class ExpensesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
             .create()
 
         dialogBinding.tilAmount.hint = "Montant ($currency)"
+        setupMedicationInputs(dialogBinding)
         
         val adapterSpinner = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, expenseCategories)
         dialogBinding.autoCompleteCategory.setAdapter(adapterSpinner)
@@ -345,11 +419,14 @@ class ExpensesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
             val amount = dialogBinding.etAmount.text.toString().toDoubleOrNull() ?: 0.0
             val qty = dialogBinding.etQuantityKg.text.toString().toDoubleOrNull() ?: 0.0
             val description = dialogBinding.etDescription.text.toString()
+            val productName = dialogBinding.etProductName.text.toString().trim()
+                .takeIf { it.isNotEmpty() && dialogBinding.tilProductName.visibility == View.VISIBLE }
 
             if (category.isEmpty() || amount <= 0.0) {
                 Toast.makeText(this, "Veuillez remplir les champs obligatoires", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
+            if (!validateProductName(dialogBinding, category, subCategory)) return@setOnClickListener
 
             lifecycleScope.launch(Dispatchers.IO) {
                 try {
@@ -360,7 +437,9 @@ class ExpensesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
                         quantityKg = if (isQuantityTracked(category, subCategory)) qty else 0.0,
                         description = description,
                         batchId = selectedBatchId,
-                        subCategory = subCategory
+                        subCategory = subCategory,
+                        productName = productName,
+                        medicationType = selectedMedicationType(dialogBinding)
                     )
                     firebaseRepo.addExpense(expense)
                     withContext(Dispatchers.Main) {
@@ -394,6 +473,9 @@ class ExpensesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
         dialogBinding.etDescription.setText(expense.description ?: "")
         configureSubCategoryField(dialogBinding, expense.category, expense.subCategory)
         updateQuantityFieldVisibility(dialogBinding, expense.category, expense.subCategory)
+        dialogBinding.etProductName.setText(expense.productName ?: "", false)
+        dialogBinding.autoCompleteMedicationType.setText(MedicationType.fromKey(expense.medicationType)?.label ?: "", false)
+        setupMedicationInputs(dialogBinding)
         if (isQuantityTracked(expense.category, expense.subCategory)) {
             dialogBinding.etQuantityKg.setText(expense.quantityKg?.toString() ?: "")
         }
@@ -431,11 +513,14 @@ class ExpensesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
             val amount = dialogBinding.etAmount.text.toString().toDoubleOrNull() ?: 0.0
             val qty = dialogBinding.etQuantityKg.text.toString().toDoubleOrNull() ?: 0.0
             val description = dialogBinding.etDescription.text.toString()
+            val productName = dialogBinding.etProductName.text.toString().trim()
+                .takeIf { it.isNotEmpty() && dialogBinding.tilProductName.visibility == View.VISIBLE }
 
             if (category.isEmpty() || amount <= 0.0) {
                 Toast.makeText(this, "Champs obligatoires manquants", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
+            if (!validateProductName(dialogBinding, category, subCategory)) return@setOnClickListener
 
             lifecycleScope.launch(Dispatchers.IO) {
                 try {
@@ -445,7 +530,9 @@ class ExpensesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
                         amount = amount,
                         quantityKg = if (isQuantityTracked(category, subCategory)) qty else 0.0,
                         description = description,
-                        subCategory = subCategory
+                        subCategory = subCategory,
+                        productName = productName,
+                        medicationType = selectedMedicationType(dialogBinding)
                     )
                     firebaseRepo.updateExpense(updatedExpense)
                     withContext(Dispatchers.Main) {
@@ -637,7 +724,10 @@ class ExpensesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
                 } else {
                     binding.tvSubCategory.visibility = View.GONE
                 }
-                binding.tvDescription.text = item.description ?: ""
+                binding.tvDescription.text = listOfNotNull(
+                    item.productName?.takeIf { it.isNotBlank() },
+                    item.description?.takeIf { it.isNotBlank() }
+                ).joinToString(" · ")
                 
                 if (item.category == "Aliment" && item.quantityKg != null && item.quantityKg > 0) {
                     binding.tvDescription.text = "${item.quantityKg.toInt()} kg - ${item.description ?: ""}"

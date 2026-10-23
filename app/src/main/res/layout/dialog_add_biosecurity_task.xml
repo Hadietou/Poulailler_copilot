@@ -29,11 +29,12 @@
 
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/tilTaskName"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense.ExposedDropdownMenu"
+            app:endIconMinSize="32dp"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Tâche"
-            android:layout_marginBottom="12dp"
+            android:layout_marginBottom="8dp"
             app:hintTextColor="@color/text_secondary"
             app:boxStrokeColor="@color/primary">
             <AutoCompleteTextView android:id="@+id/actvTaskName" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="@color/text_primary" />
@@ -41,7 +42,8 @@
 
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/tilTaskFrequency"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense.ExposedDropdownMenu"
+            app:endIconMinSize="32dp"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Fréquence"

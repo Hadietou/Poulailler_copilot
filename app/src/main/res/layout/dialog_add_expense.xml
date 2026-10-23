@@ -33,11 +33,9 @@
             android:layout_height="wrap_content"
             android:hint="Date"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
-            android:layout_marginBottom="12dp"
+            android:layout_marginBottom="8dp"
             app:hintTextColor="@color/text_secondary"
-            app:boxStrokeColor="@color/primary"
-            app:startIconDrawable="@drawable/ic_calendar"
-            app:startIconTint="@color/primary">
+            app:boxStrokeColor="@color/primary">
             <com.google.android.material.textfield.TextInputEditText
         style="@style/Widget.App.TextInputEditText"
                 android:id="@+id/etExpenseDate"
@@ -52,16 +50,18 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Catégorie"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
-            android:layout_marginBottom="12dp"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense.ExposedDropdownMenu"
+            app:endIconMinSize="32dp"
+            android:layout_marginBottom="8dp"
             app:hintTextColor="@color/text_secondary"
-            app:boxStrokeColor="@color/primary"
-            app:startIconDrawable="@drawable/ic_batches"
-            app:startIconTint="@color/primary">
+            app:boxStrokeColor="@color/primary">
             <AutoCompleteTextView
                 android:id="@+id/autoCompleteCategory"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:minHeight="0dp"
+                android:paddingTop="8dp"
+                android:paddingBottom="8dp"
                 android:inputType="none"
                 android:textColor="@color/text_primary" />
         </com.google.android.material.textfield.TextInputLayout>
@@ -71,17 +71,19 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Sous-catégorie"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
-            android:layout_marginBottom="12dp"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense.ExposedDropdownMenu"
+            app:endIconMinSize="32dp"
+            android:layout_marginBottom="8dp"
             android:visibility="gone"
             app:hintTextColor="@color/text_secondary"
-            app:boxStrokeColor="@color/primary"
-            app:startIconDrawable="@drawable/ic_batches"
-            app:startIconTint="@color/primary">
+            app:boxStrokeColor="@color/primary">
             <AutoCompleteTextView
                 android:id="@+id/autoCompleteSubCategory"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:minHeight="0dp"
+                android:paddingTop="8dp"
+                android:paddingBottom="8dp"
                 android:inputType="none"
                 android:textColor="@color/text_primary" />
         </com.google.android.material.textfield.TextInputLayout>
@@ -92,7 +94,7 @@
             android:layout_height="wrap_content"
             android:hint="Quantité (kg)"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
-            android:layout_marginBottom="12dp"
+            android:layout_marginBottom="8dp"
             android:visibility="gone"
             app:hintTextColor="@color/text_secondary"
             app:boxStrokeColor="@color/primary">
@@ -111,11 +113,9 @@
             android:layout_height="wrap_content"
             android:hint="Montant"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
-            android:layout_marginBottom="12dp"
+            android:layout_marginBottom="8dp"
             app:hintTextColor="@color/text_secondary"
-            app:boxStrokeColor="@color/primary"
-            app:startIconDrawable="@drawable/ic_batches"
-            app:startIconTint="@color/primary">
+            app:boxStrokeColor="@color/primary">
             <com.google.android.material.textfield.TextInputEditText
         style="@style/Widget.App.TextInputEditText"
                 android:id="@+id/etAmount"
@@ -126,7 +126,53 @@
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/tilProductName"
             android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Nom du médicament"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
+            android:layout_marginBottom="8dp"
+            android:visibility="gone"
+            app:hintTextColor="@color/text_secondary"
+            app:boxStrokeColor="@color/primary">
+            <com.google.android.material.textfield.MaterialAutoCompleteTextView
+                style="@style/Widget.MaterialComponents.AutoCompleteTextView.OutlinedBox.Dense"
+                android:id="@+id/etProductName"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:completionThreshold="1"
+                android:inputType="textCapSentences"
+                android:minHeight="0dp"
+                android:paddingTop="8dp"
+                android:paddingBottom="8dp"
+                android:textColor="@color/text_primary" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/tilMedicationType"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense.ExposedDropdownMenu"
+            app:endIconMinSize="32dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Type de médicament (optionnel)"
+            android:layout_marginBottom="8dp"
+            android:visibility="gone"
+            app:hintTextColor="@color/text_secondary"
+            app:boxStrokeColor="@color/primary">
+            <AutoCompleteTextView
+                android:id="@+id/autoCompleteMedicationType"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="0dp"
+                android:paddingTop="8dp"
+                android:paddingBottom="8dp"
+                android:inputType="none"
+                android:textColor="@color/text_primary" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:id="@+id/tilDescription"
             android:layout_height="wrap_content"
             android:hint="Description / Notes"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"

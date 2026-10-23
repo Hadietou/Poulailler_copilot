@@ -37,7 +37,7 @@
             android:layout_height="wrap_content"
             android:hint="Nom du vétérinaire"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
-            android:layout_marginBottom="12dp"
+            android:layout_marginBottom="8dp"
             app:hintTextColor="@color/text_secondary"
             app:boxStrokeColor="@color/primary">
             <com.google.android.material.textfield.TextInputEditText
@@ -58,14 +58,14 @@
             app:strokeColor="@color/primary"
             app:icon="@drawable/ic_calendar"
             app:iconTint="@color/primary"
-            android:layout_marginBottom="12dp"/>
+            android:layout_marginBottom="8dp"/>
 
         <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Motif (optionnel)"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
-            android:layout_marginBottom="12dp"
+            android:layout_marginBottom="8dp"
             app:hintTextColor="@color/text_secondary"
             app:boxStrokeColor="@color/primary">
             <com.google.android.material.textfield.TextInputEditText
@@ -81,7 +81,7 @@
             android:layout_height="wrap_content"
             android:hint="Observations (optionnel)"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
-            android:layout_marginBottom="12dp"
+            android:layout_marginBottom="8dp"
             app:hintTextColor="@color/text_secondary"
             app:boxStrokeColor="@color/primary">
             <com.google.android.material.textfield.TextInputEditText
@@ -97,7 +97,7 @@
             android:layout_height="wrap_content"
             android:hint="Diagnostic (optionnel)"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
-            android:layout_marginBottom="12dp"
+            android:layout_marginBottom="8dp"
             app:hintTextColor="@color/text_secondary"
             app:boxStrokeColor="@color/primary">
             <com.google.android.material.textfield.TextInputEditText
@@ -113,7 +113,7 @@
             android:layout_height="wrap_content"
             android:hint="Recommandations (optionnel)"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
-            android:layout_marginBottom="12dp"
+            android:layout_marginBottom="8dp"
             app:hintTextColor="@color/text_secondary"
             app:boxStrokeColor="@color/primary">
             <com.google.android.material.textfield.TextInputEditText
@@ -129,7 +129,7 @@
             android:layout_height="wrap_content"
             android:hint="Vaccinations réalisées (optionnel)"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
-            android:layout_marginBottom="12dp"
+            android:layout_marginBottom="8dp"
             app:hintTextColor="@color/text_secondary"
             app:boxStrokeColor="@color/primary">
             <com.google.android.material.textfield.TextInputEditText
@@ -145,7 +145,7 @@
             android:layout_height="wrap_content"
             android:hint="Analyses demandées (optionnel)"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
-            android:layout_marginBottom="12dp"
+            android:layout_marginBottom="8dp"
             app:hintTextColor="@color/text_secondary"
             app:boxStrokeColor="@color/primary">
             <com.google.android.material.textfield.TextInputEditText

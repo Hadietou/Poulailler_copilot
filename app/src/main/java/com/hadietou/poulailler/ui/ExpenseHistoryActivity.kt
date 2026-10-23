@@ -113,7 +113,7 @@ class ExpenseHistoryActivity : AppCompatActivity() {
                 val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
                 binding.tvDate.text = sdf.format(Date(item.date))
                 binding.tvCategory.text = item.category
-                binding.tvDescription.text = item.description
+                binding.tvDescription.text = listOfNotNull(item.productName?.takeIf { it.isNotBlank() }, item.description?.takeIf { it.isNotBlank() }).joinToString(" · ")
                 binding.tvAmount.text = String.format("%.2f $", item.amount)
             }
         }

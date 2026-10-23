@@ -34,17 +34,21 @@
 
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/tilStatus"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense.ExposedDropdownMenu"
+            app:endIconMinSize="32dp"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Statut"
-            android:layout_marginBottom="12dp"
+            android:layout_marginBottom="8dp"
             app:hintTextColor="@color/text_secondary"
             app:boxStrokeColor="@color/primary">
             <AutoCompleteTextView
                 android:id="@+id/actvStatus"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:minHeight="0dp"
+                android:paddingTop="8dp"
+                android:paddingBottom="8dp"
                 android:inputType="none"
                 android:textColor="@color/text_primary" />
         </com.google.android.material.textfield.TextInputLayout>
@@ -54,11 +58,9 @@
             android:layout_height="wrap_content"
             android:hint="Nom du vaccin / médicament"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
-            android:layout_marginBottom="12dp"
+            android:layout_marginBottom="8dp"
             app:hintTextColor="@color/text_secondary"
-            app:boxStrokeColor="@color/primary"
-            app:startIconDrawable="@drawable/ic_add"
-            app:startIconTint="@color/primary">
+            app:boxStrokeColor="@color/primary">
             <com.google.android.material.textfield.TextInputEditText
         style="@style/Widget.App.TextInputEditText"
                 android:id="@+id/etVaccineName"
@@ -77,14 +79,14 @@
             app:strokeColor="@color/primary"
             app:icon="@drawable/ic_calendar"
             app:iconTint="@color/primary"
-            android:layout_marginBottom="12dp"/>
+            android:layout_marginBottom="8dp"/>
 
         <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Remarques"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
-            android:layout_marginBottom="12dp"
+            android:layout_marginBottom="8dp"
             app:hintTextColor="@color/text_secondary"
             app:boxStrokeColor="@color/primary">
             <com.google.android.material.textfield.TextInputEditText
@@ -99,7 +101,7 @@
             android:id="@+id/btnToggleAdvanced"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="12dp"
+            android:layout_marginBottom="8dp"
             android:text="▸ Détails avancés (optionnel)"
             android:textColor="@color/primary"
             android:textStyle="bold"
@@ -120,7 +122,7 @@
                 android:layout_height="wrap_content"
                 android:hint="Fabricant"
                 style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
-                android:layout_marginBottom="12dp"
+                android:layout_marginBottom="8dp"
                 app:hintTextColor="@color/text_secondary"
                 app:boxStrokeColor="@color/primary">
                 <com.google.android.material.textfield.TextInputEditText
@@ -135,7 +137,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                android:layout_marginBottom="12dp">
+                android:layout_marginBottom="8dp">
                 <com.google.android.material.textfield.TextInputLayout
                     android:layout_width="0dp"
                     android:layout_weight="1"
@@ -181,21 +183,25 @@
                 app:strokeColor="@color/primary"
                 app:icon="@drawable/ic_calendar"
                 app:iconTint="@color/primary"
-                android:layout_marginBottom="12dp"/>
+                android:layout_marginBottom="8dp"/>
 
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/tilRoute"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense.ExposedDropdownMenu"
+            app:endIconMinSize="32dp"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:hint="Voie d'administration"
-                android:layout_marginBottom="12dp"
+                android:layout_marginBottom="8dp"
                 app:hintTextColor="@color/text_secondary"
                 app:boxStrokeColor="@color/primary">
                 <AutoCompleteTextView
                     android:id="@+id/actvRoute"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:minHeight="0dp"
+                    android:paddingTop="8dp"
+                    android:paddingBottom="8dp"
                     android:inputType="none"
                     android:textColor="@color/text_primary" />
             </com.google.android.material.textfield.TextInputLayout>
@@ -204,7 +210,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                android:layout_marginBottom="12dp">
+                android:layout_marginBottom="8dp">
                 <com.google.android.material.textfield.TextInputLayout
                     android:layout_width="0dp"
                     android:layout_weight="1"

@@ -133,7 +133,7 @@ object DemoData {
     val expenses: List<Expense>
         get() {
             val n = now()
-            data class E(val daysAgo: Long, val cat: String, val sub: String?, val amount: Double, val kg: Double?, val desc: String?)
+            data class E(val daysAgo: Long, val cat: String, val sub: String?, val amount: Double, val kg: Double?, val desc: String?, val product: String? = null, val type: String? = null)
             val items = listOf(
                 // Constitution du stock initial à l'arrivée du lot (couvre la ration croissante
                 // sur toute la durée déjà écoulée) + achats d'appoint récents.
@@ -141,7 +141,8 @@ object DemoData {
                 E(2, "Aliment", "Ponte", 185_000.0, 350.0, "Sac aliment ponte x14"),
                 E(6, "Aliment", "Ponte", 92_000.0, 175.0, "Complément"),
                 E(1, "Cheptel & Santé", "Vaccins", 28_000.0, null, "Vaccins Newcastle"),
-                E(9, "Cheptel & Santé", "Traitements", 15_500.0, null, "Amoxicilline"),
+                E(9, "Cheptel & Santé", "Médicaments", 15_500.0, null, "Boîte de 10 sachets", "Amoxicilline", "ANTIBIOTIQUE"),
+                E(3, "Cheptel & Santé", "Vitamines", 6_000.0, null, "Pour les jours de chaleur", "Vitamines + Électrolytes", "ELECTROLYTES"),
                 E(4, "Main d'œuvre", null, 45_000.0, null, "Salaire gardien"),
                 E(12, "Transport", null, 12_000.0, null, "Livraison aliment"),
                 E(3, "Consommables", null, 8_500.0, null, "Litière"),
@@ -162,7 +163,9 @@ object DemoData {
                     firestoreId = "demo-expense-$i",
                     farmId = FARM_ID,
                     batchId = BATCH_ID,
-                    subCategory = e.sub
+                    subCategory = e.sub,
+                    productName = e.product,
+                    medicationType = e.type
                 )
             }
         }
@@ -244,13 +247,15 @@ object DemoData {
                     targetCount = 320, prescriber = "Dr Vétérinaire Sy", status = "TERMINE",
                     eggWithdrawalDays = 7, slaughterWithdrawalDays = 5,
                     notes = "Amélioration progressive.",
-                    firestoreId = "demo-treatment-1", farmId = FARM_ID, batchId = BATCH_ID
+                    firestoreId = "demo-treatment-1", farmId = FARM_ID, batchId = BATCH_ID,
+                    medicationType = "ANTIBIOTIQUE"
                 ),
                 Treatment(
                     medicationName = "Vitamines + Électrolytes", reason = "Stress thermique",
                     startDate = n - 1 * DAY, endDate = null, dose = "Selon notice", route = "Eau de boisson",
                     prescriber = null, status = "EN_COURS", notes = "Pic de chaleur en cours.",
-                    firestoreId = "demo-treatment-2", farmId = FARM_ID, batchId = BATCH_ID
+                    firestoreId = "demo-treatment-2", farmId = FARM_ID, batchId = BATCH_ID,
+                    medicationType = "ELECTROLYTES"
                 )
             )
         }

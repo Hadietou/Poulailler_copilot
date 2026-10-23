@@ -56,11 +56,9 @@
             android:layout_height="wrap_content"
             android:hint="Maladie suspectée (optionnel)"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
-            android:layout_marginBottom="12dp"
+            android:layout_marginBottom="8dp"
             app:hintTextColor="@color/text_secondary"
-            app:boxStrokeColor="@color/primary"
-            app:startIconDrawable="@drawable/ic_disease"
-            app:startIconTint="@color/primary">
+            app:boxStrokeColor="@color/primary">
             <com.google.android.material.textfield.TextInputEditText
         style="@style/Widget.App.TextInputEditText"
                 android:id="@+id/etSuspectedDisease"
@@ -73,10 +71,11 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:layout_marginBottom="12dp">
+            android:layout_marginBottom="8dp">
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/tilDiseaseStatus"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense.ExposedDropdownMenu"
+            app:endIconMinSize="32dp"
                 android:layout_width="0dp"
                 android:layout_weight="1"
                 android:layout_height="wrap_content"
@@ -88,13 +87,17 @@
                     android:id="@+id/actvDiseaseStatus"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:minHeight="0dp"
+                    android:paddingTop="8dp"
+                    android:paddingBottom="8dp"
                     android:inputType="none"
                     android:textColor="@color/text_primary" />
             </com.google.android.material.textfield.TextInputLayout>
 
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/tilDiseaseSeverity"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense.ExposedDropdownMenu"
+            app:endIconMinSize="32dp"
                 android:layout_width="0dp"
                 android:layout_weight="1"
                 android:layout_height="wrap_content"
@@ -106,6 +109,9 @@
                     android:id="@+id/actvDiseaseSeverity"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:minHeight="0dp"
+                    android:paddingTop="8dp"
+                    android:paddingBottom="8dp"
                     android:inputType="none"
                     android:textColor="@color/text_primary" />
             </com.google.android.material.textfield.TextInputLayout>
@@ -115,7 +121,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:layout_marginBottom="12dp">
+            android:layout_marginBottom="8dp">
             <com.google.android.material.textfield.TextInputLayout
                 android:layout_width="0dp"
                 android:layout_weight="1"
@@ -158,7 +164,7 @@
             android:layout_height="wrap_content"
             android:hint="Zone / bâtiment (optionnel)"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
-            android:layout_marginBottom="12dp"
+            android:layout_marginBottom="8dp"
             app:hintTextColor="@color/text_secondary"
             app:boxStrokeColor="@color/primary">
             <com.google.android.material.textfield.TextInputEditText
@@ -174,7 +180,7 @@
             android:layout_height="wrap_content"
             android:hint="Observations (optionnel)"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
-            android:layout_marginBottom="12dp"
+            android:layout_marginBottom="8dp"
             app:hintTextColor="@color/text_secondary"
             app:boxStrokeColor="@color/primary">
             <com.google.android.material.textfield.TextInputEditText
@@ -190,7 +196,7 @@
             android:layout_height="wrap_content"
             android:hint="Diagnostic vétérinaire (optionnel)"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
-            android:layout_marginBottom="12dp"
+            android:layout_marginBottom="8dp"
             app:hintTextColor="@color/text_secondary"
             app:boxStrokeColor="@color/primary">
             <com.google.android.material.textfield.TextInputEditText

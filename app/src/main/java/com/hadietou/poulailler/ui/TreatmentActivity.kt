@@ -19,12 +19,17 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.hadietou.poulailler.BuildConfig
 import com.hadietou.poulailler.R
+import com.hadietou.poulailler.data.Expense
 import com.hadietou.poulailler.data.Treatment
 import com.hadietou.poulailler.databinding.ActivityTreatmentBinding
 import com.hadietou.poulailler.databinding.DialogAddTreatmentBinding
 import com.hadietou.poulailler.databinding.ItemTreatmentBinding
 import com.hadietou.poulailler.repository.FirebaseRepository
+import androidx.core.widget.doAfterTextChanged
 import com.hadietou.poulailler.util.DrawerSubmenuController
+import com.hadietou.poulailler.util.HealthAlertEngine
+import com.hadietou.poulailler.util.MedicationPurchases
+import com.hadietou.poulailler.util.MedicationType
 import com.hadietou.poulailler.util.NavMenuStyler
 import com.hadietou.poulailler.util.NetworkStatusMonitor
 import com.google.android.material.navigation.NavigationView
@@ -55,6 +60,8 @@ class TreatmentActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
     private var userId: String? = null
     private var selectedBatchId: String? = null
     private var allTreatments: List<Treatment> = emptyList()
+    private var allExpenses: List<Expense> = emptyList()
+    private var currency: String = "MRU"
     private var isBlocked = false
 
     private val statusLabels = linkedMapOf(
@@ -79,6 +86,7 @@ class TreatmentActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
         setupNavigation()
         setupRecyclerView()
         observeTreatments()
+        observePurchases()
         checkAccessStatus()
 
         binding.fabAddTreatment.setOnClickListener {
@@ -178,6 +186,50 @@ class TreatmentActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
         }
     }
 
+    /** Achats de médicaments : alimentent les suggestions de noms et la ligne « Dernier achat ». */
+    private fun observePurchases() {
+        lifecycleScope.launch {
+            currency = firebaseRepo.getFarmInfo()?.currency ?: "MRU"
+            withContext(Dispatchers.Main) { adapter.updateCurrency(currency) }
+        }
+        lifecycleScope.launch {
+            firebaseRepo.getExpensesFlow().collectLatest { list ->
+                allExpenses = list
+                withContext(Dispatchers.Main) {
+                    adapter.updatePurchases(list)
+                    refreshDisplay()
+                }
+            }
+        }
+    }
+
+    private fun lastPurchaseText(name: String?): String? {
+        val purchase = MedicationPurchases.lastPurchase(allExpenses, name) ?: return null
+        return TreatmentAdapter.purchaseText(purchase, currency)
+    }
+
+    /** Suggestions de noms, choix du type, et rappel du dernier achat sous le nom saisi. */
+    private fun setupMedicationInputs(dialogBinding: DialogAddTreatmentBinding, autoType: Boolean) {
+        dialogBinding.etMedicationName.setAdapter(
+            ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, MedicationPurchases.knownNames(allExpenses, allTreatments))
+        )
+        dialogBinding.actvMedicationType.setAdapter(
+            ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, MedicationType.entries.map { it.label })
+        )
+        dialogBinding.etMedicationName.doAfterTextChanged { text ->
+            val name = text?.toString()
+            dialogBinding.tilMedicationName.helperText = lastPurchaseText(name)
+            if (autoType && dialogBinding.actvMedicationType.text.isNullOrBlank()) {
+                MedicationPurchases.knownType(allExpenses, allTreatments, name)?.let {
+                    dialogBinding.actvMedicationType.setText(it.label, false)
+                }
+            }
+        }
+    }
+
+    private fun selectedType(dialogBinding: DialogAddTreatmentBinding): String? =
+        MedicationType.fromLabel(dialogBinding.actvMedicationType.text.toString())?.name
+
     private fun refreshDisplay() {
         binding.tvNoTreatments.visibility = if (allTreatments.isEmpty()) View.VISIBLE else View.GONE
         binding.rvTreatments.visibility = if (allTreatments.isEmpty()) View.GONE else View.VISIBLE
@@ -192,13 +244,18 @@ class TreatmentActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
         val activeSlaughter = allTreatments.filter { it.slaughterWithdrawalUntil?.let { until -> until > now } == true }
             .maxByOrNull { it.slaughterWithdrawalUntil!! }
 
-        if (activeEgg == null && activeSlaughter == null) {
+        val ongoing = allTreatments.filter {
+            HealthAlertEngine.isOngoing(it, now) && MedicationType.fromKey(it.medicationType)?.needsWithdrawal == true
+        }
+
+        if (activeEgg == null && activeSlaughter == null && ongoing.isEmpty()) {
             binding.cardWithdrawalWarning.visibility = View.GONE
             return
         }
         binding.cardWithdrawalWarning.visibility = View.VISIBLE
         val lines = mutableListOf<String>()
         activeEgg?.let { lines += "Œufs (${it.medicationName}) : ne pas commercialiser avant le ${sdf.format(Date(it.eggWithdrawalUntil!!))}" }
+        ongoing.forEach { lines += "Œufs (${it.medicationName}) : traitement en cours, ne pas commercialiser selon la notice" }
         activeSlaughter?.let { lines += "Abattage (${it.medicationName}) : à éviter avant le ${sdf.format(Date(it.slaughterWithdrawalUntil!!))}" }
         binding.tvWithdrawalWarningDetail.text = lines.joinToString("\n")
     }
@@ -213,6 +270,7 @@ class TreatmentActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
         val dialog = AlertDialog.Builder(this).setView(dialogBinding.root).create()
         setupStatusDropdown(dialogBinding)
         dialogBinding.actvTreatmentStatus.setText(statusLabels.getValue("EN_COURS"), false)
+        setupMedicationInputs(dialogBinding, autoType = true)
 
         val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
         var startDateMs = System.currentTimeMillis()
@@ -240,6 +298,12 @@ class TreatmentActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
                 Toast.makeText(this, "Veuillez saisir le nom du médicament", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
+            val medicationType = selectedType(dialogBinding)
+            if (medicationType == null) {
+                dialogBinding.tilMedicationType.error = "Choisissez le type : il sert aux alertes sanitaires"
+                return@setOnClickListener
+            }
+            dialogBinding.tilMedicationType.error = null
             val treatment = Treatment(
                 medicationName = name,
                 reason = dialogBinding.etReason.text?.toString()?.trim()?.ifEmpty { null },
@@ -252,7 +316,8 @@ class TreatmentActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
                 eggWithdrawalDays = dialogBinding.etEggWithdrawalDays.text?.toString()?.toIntOrNull(),
                 slaughterWithdrawalDays = dialogBinding.etSlaughterWithdrawalDays.text?.toString()?.toIntOrNull(),
                 notes = dialogBinding.etTreatmentNotes.text?.toString()?.trim()?.ifEmpty { null },
-                batchId = selectedBatchId
+                batchId = selectedBatchId,
+                medicationType = medicationType
             )
             lifecycleScope.launch(Dispatchers.IO) {
                 try {
@@ -277,7 +342,10 @@ class TreatmentActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
         setupStatusDropdown(dialogBinding)
 
         val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-        dialogBinding.etMedicationName.setText(treatment.medicationName)
+        dialogBinding.etMedicationName.setText(treatment.medicationName, false)
+        dialogBinding.actvMedicationType.setText(MedicationType.fromKey(treatment.medicationType)?.label ?: "", false)
+        dialogBinding.tilMedicationName.helperText = lastPurchaseText(treatment.medicationName)
+        setupMedicationInputs(dialogBinding, autoType = false)
         dialogBinding.etReason.setText(treatment.reason ?: "")
         dialogBinding.actvTreatmentStatus.setText(statusLabels.getValue(treatment.status), false)
         dialogBinding.etTreatmentDose.setText(treatment.dose ?: "")
@@ -327,7 +395,8 @@ class TreatmentActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
                 status = statusFromLabel(dialogBinding.actvTreatmentStatus.text?.toString() ?: ""),
                 eggWithdrawalDays = dialogBinding.etEggWithdrawalDays.text?.toString()?.toIntOrNull(),
                 slaughterWithdrawalDays = dialogBinding.etSlaughterWithdrawalDays.text?.toString()?.toIntOrNull(),
-                notes = dialogBinding.etTreatmentNotes.text?.toString()?.trim()?.ifEmpty { null }
+                notes = dialogBinding.etTreatmentNotes.text?.toString()?.trim()?.ifEmpty { null },
+                medicationType = selectedType(dialogBinding)
             )
             lifecycleScope.launch(Dispatchers.IO) {
                 try {
@@ -379,6 +448,25 @@ class TreatmentActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
 
     class TreatmentAdapter(private val onItemClick: (Treatment) -> Unit) : RecyclerView.Adapter<TreatmentAdapter.ViewHolder>() {
         private var items = listOf<Treatment>()
+        private var purchases = listOf<Expense>()
+        private var currency = "MRU"
+
+        fun updatePurchases(list: List<Expense>) {
+            purchases = list
+            notifyDataSetChanged()
+        }
+
+        fun updateCurrency(value: String) {
+            currency = value
+            notifyDataSetChanged()
+        }
+
+        companion object {
+            fun purchaseText(purchase: Expense, currency: String): String {
+                val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+                return String.format(Locale.getDefault(), "Dernier achat : %.0f %s le %s", purchase.amount, currency, sdf.format(Date(purchase.date)))
+            }
+        }
 
         fun submitList(list: List<Treatment>) {
             items = list
@@ -392,17 +480,23 @@ class TreatmentActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
 
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             val item = items[position]
-            holder.bind(item)
+            holder.bind(item, MedicationPurchases.lastPurchase(purchases, item.medicationName)?.let { purchaseText(it, currency) })
             holder.itemView.setOnClickListener { onItemClick(item) }
         }
 
         override fun getItemCount() = items.size
 
         class ViewHolder(private val binding: ItemTreatmentBinding) : RecyclerView.ViewHolder(binding.root) {
-            fun bind(item: Treatment) {
+            fun bind(item: Treatment, purchaseText: String?) {
                 val context = binding.root.context
                 val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
                 binding.tvTreatmentName.text = item.medicationName
+
+                val type = MedicationType.fromKey(item.medicationType)
+                binding.tvTreatmentType.text = type?.label
+                binding.tvTreatmentType.visibility = if (type != null) View.VISIBLE else View.GONE
+                binding.tvTreatmentPurchase.text = purchaseText
+                binding.tvTreatmentPurchase.visibility = if (purchaseText != null) View.VISIBLE else View.GONE
 
                 if (!item.reason.isNullOrEmpty()) {
                     binding.tvTreatmentReason.text = "Motif : ${item.reason}"

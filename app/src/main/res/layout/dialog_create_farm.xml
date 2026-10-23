@@ -49,11 +49,15 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
             android:hint="Pays"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu">
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense.ExposedDropdownMenu"
+            app:endIconMinSize="32dp">
             <AutoCompleteTextView
                 android:id="@+id/actvCountry"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:minHeight="0dp"
+                android:paddingTop="8dp"
+                android:paddingBottom="8dp"
                 android:inputType="none" />
         </com.google.android.material.textfield.TextInputLayout>
 
@@ -74,11 +78,15 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
             android:hint="Devise"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu">
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense.ExposedDropdownMenu"
+            app:endIconMinSize="32dp">
             <AutoCompleteTextView
                 android:id="@+id/actvCurrency"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:minHeight="0dp"
+                android:paddingTop="8dp"
+                android:paddingBottom="8dp"
                 android:inputType="none" />
         </com.google.android.material.textfield.TextInputLayout>
 

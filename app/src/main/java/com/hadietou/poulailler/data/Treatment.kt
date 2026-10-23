@@ -23,7 +23,9 @@ data class Treatment(
     val notes: String? = null,
     val firestoreId: String? = null,
     val farmId: String? = null,
-    val batchId: String? = null
+    val batchId: String? = null,
+    /** Type du médicament (clé de [com.hadietou.poulailler.util.MedicationType]) : pilote les alertes sanitaires. */
+    val medicationType: String? = null
 ) {
     /** Date jusqu'à laquelle les œufs ne doivent pas être commercialisés, si applicable. */
     val eggWithdrawalUntil: Long?

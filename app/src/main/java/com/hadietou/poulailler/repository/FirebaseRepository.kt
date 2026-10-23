@@ -783,7 +783,7 @@ class FirebaseRepository {
             val sub = db.collection("expenses").whereEqualTo("farmId", id)
                 .addSnapshotListener { s, e ->
                     val list = s?.documents?.mapNotNull { doc ->
-                        Expense(0L, doc.getLong("date") ?: 0L, doc.getString("category") ?: "", doc.getDouble("amount") ?: 0.0, doc.getDouble("quantityKg"), doc.getString("description"), doc.id, id, doc.getString("batchId"), doc.getString("subCategory"))
+                        Expense(0L, doc.getLong("date") ?: 0L, doc.getString("category") ?: "", doc.getDouble("amount") ?: 0.0, doc.getDouble("quantityKg"), doc.getString("description"), doc.id, id, doc.getString("batchId"), doc.getString("subCategory"), doc.getString("productName"), doc.getString("medicationType"))
                     }?.sortedByDescending { it.date } ?: emptyList()
                     trySend(list)
                 }
@@ -1050,6 +1050,8 @@ class FirebaseRepository {
             "amount" to e.amount,
             "quantityKg" to e.quantityKg,
             "description" to e.description,
+            "productName" to e.productName,
+            "medicationType" to e.medicationType,
             "farmId" to fId,
             "batchId" to e.batchId
         )).fireAndForget("addExpense")
@@ -1064,7 +1066,9 @@ class FirebaseRepository {
                 "subCategory" to e.subCategory,
                 "amount" to e.amount,
                 "quantityKg" to e.quantityKg,
-                "description" to e.description
+                "description" to e.description,
+                "productName" to e.productName,
+                "medicationType" to e.medicationType
             ) as Map<String, Any>).fireAndForget("updateExpense")
         }
     }
@@ -1142,7 +1146,8 @@ class FirebaseRepository {
                             notes = doc.getString("notes"),
                             firestoreId = doc.id,
                             farmId = id,
-                            batchId = doc.getString("batchId")
+                            batchId = doc.getString("batchId"),
+                            medicationType = doc.getString("medicationType")
                         )
                     }?.sortedByDescending { it.startDate } ?: emptyList()
                     trySend(list)
@@ -1167,6 +1172,7 @@ class FirebaseRepository {
             "eggWithdrawalDays" to t.eggWithdrawalDays,
             "slaughterWithdrawalDays" to t.slaughterWithdrawalDays,
             "notes" to t.notes,
+            "medicationType" to t.medicationType,
             "farmId" to fId,
             "batchId" to t.batchId
         )).fireAndForget("addTreatment")
@@ -1187,7 +1193,8 @@ class FirebaseRepository {
                 "status" to t.status,
                 "eggWithdrawalDays" to t.eggWithdrawalDays,
                 "slaughterWithdrawalDays" to t.slaughterWithdrawalDays,
-                "notes" to t.notes
+                "notes" to t.notes,
+                "medicationType" to t.medicationType
             ) as Map<String, Any>).fireAndForget("updateTreatment")
         }
     }

@@ -34,19 +34,44 @@
 
         <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
+            android:id="@+id/tilMedicationName"
             android:layout_height="wrap_content"
             android:hint="Nom du médicament"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
-            android:layout_marginBottom="12dp"
+            android:layout_marginBottom="8dp"
             app:hintTextColor="@color/text_secondary"
-            app:boxStrokeColor="@color/primary"
-            app:startIconDrawable="@drawable/ic_medication"
-            app:startIconTint="@color/primary">
-            <com.google.android.material.textfield.TextInputEditText
-        style="@style/Widget.App.TextInputEditText"
+            app:boxStrokeColor="@color/primary">
+            <com.google.android.material.textfield.MaterialAutoCompleteTextView
+                style="@style/Widget.MaterialComponents.AutoCompleteTextView.OutlinedBox.Dense"
                 android:id="@+id/etMedicationName"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:completionThreshold="1"
+                android:inputType="textCapSentences"
+                android:minHeight="0dp"
+                android:paddingTop="8dp"
+                android:paddingBottom="8dp"
+                android:textColor="@color/text_primary" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/tilMedicationType"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense.ExposedDropdownMenu"
+            app:endIconMinSize="32dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Type de médicament"
+            android:layout_marginBottom="8dp"
+            app:hintTextColor="@color/text_secondary"
+            app:boxStrokeColor="@color/primary">
+            <AutoCompleteTextView
+                android:id="@+id/actvMedicationType"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="0dp"
+                android:paddingTop="8dp"
+                android:paddingBottom="8dp"
+                android:inputType="none"
                 android:textColor="@color/text_primary" />
         </com.google.android.material.textfield.TextInputLayout>
 
@@ -55,7 +80,7 @@
             android:layout_height="wrap_content"
             android:hint="Motif (optionnel)"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
-            android:layout_marginBottom="12dp"
+            android:layout_marginBottom="8dp"
             app:hintTextColor="@color/text_secondary"
             app:boxStrokeColor="@color/primary">
             <com.google.android.material.textfield.TextInputEditText
@@ -70,7 +95,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:layout_marginBottom="12dp">
+            android:layout_marginBottom="8dp">
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnSelectStartDate"
                 android:layout_width="0dp"
@@ -82,7 +107,13 @@
                 android:textColor="@color/text_primary"
                 app:strokeColor="@color/primary"
                 app:icon="@drawable/ic_calendar"
-                app:iconTint="@color/primary"/>
+                app:iconTint="@color/primary"
+                app:iconPadding="4dp"
+                android:letterSpacing="0"
+                android:textAllCaps="false"
+                android:textSize="12sp"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"/>
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnSelectEndDate"
@@ -95,22 +126,32 @@
                 android:textColor="@color/text_primary"
                 app:strokeColor="@color/primary"
                 app:icon="@drawable/ic_calendar"
-                app:iconTint="@color/primary"/>
+                app:iconTint="@color/primary"
+                app:iconPadding="4dp"
+                android:letterSpacing="0"
+                android:textAllCaps="false"
+                android:textSize="12sp"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"/>
         </LinearLayout>
 
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/tilTreatmentStatus"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense.ExposedDropdownMenu"
+            app:endIconMinSize="32dp"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Statut"
-            android:layout_marginBottom="12dp"
+            android:layout_marginBottom="8dp"
             app:hintTextColor="@color/text_secondary"
             app:boxStrokeColor="@color/primary">
             <AutoCompleteTextView
                 android:id="@+id/actvTreatmentStatus"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:minHeight="0dp"
+                android:paddingTop="8dp"
+                android:paddingBottom="8dp"
                 android:inputType="none"
                 android:textColor="@color/text_primary" />
         </com.google.android.material.textfield.TextInputLayout>
@@ -119,7 +160,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:layout_marginBottom="12dp">
+            android:layout_marginBottom="8dp">
             <com.google.android.material.textfield.TextInputLayout
                 android:layout_width="0dp"
                 android:layout_weight="1"

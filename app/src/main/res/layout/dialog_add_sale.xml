@@ -32,11 +32,9 @@
             android:layout_height="wrap_content"
             android:hint="Date de la vente"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
-            android:layout_marginBottom="12dp"
+            android:layout_marginBottom="8dp"
             app:hintTextColor="@color/text_secondary"
-            app:boxStrokeColor="@color/primary"
-            app:startIconDrawable="@drawable/ic_calendar"
-            app:startIconTint="@color/primary">
+            app:boxStrokeColor="@color/primary">
             <com.google.android.material.textfield.TextInputEditText
         style="@style/Widget.App.TextInputEditText"
                 android:id="@+id/etSaleDate"
@@ -52,11 +50,9 @@
             android:layout_height="wrap_content"
             android:hint="Nombre de tablettes vendues"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
-            android:layout_marginBottom="12dp"
+            android:layout_marginBottom="8dp"
             app:hintTextColor="@color/text_secondary"
-            app:boxStrokeColor="@color/primary"
-            app:startIconDrawable="@drawable/ic_add"
-            app:startIconTint="@color/primary">
+            app:boxStrokeColor="@color/primary">
             <com.google.android.material.textfield.TextInputEditText
         style="@style/Widget.App.TextInputEditText"
                 android:id="@+id/etQuantity"
@@ -72,11 +68,9 @@
             android:layout_height="wrap_content"
             android:hint="Prix par tablette"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
-            android:layout_marginBottom="12dp"
+            android:layout_marginBottom="8dp"
             app:hintTextColor="@color/text_secondary"
-            app:boxStrokeColor="@color/primary"
-            app:startIconDrawable="@drawable/ic_batches"
-            app:startIconTint="@color/primary">
+            app:boxStrokeColor="@color/primary">
             <com.google.android.material.textfield.TextInputEditText
         style="@style/Widget.App.TextInputEditText"
                 android:id="@+id/etUnitPrice"
@@ -91,11 +85,9 @@
             android:layout_height="wrap_content"
             android:hint="Nom du client (Optionnel)"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
-            android:layout_marginBottom="12dp"
+            android:layout_marginBottom="8dp"
             app:hintTextColor="@color/text_secondary"
-            app:boxStrokeColor="@color/primary"
-            app:startIconDrawable="@drawable/ic_search"
-            app:startIconTint="@color/primary">
+            app:boxStrokeColor="@color/primary">
             <com.google.android.material.textfield.TextInputEditText
         style="@style/Widget.App.TextInputEditText"
                 android:id="@+id/etBuyer"
@@ -112,9 +104,7 @@
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
             android:layout_marginBottom="24dp"
             app:hintTextColor="@color/text_secondary"
-            app:boxStrokeColor="@color/primary"
-            app:startIconDrawable="@drawable/ic_phone"
-            app:startIconTint="@color/primary">
+            app:boxStrokeColor="@color/primary">
             <com.google.android.material.textfield.TextInputEditText
         style="@style/Widget.App.TextInputEditText"
                 android:id="@+id/etPhoneNumber"

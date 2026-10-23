@@ -87,10 +87,17 @@ object HealthAlertEngine {
     }
 
     /** 🔴 Rappels (vaccins, vitamines...) en retard, 🟠 ceux à échéance sous 48h. */
-    fun checkReminders(reminders: List<HealthReminder>, now: Long = System.currentTimeMillis()): List<HealthAlert> {
+    fun checkReminders(
+        reminders: List<HealthReminder>,
+        now: Long = System.currentTimeMillis(),
+        ongoingAntibiotic: String? = null
+    ): List<HealthAlert> {
         val alerts = mutableListOf<HealthAlert>()
         reminders.filter { !it.isDone }.forEach {
             val rid = it.firestoreId ?: it.id.toString()
+            val antibioticNote = if (it.type == "VACCIN" && ongoingAntibiotic != null)
+                " Antibiotique en cours ($ongoingAntibiotic) : demandez au vétérinaire si le vaccin peut être donné maintenant."
+            else ""
             val diff = it.dueDate - now
             when {
                 diff < 0 -> {
@@ -98,14 +105,14 @@ object HealthAlertEngine {
                     alerts += HealthAlert(
                         AlertLevel.CRITIQUE,
                         "${it.title} en retard",
-                        if (daysLate <= 0) "Prévu aujourd'hui, toujours pas fait." else "Prévu il y a $daysLate jour(s), toujours pas fait.",
+                        if (daysLate <= 0) "Prévu aujourd'hui, toujours pas fait.$antibioticNote" else "Prévu il y a $daysLate jour(s), toujours pas fait.$antibioticNote",
                         "reminder-late:$rid"
                     )
                 }
                 diff <= 2 * DAY_MS -> alerts += HealthAlert(
                     AlertLevel.ATTENTION,
                     "${it.title} à venir",
-                    "Prévu dans moins de 48h.",
+                    "Prévu dans moins de 48h.$antibioticNote",
                     "reminder-soon:$rid"
                 )
             }
@@ -119,20 +126,65 @@ object HealthAlertEngine {
         val alerts = mutableListOf<HealthAlert>()
         treatments.forEach { t ->
             val tid = t.firestoreId ?: t.id.toString()
+            val type = MedicationType.fromKey(t.medicationType)
+            // Un complément (vitamines, électrolytes…) n'impose normalement aucun délai : simple vigilance.
+            val level = if (type != null && type.isSupplement) AlertLevel.ATTENTION else AlertLevel.CRITIQUE
+            val who = if (type != null) "${t.medicationName} (${type.label})" else t.medicationName
             t.eggWithdrawalUntil?.let { until ->
                 if (until > now) alerts += HealthAlert(
-                    AlertLevel.CRITIQUE,
+                    level,
                     "Délai d'attente œufs en cours",
-                    "${t.medicationName} : ne pas commercialiser les œufs avant le ${sdf.format(Date(until))}.",
+                    "$who : ne pas commercialiser les œufs avant le ${sdf.format(Date(until))}.",
                     "withdrawal-egg:$tid:$until"
                 )
             }
             t.slaughterWithdrawalUntil?.let { until ->
                 if (until > now) alerts += HealthAlert(
-                    AlertLevel.CRITIQUE,
+                    level,
                     "Délai d'attente abattage en cours",
-                    "${t.medicationName} : éviter l'abattage avant le ${sdf.format(Date(until))}.",
+                    "$who : éviter l'abattage avant le ${sdf.format(Date(until))}.",
                     "withdrawal-slaughter:$tid:$until"
+                )
+            }
+        }
+        return alerts
+    }
+
+    /** Un traitement est « en cours » tant qu'il est marqué EN_COURS et que sa date de fin n'est pas dépassée. */
+    fun isOngoing(t: Treatment, now: Long = System.currentTimeMillis()): Boolean {
+        val end = t.endDate
+        return t.status == "EN_COURS" && (end == null || end + DAY_MS > now)
+    }
+
+    /**
+     * Selon le type de médicament :
+     * 🔴 un médicament à délai d'attente (antibiotique, antiparasitaire…) en cours : œufs à ne pas vendre
+     * pendant le traitement ; 🟠 un traitement récent dont le délai d'attente n'a pas été renseigné.
+     * Les compléments (vitamines, calcium, électrolytes…) ne déclenchent aucune alerte ici.
+     */
+    fun checkOngoingTreatments(treatments: List<Treatment>, now: Long = System.currentTimeMillis()): List<HealthAlert> {
+        val alerts = mutableListOf<HealthAlert>()
+        treatments.forEach { t ->
+            val type = MedicationType.fromKey(t.medicationType) ?: return@forEach
+            if (!type.needsWithdrawal) return@forEach
+            val tid = t.firestoreId ?: t.id.toString()
+            val days = t.eggWithdrawalDays
+            if (isOngoing(t, now)) {
+                // Déjà couvert par l'alerte « délai d'attente en cours » quand la date de fin et le délai sont connus.
+                if (t.eggWithdrawalUntil?.let { it > now } == true) return@forEach
+                alerts += HealthAlert(
+                    AlertLevel.CRITIQUE,
+                    "${type.label} en cours : ${t.medicationName}",
+                    if (days != null) "Œufs : à ne pas commercialiser pendant le traitement ni pendant $days jour(s) après sa fin."
+                    else "Délai d'attente non renseigné : le relever sur la notice avant de vendre des œufs.",
+                    "ongoing:$tid"
+                )
+            } else if (t.status == "TERMINE" && days == null && now - (t.endDate ?: t.startDate) <= 30 * DAY_MS) {
+                alerts += HealthAlert(
+                    AlertLevel.ATTENTION,
+                    "Délai d'attente non renseigné",
+                    "${type.label} ${t.medicationName} terminé : vérifier la notice avant de vendre des œufs.",
+                    "nodelay:$tid"
                 )
             }
         }
@@ -212,9 +264,24 @@ object HealthAlertEngine {
         now: Long = System.currentTimeMillis()
     ): List<HealthAlert> {
         val alerts = mutableListOf<HealthAlert>()
-        checkMortalitySpike(mortalities, now, mortalitySpikeMultiplier)?.let { alerts += it }
-        checkMortalityTrend(mortalities, now)?.let { alerts += it }
-        alerts += checkReminders(reminders, now)
+
+        // Contexte des traitements en cours, selon leur type, pour mieux interpréter la mortalité et les vaccins.
+        val ongoing = treatments.filter { isOngoing(it, now) }
+        val ongoingMeds = ongoing.filter { MedicationType.fromKey(it.medicationType)?.needsWithdrawal == true }
+        val ongoingSupplements = ongoing.filter { MedicationType.fromKey(it.medicationType)?.isSupplement == true }
+        val mortalityContext = when {
+            ongoingMeds.isNotEmpty() ->
+                " Traitement déjà en cours (${ongoingMeds.joinToString { "${it.medicationName}, ${MedicationType.fromKey(it.medicationType)?.label?.lowercase()}" }}) : si la mortalité continue, contactez le vétérinaire."
+            ongoingSupplements.isNotEmpty() ->
+                " Seuls des compléments sont en cours (${ongoingSupplements.joinToString { it.medicationName }}) : ils ne soignent pas une maladie, consultez un vétérinaire."
+            else -> ""
+        }
+        val ongoingAntibiotic = ongoing.firstOrNull { it.medicationType == MedicationType.ANTIBIOTIQUE.name }?.medicationName
+
+        checkMortalitySpike(mortalities, now, mortalitySpikeMultiplier)?.let { alerts += it.copy(message = it.message + mortalityContext) }
+        checkMortalityTrend(mortalities, now)?.let { alerts += it.copy(message = it.message + mortalityContext) }
+        alerts += checkReminders(reminders, now, ongoingAntibiotic)
+        alerts += checkOngoingTreatments(treatments, now)
         alerts += checkActiveWithdrawals(treatments, now)
         alerts += checkDiseaseCases(diseaseCases, now)
         alerts += checkObservations(observations, now)

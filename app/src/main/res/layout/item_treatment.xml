@@ -44,6 +44,18 @@
         </LinearLayout>
 
         <TextView
+            android:id="@+id/tvTreatmentType"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:textColor="@color/primary"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:visibility="gone"
+            tools:text="Antibiotique"
+            tools:visibility="visible"/>
+
+        <TextView
             android:id="@+id/tvTreatmentReason"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -62,6 +74,17 @@
             android:textColor="@color/text_secondary"
             android:textSize="11sp"
             tools:text="Du 10/09/2026 au 15/09/2026"/>
+
+        <TextView
+            android:id="@+id/tvTreatmentPurchase"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:textColor="@color/text_secondary"
+            android:textSize="11sp"
+            android:visibility="gone"
+            tools:text="Dernier achat : 15500 MRU le 12/10/2026"
+            tools:visibility="visible"/>
 
         <TextView
             android:id="@+id/tvTreatmentWithdrawal"

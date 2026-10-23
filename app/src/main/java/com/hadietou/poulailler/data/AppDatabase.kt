@@ -18,7 +18,7 @@ import androidx.room.RoomDatabase
         Batch::class,
         HealthReminder::class
     ],
-    version = 14,
+    version = 16,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {

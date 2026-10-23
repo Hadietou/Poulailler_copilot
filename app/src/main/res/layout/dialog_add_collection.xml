@@ -37,7 +37,7 @@
             app:strokeColor="@color/primary"
             app:icon="@drawable/ic_calendar"
             app:iconTint="@color/primary"
-            android:layout_marginBottom="12dp"/>
+            android:layout_marginBottom="8dp"/>
 
         <!-- Saisie comme on la reçoit : plateaux complets + œufs restants (1 plateau = 30 œufs) -->
         <LinearLayout
@@ -92,7 +92,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="2dp"
-            android:layout_marginBottom="12dp"
+            android:layout_marginBottom="8dp"
             android:background="@drawable/bg_value_chip"
             android:backgroundTint="@color/emerald_container"
             android:gravity="center"
@@ -109,11 +109,9 @@
             android:id="@+id/tilBroken"
             android:hint="Dont œufs cassés"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
-            android:layout_marginBottom="12dp"
+            android:layout_marginBottom="8dp"
             app:hintTextColor="@color/text_secondary"
-            app:boxStrokeColor="@color/primary"
-            app:startIconDrawable="@drawable/ic_delete"
-            app:startIconTint="@color/error">
+            app:boxStrokeColor="@color/primary">
             <com.google.android.material.textfield.TextInputEditText
         style="@style/Widget.App.TextInputEditText"
                 android:id="@+id/etBrokenEggsCount"

@@ -29,11 +29,12 @@
 
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/tilAnalysisType"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense.ExposedDropdownMenu"
+            app:endIconMinSize="32dp"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Type d'analyse"
-            android:layout_marginBottom="12dp"
+            android:layout_marginBottom="8dp"
             app:hintTextColor="@color/text_secondary"
             app:boxStrokeColor="@color/primary">
             <AutoCompleteTextView android:id="@+id/actvAnalysisType" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="none" android:textColor="@color/text_primary" />
@@ -49,14 +50,14 @@
             app:strokeColor="@color/primary"
             app:icon="@drawable/ic_calendar"
             app:iconTint="@color/primary"
-            android:layout_marginBottom="12dp"/>
+            android:layout_marginBottom="8dp"/>
 
         <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Résultat (optionnel)"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
-            android:layout_marginBottom="12dp"
+            android:layout_marginBottom="8dp"
             app:hintTextColor="@color/text_secondary"
             app:boxStrokeColor="@color/primary">
             <com.google.android.material.textfield.TextInputEditText
