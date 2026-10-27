@@ -6,7 +6,9 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.hadietou.poulailler.data.HealthReminder
 import com.hadietou.poulailler.network.WeatherUtils
+import com.google.firebase.auth.FirebaseAuth
 import com.hadietou.poulailler.repository.FirebaseRepository
+import com.hadietou.poulailler.util.AlertNotifier
 import kotlinx.coroutines.flow.first
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -24,6 +26,20 @@ import java.util.TimeZone
 class HeatAlertWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
 
     private val firebaseRepo = FirebaseRepository()
+
+    /**
+     * Email du responsable s'il est connu, sinon celui du compte connecté sur ce téléphone.
+     * Avec la connexion par numéro de téléphone, il peut ne pas y en avoir : l'alerte arrive alors
+     * uniquement par notification sur le téléphone (voir [AlertNotifier]).
+     */
+    private suspend fun alertEmail(): String? =
+        firebaseRepo.getResponsibleEmail()?.takeIf { it.isNotBlank() }
+            ?: FirebaseAuth.getInstance().currentUser?.email?.takeIf { it.isNotBlank() }
+
+    private fun formatDay(isoDay: String): String {
+        val parts = isoDay.split("-")
+        return if (parts.size == 3) "${parts[2]}/${parts[1]}/${parts[0]}" else isoDay
+    }
 
     override suspend fun doWork(): Result {
         return try {
@@ -47,8 +63,10 @@ class HeatAlertWorker(context: Context, params: WorkerParameters) : CoroutineWor
         val todayDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
         if (lastCheckDate == todayDate) return
 
-        val email = firebaseRepo.getResponsibleEmail() ?: return
-        val info = firebaseRepo.getFarmInfo() ?: return
+        val info = firebaseRepo.getFarmInfo() ?: run {
+            Log.w("HeatAlertWorker", "Informations de la ferme introuvables : pas de vérification météo")
+            return
+        }
 
         val response = WeatherUtils.fetchForecast(info.latitude, info.longitude)
         val daily = response.daily
@@ -72,7 +90,18 @@ class HeatAlertWorker(context: Context, params: WorkerParameters) : CoroutineWor
         }
 
         if (alertNeeded) {
-            firebaseRepo.sendHeatAlertEmail(email, info.farmName, highTempDay, highTempValue)
+            AlertNotifier.notifyHeat(
+                applicationContext,
+                "🔥 Alerte chaleur · ${info.farmName}",
+                "${Math.round(highTempValue)}°C prévus le ${formatDay(highTempDay)}. Renforcez la ventilation, prévoyez de l'eau très fraîche et des anti-stress (vitamine C, électrolytes).",
+                1001
+            )
+            val email = alertEmail()
+            if (email != null) {
+                firebaseRepo.sendHeatAlertEmail(email, info.farmName, highTempDay, highTempValue)
+            } else {
+                Log.w("HeatAlertWorker", "Aucun email pour l'alerte chaleur : notification seule")
+            }
             addVitaminReminderForActiveBatch(
                 "Vitamine C / Électrolytes",
                 "Période de chaleur prévue (${Math.round(highTempValue)}°C le $highTempDay). Hydratation et anti-stress recommandés."
@@ -108,8 +137,10 @@ class HeatAlertWorker(context: Context, params: WorkerParameters) : CoroutineWor
         val sameDayCheckDate = prefs.getString("sameDayCheckDate", "")
         if (sameDayCheckDate == todayDate) return
 
-        val email = firebaseRepo.getResponsibleEmail() ?: return
-        val info = firebaseRepo.getFarmInfo() ?: return
+        val info = firebaseRepo.getFarmInfo() ?: run {
+            Log.w("HeatAlertWorker", "Informations de la ferme introuvables : pas de vérification du jour")
+            return
+        }
 
         val response = WeatherUtils.fetchForecast(info.latitude, info.longitude)
         val daily = response.daily
@@ -119,7 +150,13 @@ class HeatAlertWorker(context: Context, params: WorkerParameters) : CoroutineWor
         if (todayIndex != -1) {
             val todayTemp = maxTemperatures[todayIndex]
             if (todayTemp >= info.heatAlertTempCelsius) {
-                firebaseRepo.sendHeatAlertEmail(email, info.farmName, todayDate, todayTemp)
+                AlertNotifier.notifyHeat(
+                    applicationContext,
+                    "🔥 Chaleur aujourd'hui · ${info.farmName}",
+                    "${Math.round(todayTemp)}°C attendus aujourd'hui. Ventilation, eau fraîche et anti-stress sans attendre.",
+                    1002
+                )
+                alertEmail()?.let { firebaseRepo.sendHeatAlertEmail(it, info.farmName, todayDate, todayTemp) }
             } else {
                 Log.d("HeatAlertWorker", "Vérification 8h : température du jour finalement sous le seuil (${Math.round(todayTemp)}°C), pas d'alerte.")
             }

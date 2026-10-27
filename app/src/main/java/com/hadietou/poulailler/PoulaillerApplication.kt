@@ -12,9 +12,12 @@ import androidx.core.view.updatePadding
 import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.NetworkType
+import androidx.work.ExistingWorkPolicy
+import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import com.google.android.material.appbar.AppBarLayout
+import com.hadietou.poulailler.worker.HealthAlertWorker
 import com.hadietou.poulailler.worker.HeatAlertWorker
 import org.osmdroid.config.Configuration
 import java.io.File
@@ -120,6 +123,27 @@ class PoulaillerApplication : Application() {
             "heat_alert_check",
             ExistingPeriodicWorkPolicy.KEEP,
             request
+        )
+
+        // Vérification immédiate à chaque ouverture de l'app : la planification périodique
+        // peut être retardée par le système (économie d'énergie). Le worker ne renvoie jamais
+        // deux fois la même alerte le même jour.
+        WorkManager.getInstance(this).enqueueUniqueWork(
+            "heat_alert_check_now",
+            ExistingWorkPolicy.REPLACE,
+            OneTimeWorkRequestBuilder<HeatAlertWorker>().setConstraints(constraints).build()
+        )
+
+        // Alertes sanitaires critiques : même principe (toutes les 6 h + à chaque ouverture).
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+            "health_alert_check",
+            ExistingPeriodicWorkPolicy.KEEP,
+            PeriodicWorkRequestBuilder<HealthAlertWorker>(6, TimeUnit.HOURS).setConstraints(constraints).build()
+        )
+        WorkManager.getInstance(this).enqueueUniqueWork(
+            "health_alert_check_now",
+            ExistingWorkPolicy.REPLACE,
+            OneTimeWorkRequestBuilder<HealthAlertWorker>().setConstraints(constraints).build()
         )
     }
 }

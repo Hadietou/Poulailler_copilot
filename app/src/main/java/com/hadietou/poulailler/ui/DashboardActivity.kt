@@ -69,6 +69,7 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
             binding = ActivityDashboardBinding.inflate(layoutInflater)
             setContentView(binding.root)
             NetworkStatusMonitor.observe(this, binding.root)
+            com.hadietou.poulailler.util.AlertNotifier.requestPermissionIfNeeded(this)
 
             userId = if (com.hadietou.poulailler.demo.DemoMode.enabled) {
                 com.hadietou.poulailler.demo.DemoData.USER_ID
@@ -265,7 +266,7 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
 
         binding.toolbar.findViewById<View>(R.id.ivHeaderReport)?.setOnClickListener {
             val prodChart = if (binding.productionChart.visibility == View.VISIBLE) binding.productionChart.chartBitmap else null
-            val expChart = if (binding.expensesBarChart.visibility == View.VISIBLE) binding.expensesBarChart.drawToBitmap() else null
+            val expChart = buildGlobalExpensesChartBitmap()
             ReportUtils.generateAndShareReport(this, viewModel, prodChart, expChart)
         }
     }
@@ -296,7 +297,10 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
         binding.layoutDashHealthWeather.setOnClickListener { navigateTo(WeatherActivity::class.java) }
         binding.layoutDashHealthTreatment.setOnClickListener { navigateTo(TreatmentActivity::class.java) }
 
-        binding.cardNetProfit.setOnClickListener { navigateTo(SalesActivity::class.java) }
+        binding.titleFinance.text = "SITUATION FINANCIÈRE · " +
+            java.text.SimpleDateFormat("MMMM yyyy", java.util.Locale.FRENCH).format(java.util.Date()).uppercase(java.util.Locale.FRENCH)
+        binding.cardNetProfit.setOnClickListener { openFinance(FinanceActivity.TAB_OVERVIEW) }
+        binding.tvOpenFinance.setOnClickListener { openFinance(FinanceActivity.TAB_OVERVIEW) }
     }
 
     private fun showEggProductionMenu(anchor: View) = ActionMenuPopup.show(anchor, listOf(
@@ -306,12 +310,12 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
 
     private fun showSalesMenu(anchor: View) = ActionMenuPopup.show(anchor, listOf(
         ActionMenuItem(R.drawable.ic_sell, "Saisie des ventes") { navigateTo(SalesActivity::class.java) },
-        ActionMenuItem(R.drawable.ic_chart_line, "Ventes et recettes") { navigateToStats("SALES") }
+        ActionMenuItem(R.drawable.ic_chart_line, "Ventes et recettes") { openFinance(FinanceActivity.TAB_SALES) }
     ))
 
     private fun showExpensesMenu(anchor: View) = ActionMenuPopup.show(anchor, listOf(
         ActionMenuItem(R.drawable.ic_finance, "+ Ajouter une dépense") { navigateTo(ExpensesActivity::class.java) },
-        ActionMenuItem(R.drawable.ic_chart_line, "Suivi des dépenses") { navigateToStats("EXPENSES") }
+        ActionMenuItem(R.drawable.ic_chart_line, "Suivi des dépenses") { openFinance(FinanceActivity.TAB_EXPENSES) }
     ))
 
     private fun showFeedMenu(anchor: View) = ActionMenuPopup.show(anchor, listOf(
@@ -330,6 +334,34 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
         intent.putExtra("statsType", type)
         intent.putExtra("selectedBatchId", viewModel.selectedBatch.value?.firestoreId)
         startActivity(intent)
+    }
+
+    /** Page Finances (situation globale, ventes et recettes, dépenses), ouverte sur l'onglet voulu. */
+    private fun openFinance(tab: Int) {
+        val intent = Intent(this, FinanceActivity::class.java)
+        intent.putExtra(FinanceActivity.EXTRA_TAB, tab)
+        intent.putExtra("role", userRole)
+        intent.putExtra("userIdString", userId)
+        intent.putExtra("selectedBatchId", viewModel.selectedBatch.value?.firestoreId)
+        startActivity(intent)
+    }
+
+    /**
+     * Le rapport PDF présente la répartition des dépenses depuis le début : on la dessine à part,
+     * car le graphique du tableau de bord ne montre plus que le mois en cours.
+     */
+    private fun buildGlobalExpensesChartBitmap(): android.graphics.Bitmap? {
+        val list = viewModel.expensesByCategory.value.orEmpty()
+        if (list.isEmpty()) return null
+        val container = android.widget.LinearLayout(this).apply { orientation = android.widget.LinearLayout.VERTICAL }
+        DashboardChartRenderer.renderExpenses(container, this, list)
+        val width = binding.expensesBarChart.width.takeIf { it > 0 } ?: (resources.displayMetrics.widthPixels - 120)
+        container.measure(
+            View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
+            View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
+        )
+        container.layout(0, 0, container.measuredWidth, container.measuredHeight)
+        return container.drawToBitmap()
     }
 
     private fun <T> navigateTo(cls: Class<T>) {
@@ -581,18 +613,23 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
             binding.tvEggProdStockValue.text = tablettes.toString()
         }
 
-        viewModel.totalSales.observe(this) {
+        // Carte « Situation financière » : chiffres du mois en cours (les totaux globaux sont dans la page Finances).
+        viewModel.monthRevenue.observe(this) {
             val curr = viewModel.farmInfo.value?.currency ?: "MRU"
             binding.tvTotalRevenueValue.text = getString(R.string.currency_format, NumberFormat.getInstance().format(it), curr)
         }
 
-        viewModel.totalExpenses.observe(this) {
+        viewModel.monthExpenses.observe(this) {
             val curr = viewModel.farmInfo.value?.currency ?: "MRU"
             binding.tvTotalExpensesValue.text = getString(R.string.currency_format, NumberFormat.getInstance().format(it), curr)
+        }
+
+        viewModel.totalExpenses.observe(this) {
+            val curr = viewModel.farmInfo.value?.currency ?: "MRU"
             binding.tvDashExpensesTotal.text = "${getString(R.string.k_format, it / 1000.0)} $curr au total"
         }
 
-        viewModel.netProfit.observe(this) {
+        viewModel.monthNetProfit.observe(this) {
             val curr = viewModel.farmInfo.value?.currency ?: "MRU"
             binding.tvNetProfit.text = getString(R.string.currency_format, NumberFormat.getInstance().format(it), curr)
             if (it < 0) {
@@ -621,7 +658,7 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
             DashboardChartRenderer.renderProduction(binding.productionChart, this, list)
         }
 
-        viewModel.expensesByCategory.observe(this) { list ->
+        viewModel.monthExpensesByCategory.observe(this) { list ->
             DashboardChartRenderer.renderExpenses(binding.expensesBarChart, this, list)
         }
 

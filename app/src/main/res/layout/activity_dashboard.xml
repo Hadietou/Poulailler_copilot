@@ -644,7 +644,7 @@
                     </GridLayout>
 
                     <!-- ── SECTION : BILAN FINANCIER ── -->
-                    <TextView android:id="@+id/titleFinance" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="24dp" android:text="SITUATION FINANCIÈRE" android:textColor="@color/accent_blue" android:textSize="12sp" android:textStyle="bold" android:letterSpacing="0.1" />
+                    <TextView android:id="@+id/titleFinance" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="24dp" android:text="SITUATION FINANCIÈRE DU MOIS" android:textColor="@color/accent_blue" android:textSize="12sp" android:textStyle="bold" android:letterSpacing="0.1" />
 
                     <com.google.android.material.card.MaterialCardView
                         android:id="@+id/cardNetProfit" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" app:cardBackgroundColor="@color/surface" app:cardCornerRadius="20dp" app:strokeColor="@color/accent_blue_container" app:strokeWidth="1dp">
@@ -652,7 +652,7 @@
 
                             <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical">
                                 <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
-                                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Bénéfice Net Global" android:textColor="@color/emerald_soft" android:textSize="12sp" android:textStyle="bold" />
+                                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Bénéfice net du mois" android:textColor="@color/emerald_soft" android:textSize="12sp" android:textStyle="bold" />
                                     <TextView android:id="@+id/tvNetProfit" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="@color/text_primary" android:textSize="22sp" android:textStyle="bold" tools:text="45,000 MRU" />
                                 </LinearLayout>
                                 <ImageView android:layout_width="32dp" android:layout_height="32dp" android:src="@drawable/ic_finance" app:tint="@color/accent_blue" />
@@ -662,22 +662,30 @@
 
                             <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
                                 <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
-                                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Total Entrées" android:textColor="@color/text_secondary" android:textSize="10sp" android:textStyle="bold" />
+                                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Entrées du mois" android:textColor="@color/text_secondary" android:textSize="10sp" android:textStyle="bold" />
                                     <TextView android:id="@+id/tvTotalRevenueValue" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="@color/emerald_soft" android:textSize="16sp" android:textStyle="bold" tools:text="150,000 MRU" />
                                 </LinearLayout>
                                 <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
-                                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Total Dépenses" android:textColor="@color/text_secondary" android:textSize="10sp" android:textStyle="bold" />
+                                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Dépenses du mois" android:textColor="@color/text_secondary" android:textSize="10sp" android:textStyle="bold" />
                                     <TextView android:id="@+id/tvTotalExpensesValue" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="@color/error" android:textSize="16sp" android:textStyle="bold" tools:text="105,000 MRU" />
                                 </LinearLayout>
                             </LinearLayout>
 
                             <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/background" android:layout_marginVertical="12dp" />
 
-                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Répartition des dépenses par catégorie" android:textColor="@color/text_secondary" android:textSize="11sp" android:textStyle="bold" android:layout_marginBottom="8dp" />
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Dépenses du mois par catégorie" android:textColor="@color/text_secondary" android:textSize="11sp" android:textStyle="bold" android:layout_marginBottom="8dp" />
 
                             <LinearLayout
                                 android:id="@+id/expensesBarChart" android:layout_width="match_parent" android:layout_height="wrap_content"
                                 android:orientation="vertical" />
+
+                            <TextView
+                                android:id="@+id/tvOpenFinance"
+                                android:layout_width="match_parent" android:layout_height="wrap_content"
+                                android:layout_marginTop="12dp"
+                                android:gravity="end"
+                                android:text="Situation globale, ventes et dépenses ›"
+                                android:textColor="@color/accent_blue" android:textSize="12sp" android:textStyle="bold" />
                         </LinearLayout>
                     </com.google.android.material.card.MaterialCardView>
 

@@ -29,6 +29,11 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     val totalSales = MutableLiveData<Double>(0.0)
     val totalExpenses = MutableLiveData<Double>(0.0)
     val netProfit = MutableLiveData<Double>(0.0)
+    // Situation financière du mois en cours (carte du tableau de bord) ; les totaux ci-dessus restent globaux.
+    val monthRevenue = MutableLiveData<Double>(0.0)
+    val monthExpenses = MutableLiveData<Double>(0.0)
+    val monthNetProfit = MutableLiveData<Double>(0.0)
+    val monthExpensesByCategory = MutableLiveData<List<CategoryExpense>>(emptyList())
     val weeklyProduction = MutableLiveData<List<Triple<Long, Int, Double>>>(emptyList())
     
     val totalCollected = MutableLiveData<Int>(0)
@@ -356,15 +361,23 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         isCheckingStockAlert = true
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val email = firebaseRepo.getResponsibleEmail()
                 val info = firebaseRepo.getFarmInfo()
-                
-                if (email == null || info == null) {
+                if (info == null) {
                     isCheckingStockAlert = false
                     return@launch
                 }
 
-                firebaseRepo.sendFeedStockAlertEmail(email, info.farmName, stock, days)
+                // Notification directe sur le téléphone, qui ne dépend pas d'un email ; l'email
+                // part en plus quand une adresse est connue.
+                com.hadietou.poulailler.util.AlertNotifier.notifyStock(
+                    getApplication(),
+                    "🌾 Stock d'aliment bas · ${info.farmName}",
+                    "Il reste ${Math.round(stock)} kg, soit environ $days jour(s) d'autonomie. Pensez à commander.",
+                    3001
+                )
+                val email = firebaseRepo.getResponsibleEmail()?.takeIf { it.isNotBlank() }
+                    ?: com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.email?.takeIf { it.isNotBlank() }
+                if (email != null) firebaseRepo.sendFeedStockAlertEmail(email, info.farmName, stock, days)
                 prefs.edit().putString("lastCheckDate", todayDate).apply()
             } catch (e: Exception) {
                 Log.e("DashboardVM", "Error sending stock alert", e)
@@ -404,6 +417,17 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         totalSales.postValue(salesTotal)
         totalExpenses.postValue(expTotal)
         netProfit.postValue(salesTotal - expTotal)
+
+        val financeMonthStart = Calendar.getInstance().apply {
+            set(Calendar.DAY_OF_MONTH, 1); set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
+        }.timeInMillis
+        val monthSalesList = sales.filter { it.date >= financeMonthStart }
+        val monthExpenseList = expenses.filter { it.date >= financeMonthStart }
+        monthRevenue.postValue(monthSalesList.sumOf { it.totalPrice })
+        monthExpenses.postValue(monthExpenseList.sumOf { it.amount })
+        monthNetProfit.postValue(monthSalesList.sumOf { it.totalPrice } - monthExpenseList.sumOf { it.amount })
+        monthExpensesByCategory.postValue(monthExpenseList.groupBy { it.category }
+            .map { (cat, items) -> CategoryExpense(cat, items.sumOf { it.amount }) })
 
         val feedPurchased = expenses.filter { it.category == "Aliment" }.sumOf { it.quantityKg ?: 0.0 }
         totalFeedPurchasedKg.postValue(feedPurchased)

@@ -1,13 +1,17 @@
 package com.hadietou.poulailler.network
 
+import com.hadietou.poulailler.BuildConfig
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
 object RetrofitClient {
+    // Journal des requêtes uniquement en debug, et sans la clé d'API Brevo : en release, le logcat
+    // du téléphone ne doit pas exposer de clé ni de contenu d'email.
     private val logging = HttpLoggingInterceptor().apply {
-        level = HttpLoggingInterceptor.Level.BODY
+        level = if (BuildConfig.DEBUG) HttpLoggingInterceptor.Level.BODY else HttpLoggingInterceptor.Level.NONE
+        redactHeader("api-key")
     }
 
     private val httpClient = OkHttpClient.Builder()
