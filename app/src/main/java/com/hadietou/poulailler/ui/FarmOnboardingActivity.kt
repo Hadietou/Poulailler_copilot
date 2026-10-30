@@ -1,5 +1,6 @@
 package com.hadietou.poulailler.ui
 
+import com.hadietou.poulailler.R
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -131,11 +132,11 @@ class FarmOnboardingActivity : AppCompatActivity() {
         val dialogBinding = DialogCreateFarmBinding.inflate(LayoutInflater.from(this))
         val dialog = AlertDialog.Builder(this).setView(dialogBinding.root).create()
 
-        val countryAdapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, countries)
+        val countryAdapter = ArrayAdapter(this, R.layout.item_dropdown_compact, countries)
         dialogBinding.actvCountry.setAdapter(countryAdapter)
         dialogBinding.actvCountry.setText(countries[0], false)
 
-        val currencyAdapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, currencies)
+        val currencyAdapter = ArrayAdapter(this, R.layout.item_dropdown_compact, currencies)
         dialogBinding.actvCurrency.setAdapter(currencyAdapter)
         dialogBinding.actvCurrency.setText(currencies[0], false)
 

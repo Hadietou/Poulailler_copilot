@@ -1,5 +1,6 @@
 package com.hadietou.poulailler.ui
 
+import com.hadietou.poulailler.R
 import android.app.AlertDialog
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -81,8 +82,8 @@ class BiosecurityActivity : AppCompatActivity() {
         val dialogBinding = DialogAddBiosecurityTaskBinding.inflate(LayoutInflater.from(this))
         val dialog = AlertDialog.Builder(this).setView(dialogBinding.root).create()
 
-        dialogBinding.actvTaskName.setAdapter(ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, BiosecurityTask.COMMON_TASKS))
-        dialogBinding.actvTaskFrequency.setAdapter(ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, BiosecurityTask.FREQUENCY_LABELS.values.toList()))
+        dialogBinding.actvTaskName.setAdapter(ArrayAdapter(this, R.layout.item_dropdown_compact, BiosecurityTask.COMMON_TASKS))
+        dialogBinding.actvTaskFrequency.setAdapter(ArrayAdapter(this, R.layout.item_dropdown_compact, BiosecurityTask.FREQUENCY_LABELS.values.toList()))
         dialogBinding.actvTaskFrequency.setText(BiosecurityTask.FREQUENCY_LABELS.getValue("HEBDOMADAIRE"), false)
 
         dialogBinding.btnSaveTask.setOnClickListener {

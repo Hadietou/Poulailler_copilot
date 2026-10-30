@@ -1,5 +1,6 @@
 package com.hadietou.poulailler.ui
 
+import com.hadietou.poulailler.R
 import android.app.AlertDialog
 import android.app.DatePickerDialog
 import android.os.Bundle
@@ -69,7 +70,7 @@ class LabAnalysisActivity : AppCompatActivity() {
         val dialog = AlertDialog.Builder(this).setView(dialogBinding.root).create()
         val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
 
-        dialogBinding.actvAnalysisType.setAdapter(ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, LabAnalysis.TYPE_LABELS.values.toList()))
+        dialogBinding.actvAnalysisType.setAdapter(ArrayAdapter(this, R.layout.item_dropdown_compact, LabAnalysis.TYPE_LABELS.values.toList()))
         dialogBinding.actvAnalysisType.setText(LabAnalysis.TYPE_LABELS.getValue("LABORATOIRE"), false)
 
         var dateMs = System.currentTimeMillis()

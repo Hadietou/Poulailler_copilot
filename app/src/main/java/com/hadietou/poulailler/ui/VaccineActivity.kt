@@ -330,9 +330,9 @@ class VaccineActivity : AppCompatActivity(), NavigationView.OnNavigationItemSele
             dialogBinding.layoutAdvancedFields.visibility = if (isVisible) View.GONE else View.VISIBLE
             dialogBinding.btnToggleAdvanced.text = if (isVisible) "▸ Détails avancés (optionnel)" else "▾ Détails avancés (optionnel)"
         }
-        val routeAdapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, vaccineRoutes)
+        val routeAdapter = ArrayAdapter(this, R.layout.item_dropdown_compact, vaccineRoutes)
         dialogBinding.actvRoute.setAdapter(routeAdapter)
-        val statusAdapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, vaccineStatusLabels.values.toList())
+        val statusAdapter = ArrayAdapter(this, R.layout.item_dropdown_compact, vaccineStatusLabels.values.toList())
         dialogBinding.actvStatus.setAdapter(statusAdapter)
     }
 

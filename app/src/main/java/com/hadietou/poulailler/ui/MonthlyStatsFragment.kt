@@ -1,5 +1,6 @@
 package com.hadietou.poulailler.ui
 
+import com.hadietou.poulailler.util.NumberFormats
 import android.graphics.Color
 import android.os.Bundle
 import android.view.View
@@ -161,7 +162,7 @@ class MonthlyStatsFragment : Fragment() {
 
                 val totalMensuelTablettes = totalMensuel / 30
                 val totalGeneralTablettes = totalGeneral / 30
-                val numberFormat = NumberFormat.getInstance(Locale.getDefault())
+                val numberFormat = NumberFormats.plain()
 
                 binding.tvStatsSummary.text = totalMensuelTablettes.toString()
                 binding.tvStatsSummaryUnit.visibility = View.VISIBLE
@@ -222,7 +223,7 @@ class MonthlyStatsFragment : Fragment() {
 
                 // Case « Ventes totales » : total toutes périodes + détail par prix de vente
                 // (car toutes les tablettes ne sont pas vendues au même prix)
-                val numberFormat = NumberFormat.getInstance(Locale.getDefault())
+                val numberFormat = NumberFormats.plain()
                 binding.cardSalesTotal.visibility = View.VISIBLE
 
                 val totalQuantityAll = filteredAll.sumOf { it.quantity }
@@ -334,7 +335,7 @@ class MonthlyStatsFragment : Fragment() {
                 setupHistoricalComparisonChart(historicalExpData, historicalSalesData)
 
                 // Détail par catégorie des dépenses du mois, dans la case résumé dynamique
-                val numberFormat = NumberFormat.getInstance(Locale.getDefault())
+                val numberFormat = NumberFormats.plain()
                 if (filteredCurrent.isEmpty()) {
                     binding.dividerStatsSummary.visibility = View.GONE
                     binding.tvStatsSummaryBreakdownLabel.visibility = View.GONE
@@ -493,8 +494,8 @@ class MonthlyStatsFragment : Fragment() {
             "SALES" -> " plateaux"
             else -> ""
         }
-        val format = if (kind == "SALES") "%.1f" else "%.0f"
-        binding.tvStatsSummary.text = "${String.format(Locale.getDefault(), format, total)}$unit"
+        val shown = if (kind == "SALES") String.format(Locale.getDefault(), "%.1f", total) else NumberFormats.plain().format(Math.round(total))
+        binding.tvStatsSummary.text = "$shown$unit"
     }
 
     private fun setupBarChart(data: List<Pair<String, Double>>) {

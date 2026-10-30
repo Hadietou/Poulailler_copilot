@@ -238,7 +238,7 @@ class MortalityActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
             }, calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH), calendar.get(Calendar.DAY_OF_MONTH)).show()
         }
 
-        val causeAdapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, mortalityCauses)
+        val causeAdapter = ArrayAdapter(this, R.layout.item_dropdown_compact, mortalityCauses)
         dialogBinding.actvMortalityCause.setAdapter(causeAdapter)
 
         dialogBinding.btnHelpSymptoms.setOnClickListener {
@@ -350,7 +350,7 @@ class MortalityActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
             }, dCal.get(Calendar.YEAR), dCal.get(Calendar.MONTH), dCal.get(Calendar.DAY_OF_MONTH)).show()
         }
 
-        val causeAdapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, mortalityCauses)
+        val causeAdapter = ArrayAdapter(this, R.layout.item_dropdown_compact, mortalityCauses)
         dialogBinding.actvMortalityCause.setAdapter(causeAdapter)
         dialogBinding.actvMortalityCause.setText(mortality.cause, false)
         dialogBinding.etMortalityZone.setText(mortality.zone)

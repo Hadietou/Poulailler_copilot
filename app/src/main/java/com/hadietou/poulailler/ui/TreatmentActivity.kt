@@ -1,5 +1,6 @@
 package com.hadietou.poulailler.ui
 
+import com.hadietou.poulailler.util.NumberFormats
 import android.app.AlertDialog
 import android.app.DatePickerDialog
 import android.content.Intent
@@ -211,10 +212,10 @@ class TreatmentActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
     /** Suggestions de noms, choix du type, et rappel du dernier achat sous le nom saisi. */
     private fun setupMedicationInputs(dialogBinding: DialogAddTreatmentBinding, autoType: Boolean) {
         dialogBinding.etMedicationName.setAdapter(
-            ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, MedicationPurchases.knownNames(allExpenses, allTreatments))
+            ArrayAdapter(this, R.layout.item_dropdown_compact, MedicationPurchases.knownNames(allExpenses, allTreatments))
         )
         dialogBinding.actvMedicationType.setAdapter(
-            ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, MedicationType.entries.map { it.label })
+            ArrayAdapter(this, R.layout.item_dropdown_compact, MedicationType.entries.map { it.label })
         )
         dialogBinding.etMedicationName.doAfterTextChanged { text ->
             val name = text?.toString()
@@ -261,7 +262,7 @@ class TreatmentActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
     }
 
     private fun setupStatusDropdown(dialogBinding: DialogAddTreatmentBinding) {
-        val adapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, statusLabels.values.toList())
+        val adapter = ArrayAdapter(this, R.layout.item_dropdown_compact, statusLabels.values.toList())
         dialogBinding.actvTreatmentStatus.setAdapter(adapter)
     }
 
@@ -464,7 +465,7 @@ class TreatmentActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
         companion object {
             fun purchaseText(purchase: Expense, currency: String): String {
                 val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-                return String.format(Locale.getDefault(), "Dernier achat : %.0f %s le %s", purchase.amount, currency, sdf.format(Date(purchase.date)))
+                return "Dernier achat : ${NumberFormats.plain().format(Math.round(purchase.amount))} $currency le ${sdf.format(Date(purchase.date))}"
             }
         }
 

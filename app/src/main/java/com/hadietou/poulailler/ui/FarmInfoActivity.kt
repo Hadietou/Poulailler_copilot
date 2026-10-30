@@ -369,7 +369,7 @@ class FarmInfoActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
     }
 
     private fun setupCurrencyDropdown() {
-        val adapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, currencies)
+        val adapter = ArrayAdapter(this, R.layout.item_dropdown_compact, currencies)
         binding.actvCurrency.setAdapter(adapter)
         binding.actvCurrency.setText(currencies[0], false)
     }

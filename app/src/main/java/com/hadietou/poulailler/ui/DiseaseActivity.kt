@@ -194,8 +194,8 @@ class DiseaseActivity : AppCompatActivity(), NavigationView.OnNavigationItemSele
     }
 
     private fun setupDropdowns(dialogBinding: DialogAddDiseaseBinding) {
-        dialogBinding.actvDiseaseStatus.setAdapter(ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, statusLabels.values.toList()))
-        dialogBinding.actvDiseaseSeverity.setAdapter(ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, severityLabels.values.toList()))
+        dialogBinding.actvDiseaseStatus.setAdapter(ArrayAdapter(this, R.layout.item_dropdown_compact, statusLabels.values.toList()))
+        dialogBinding.actvDiseaseSeverity.setAdapter(ArrayAdapter(this, R.layout.item_dropdown_compact, severityLabels.values.toList()))
     }
 
     private fun showAddDiseaseDialog() {

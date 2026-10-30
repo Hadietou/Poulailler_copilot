@@ -129,7 +129,7 @@ class ResponsableActivity : AppCompatActivity(), NavigationView.OnNavigationItem
     }
 
     private fun setupDropdowns() {
-        val codeAdapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, countryDialOptions.map { it.first })
+        val codeAdapter = ArrayAdapter(this, R.layout.item_dropdown_compact, countryDialOptions.map { it.first })
         binding.actvAgentCountryCode.setAdapter(codeAdapter)
         binding.actvAgentCountryCode.setText(countryDialOptions[0].first, false)
     }

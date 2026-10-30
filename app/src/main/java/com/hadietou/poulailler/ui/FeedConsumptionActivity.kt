@@ -1,5 +1,6 @@
 package com.hadietou.poulailler.ui
 
+import com.hadietou.poulailler.util.NumberFormats
 import android.os.Bundle
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
@@ -42,7 +43,7 @@ class FeedConsumptionActivity : AppCompatActivity() {
             }
         }
 
-        val numberFormat = NumberFormat.getInstance(Locale.getDefault())
+        val numberFormat = NumberFormats.plain()
 
         viewModel.currentStockKg.observe(this) { stock ->
             binding.tvFeedStockValue.text = stock.toInt().toString()

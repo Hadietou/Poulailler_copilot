@@ -1,5 +1,6 @@
 package com.hadietou.poulailler.ui
 
+import com.hadietou.poulailler.util.NumberFormats
 import android.content.Intent
 import android.graphics.Bitmap
 import android.net.Uri
@@ -554,7 +555,7 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
         }
 
         viewModel.monthlyCollectedCount.observe(this) { count ->
-            binding.tvEggProdMonthlyValue.text = "${NumberFormat.getInstance().format(count)} œufs produits ce mois-ci"
+            binding.tvEggProdMonthlyValue.text = "${NumberFormats.plain().format(count)} œufs produits ce mois-ci"
         }
         viewModel.monthlySalesAmount.observe(this) { amount ->
             val curr = viewModel.farmInfo.value?.currency ?: "MRU"
@@ -616,12 +617,12 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
         // Carte « Situation financière » : chiffres du mois en cours (les totaux globaux sont dans la page Finances).
         viewModel.monthRevenue.observe(this) {
             val curr = viewModel.farmInfo.value?.currency ?: "MRU"
-            binding.tvTotalRevenueValue.text = getString(R.string.currency_format, NumberFormat.getInstance().format(it), curr)
+            binding.tvTotalRevenueValue.text = getString(R.string.currency_format, NumberFormats.plain().format(it), curr)
         }
 
         viewModel.monthExpenses.observe(this) {
             val curr = viewModel.farmInfo.value?.currency ?: "MRU"
-            binding.tvTotalExpensesValue.text = getString(R.string.currency_format, NumberFormat.getInstance().format(it), curr)
+            binding.tvTotalExpensesValue.text = getString(R.string.currency_format, NumberFormats.plain().format(it), curr)
         }
 
         viewModel.totalExpenses.observe(this) {
@@ -631,7 +632,7 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
 
         viewModel.monthNetProfit.observe(this) {
             val curr = viewModel.farmInfo.value?.currency ?: "MRU"
-            binding.tvNetProfit.text = getString(R.string.currency_format, NumberFormat.getInstance().format(it), curr)
+            binding.tvNetProfit.text = getString(R.string.currency_format, NumberFormats.plain().format(it), curr)
             if (it < 0) {
                 binding.tvNetProfit.setTextColor(getColor(R.color.error))
             } else {
@@ -708,7 +709,7 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
         val count = viewModel.effectiveHensCount.value ?: batch.hensCount
         val ageFormatted = viewModel.getFormattedAge(batch.chickBirthDate)
         
-        binding.tvDashboardHensCount.text = NumberFormat.getInstance().format(count)
+        binding.tvDashboardHensCount.text = NumberFormats.plain().format(count)
         binding.tvDashboardAge.text = ageFormatted
     }
 
@@ -762,11 +763,11 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
         val dialogBinding = DialogCreateFarmBinding.inflate(layoutInflater)
         val dialog = AlertDialog.Builder(this).setView(dialogBinding.root).create()
 
-        val countryAdapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, countries)
+        val countryAdapter = ArrayAdapter(this, R.layout.item_dropdown_compact, countries)
         dialogBinding.actvCountry.setAdapter(countryAdapter)
         dialogBinding.actvCountry.setText(countries[0], false)
 
-        val currencyAdapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, currencies)
+        val currencyAdapter = ArrayAdapter(this, R.layout.item_dropdown_compact, currencies)
         dialogBinding.actvCurrency.setAdapter(currencyAdapter)
         dialogBinding.actvCurrency.setText(currencies[0], false)
 
@@ -928,7 +929,7 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
         val dialogBinding = DialogLinkPhoneBinding.inflate(layoutInflater)
         val dialog = AlertDialog.Builder(this).setView(dialogBinding.root).create()
 
-        val codeAdapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, linkPhoneCountryDialOptions.map { it.first })
+        val codeAdapter = ArrayAdapter(this, R.layout.item_dropdown_compact, linkPhoneCountryDialOptions.map { it.first })
         dialogBinding.actvLinkCountryCode.setAdapter(codeAdapter)
         dialogBinding.actvLinkCountryCode.setText(linkPhoneCountryDialOptions[0].first, false)
 

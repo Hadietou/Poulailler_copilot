@@ -90,12 +90,12 @@ class ObservationActivity : AppCompatActivity() {
         val dialogBinding = DialogAddObservationBinding.inflate(LayoutInflater.from(this))
         val dialog = AlertDialog.Builder(this).setView(dialogBinding.root).create()
 
-        dialogBinding.actvBehavior.setAdapter(ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, HealthObservation.behaviorLabels.values.toList()))
-        dialogBinding.actvFeed.setAdapter(ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, HealthObservation.feedLabels.values.toList()))
-        dialogBinding.actvWater.setAdapter(ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, HealthObservation.waterLabels.values.toList()))
-        dialogBinding.actvRespiration.setAdapter(ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, HealthObservation.respirationLabels.values.toList()))
-        dialogBinding.actvDroppings.setAdapter(ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, HealthObservation.droppingsLabels.values.toList()))
-        dialogBinding.actvAppearance.setAdapter(ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, HealthObservation.appearanceLabels.values.toList()))
+        dialogBinding.actvBehavior.setAdapter(ArrayAdapter(this, R.layout.item_dropdown_compact, HealthObservation.behaviorLabels.values.toList()))
+        dialogBinding.actvFeed.setAdapter(ArrayAdapter(this, R.layout.item_dropdown_compact, HealthObservation.feedLabels.values.toList()))
+        dialogBinding.actvWater.setAdapter(ArrayAdapter(this, R.layout.item_dropdown_compact, HealthObservation.waterLabels.values.toList()))
+        dialogBinding.actvRespiration.setAdapter(ArrayAdapter(this, R.layout.item_dropdown_compact, HealthObservation.respirationLabels.values.toList()))
+        dialogBinding.actvDroppings.setAdapter(ArrayAdapter(this, R.layout.item_dropdown_compact, HealthObservation.droppingsLabels.values.toList()))
+        dialogBinding.actvAppearance.setAdapter(ArrayAdapter(this, R.layout.item_dropdown_compact, HealthObservation.appearanceLabels.values.toList()))
 
         dialogBinding.actvBehavior.setText(HealthObservation.behaviorLabels.getValue("NORMAL"), false)
         dialogBinding.actvFeed.setText(HealthObservation.feedLabels.getValue("NORMAL"), false)

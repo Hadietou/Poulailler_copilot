@@ -1,5 +1,6 @@
 package com.hadietou.poulailler.ui
 
+import com.hadietou.poulailler.util.NumberFormats
 import android.app.AlertDialog
 import android.app.DatePickerDialog
 import android.content.Intent
@@ -81,7 +82,7 @@ class ExpensesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
         val options = subCategoriesMap[category]
         if (options != null) {
             dialogBinding.tilSubCategory.visibility = View.VISIBLE
-            val subAdapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, options)
+            val subAdapter = ArrayAdapter(this, R.layout.item_dropdown_compact, options)
             dialogBinding.autoCompleteSubCategory.setAdapter(subAdapter)
             dialogBinding.autoCompleteSubCategory.setText(presetValue?.takeIf { options.contains(it) } ?: "", false)
         } else {
@@ -148,10 +149,10 @@ class ExpensesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
      */
     private fun setupMedicationInputs(dialogBinding: DialogAddExpenseBinding) {
         dialogBinding.etProductName.setAdapter(
-            ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, MedicationPurchases.knownNames(allExpenses, allTreatments))
+            ArrayAdapter(this, R.layout.item_dropdown_compact, MedicationPurchases.knownNames(allExpenses, allTreatments))
         )
         dialogBinding.autoCompleteMedicationType.setAdapter(
-            ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, MedicationType.entries.map { it.label })
+            ArrayAdapter(this, R.layout.item_dropdown_compact, MedicationType.entries.map { it.label })
         )
         dialogBinding.etProductName.doAfterTextChanged { text ->
             if (dialogBinding.tilMedicationType.visibility == View.VISIBLE && dialogBinding.autoCompleteMedicationType.text.isNullOrBlank()) {
@@ -385,7 +386,7 @@ class ExpensesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
         dialogBinding.tilAmount.hint = "Montant ($currency)"
         setupMedicationInputs(dialogBinding)
         
-        val adapterSpinner = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, expenseCategories)
+        val adapterSpinner = ArrayAdapter(this, R.layout.item_dropdown_compact, expenseCategories)
         dialogBinding.autoCompleteCategory.setAdapter(adapterSpinner)
 
         dialogBinding.autoCompleteCategory.setOnItemClickListener { _, _, position, _ ->
@@ -465,7 +466,7 @@ class ExpensesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
 
         dialogBinding.tilAmount.hint = "Montant ($currency)"
         
-        val adapterSpinner = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, expenseCategories)
+        val adapterSpinner = ArrayAdapter(this, R.layout.item_dropdown_compact, expenseCategories)
         dialogBinding.autoCompleteCategory.setAdapter(adapterSpinner)
 
         dialogBinding.autoCompleteCategory.setText(expense.category, false)
@@ -733,7 +734,7 @@ class ExpensesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSel
                     binding.tvDescription.text = "${item.quantityKg.toInt()} kg - ${item.description ?: ""}"
                 }
 
-                binding.tvAmount.text = String.format(Locale.getDefault(), "%.0f %s", item.amount, currency)
+                binding.tvAmount.text = "${NumberFormats.plain().format(Math.round(item.amount))} $currency"
             }
         }
     }

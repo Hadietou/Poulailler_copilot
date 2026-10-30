@@ -1,5 +1,6 @@
 package com.hadietou.poulailler.ui
 
+import com.hadietou.poulailler.util.NumberFormats
 import android.app.AlertDialog
 import android.app.DatePickerDialog
 import android.content.Intent
@@ -548,8 +549,8 @@ class SalesActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
                 val trays = item.quantity / 30
                 val trayPrice = item.pricePerUnit * 30
                 
-                binding.tvDetails.text = String.format(Locale.getDefault(), "%d tablettes x %.0f", trays, trayPrice)
-                binding.tvTotal.text = String.format(Locale.getDefault(), "%.0f %s", item.totalPrice, currency)
+                binding.tvDetails.text = "$trays tablettes x ${NumberFormats.plain().format(Math.round(trayPrice))}"
+                binding.tvTotal.text = "${NumberFormats.plain().format(Math.round(item.totalPrice))} $currency"
 
                 if (item.isPaid) {
                     binding.ivPaidStatus.setImageResource(android.R.drawable.checkbox_on_background)

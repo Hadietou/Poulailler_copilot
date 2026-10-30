@@ -1,5 +1,6 @@
 package com.hadietou.poulailler.ui
 
+import com.hadietou.poulailler.R
 import android.app.DatePickerDialog
 import android.view.LayoutInflater
 import android.widget.ArrayAdapter
@@ -45,12 +46,12 @@ class BatchDialogs(
             .create()
 
         val initialType = presetType ?: batchTypes[0]
-        dialogBinding.actvBatchType.setAdapter(ArrayAdapter(activity, android.R.layout.simple_dropdown_item_1line, batchTypes))
+        dialogBinding.actvBatchType.setAdapter(ArrayAdapter(activity, R.layout.item_dropdown_compact, batchTypes))
         dialogBinding.actvBatchType.setText(initialType, false)
 
         fun applyBreedsFor(type: String) {
             val list = breedsFor(type)
-            dialogBinding.actvHenBreed.setAdapter(ArrayAdapter(activity, android.R.layout.simple_dropdown_item_1line, list))
+            dialogBinding.actvHenBreed.setAdapter(ArrayAdapter(activity, R.layout.item_dropdown_compact, list))
             dialogBinding.actvHenBreed.setText(list[0], false)
         }
         applyBreedsFor(initialType)

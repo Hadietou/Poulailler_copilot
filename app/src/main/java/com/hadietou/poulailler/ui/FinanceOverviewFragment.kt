@@ -1,5 +1,6 @@
 package com.hadietou.poulailler.ui
 
+import com.hadietou.poulailler.util.NumberFormats
 import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
@@ -46,7 +47,7 @@ class FinanceOverviewFragment : Fragment() {
                 val revenue = sales.sumOf { it.totalPrice }
                 val spent = expenses.sumOf { it.amount }
                 val profit = revenue - spent
-                val format = NumberFormat.getInstance()
+                val format = NumberFormats.plain()
 
                 binding.tvTotalRevenue.text = "${format.format(revenue)} $currency"
                 binding.tvTotalExpenses.text = "${format.format(spent)} $currency"

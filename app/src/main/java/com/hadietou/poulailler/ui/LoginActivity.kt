@@ -1,5 +1,6 @@
 package com.hadietou.poulailler.ui
 
+import com.hadietou.poulailler.R
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
@@ -152,7 +153,7 @@ class LoginActivity : AppCompatActivity() {
     }
 
     private fun setupDropdowns() {
-        val codeAdapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, countryDialOptions.map { it.first })
+        val codeAdapter = ArrayAdapter(this, R.layout.item_dropdown_compact, countryDialOptions.map { it.first })
         binding.actvCountryCode.setAdapter(codeAdapter)
         binding.actvCountryCode.setText(countryDialOptions[0].first, false)
     }
