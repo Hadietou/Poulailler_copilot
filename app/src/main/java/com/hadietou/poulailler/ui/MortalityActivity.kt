@@ -54,20 +54,24 @@ class MortalityActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
     
     private val drawerSubmenus = DrawerSubmenuController(DrawerSubmenuController.Submenu.HEALTH)
 
+    // Seulement des causes qu'on peut constater sans autopsie. Les maladies précises (Newcastle,
+    // Gumboro, coccidiose…) ne se confirment qu'en laboratoire ou par un vétérinaire : elles sont
+    // regroupées sous « Maladie suspectée », et la cause confirmée se renseigne plus tard dans le champ prévu.
     private val mortalityCauses = listOf(
         "Stress thermique (Chaleur)",
-        "Newcastle (Pseudo-peste)",
-        "Gumboro (IBD)",
-        "Coccidiose",
-        "Salmonellose / Typhose",
-        "Coryza infectieux",
-        "Grippe aviaire",
-        "Prolapsus du cloaque",
+        "Maladie suspectée",
         "Picage / Cannibalisme",
-        "Prédation",
-        "Inconnue",
-        "Autre"
+        "Prolapsus du cloaque",
+        "Inconnue"
     )
+
+    private companion object {
+        const val SUSPECTED_DISEASE = "Maladie suspectée"
+    }
+
+    /** Le diagnostic par symptômes propose une maladie précise : on l'enregistre comme « Maladie suspectée : … ». */
+    private fun causeLabelFor(diagnosis: String): String =
+        if (diagnosis in mortalityCauses) diagnosis else "$SUSPECTED_DISEASE : $diagnosis"
 
     private val diseaseSymptoms = mapOf(
         "Stress thermique (Chaleur)" to listOf("Halètement (bec ouvert)", "Ailes écartées", "Soif intense", "Crête rouge foncé", "Prostration"),
@@ -311,7 +315,7 @@ class MortalityActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
                 Toast.makeText(this, "Impossible d'identifier une cause précise. Veuillez consulter un vétérinaire.", Toast.LENGTH_LONG).show()
             } else if (likelyCauses.size == 1) {
                 val cause = likelyCauses.first()
-                onCauseSelected(cause)
+                onCauseSelected(causeLabelFor(cause))
                 Toast.makeText(this, "Cause probable : $cause", Toast.LENGTH_SHORT).show()
             } else {
                 // Multiple possibilities
@@ -319,7 +323,7 @@ class MortalityActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
                     .setTitle("Résultat de l'analyse")
                     .setMessage("Plusieurs causes sont possibles :\n" + likelyCauses.joinToString("\n") + "\n\nLaquelle correspond le mieux ?")
                     .setItems(likelyCauses.toTypedArray()) { _, which ->
-                        onCauseSelected(likelyCauses.elementAt(which))
+                        onCauseSelected(causeLabelFor(likelyCauses.elementAt(which)))
                     }
                     .show()
             }
@@ -448,7 +452,19 @@ class MortalityActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
     private fun showAdviceDialog(cause: String) {
         if (cause.isEmpty() || cause == "Inconnue" || cause == "Autre") return
 
-        val advice = when (cause) {
+        // « Maladie suspectée : Coccidiose » -> conseils de la maladie ; « Maladie suspectée » seule -> conseils généraux.
+        val advice = when (cause.removePrefix("$SUSPECTED_DISEASE : ").trim()) {
+            SUSPECTED_DISEASE -> """
+                🔎 À FAIRE : 
+                - Isoler les oiseaux malades du reste du lot.
+                - Noter les symptômes observés (page Symptômes & maladies).
+                - Contacter un vétérinaire ou un technicien avicole si la mortalité continue.
+                
+                🌿 PRÉVENTIF : 
+                - Respecter le calendrier de vaccination.
+                - Biosécurité : pédiluve, pas de visiteurs, eau propre.
+            """.trimIndent()
+
             "Stress thermique (Chaleur)" -> """
                 🌿 PRÉVENTIF : 
                 - Isoler le toit (paille ou peinture blanche).
