@@ -1,5 +1,7 @@
 package com.hadietou.poulailler.ui
 
+import com.hadietou.poulailler.util.StockType
+import com.hadietou.poulailler.util.StockAdjustments
 import com.hadietou.poulailler.util.NumberFormats
 import android.graphics.Color
 import android.os.Bundle
@@ -142,9 +144,9 @@ class MonthlyStatsFragment : Fragment() {
 
     private fun observeCollection() {
         viewLifecycleOwner.lifecycleScope.launch {
-            combine(repository.getEggEntriesFlow(), repository.getSalesFlow()) { entries, sales ->
-                entries to sales
-            }.collectLatest { (entries, sales) ->
+            combine(repository.getEggEntriesFlow(), repository.getSalesFlow(), repository.getStockAdjustmentsFlow()) { entries, sales, adjustments ->
+                Triple(entries, sales, adjustments)
+            }.collectLatest { (entries, sales, adjustments) ->
                 val filteredEntries = entries.filter { (batchId == null || it.batchId == batchId) }
                 val currentMonthEntries = filteredEntries.filter { isCurrentMonth(it.date) }
 
@@ -158,7 +160,7 @@ class MonthlyStatsFragment : Fragment() {
                 val filteredSales = sales.filter { (batchId == null || it.batchId == batchId) }
                 val totalSold = filteredSales.sumOf { it.quantity }
                 val totalBroken = filteredEntries.sumOf { it.brokenEggsCount }
-                val totalAvailable = totalGeneral - totalSold - totalBroken
+                val totalAvailable = totalGeneral - totalSold - totalBroken + StockAdjustments.offset(adjustments, StockType.EGGS, batchId).toInt()
 
                 val totalMensuelTablettes = totalMensuel / 30
                 val totalGeneralTablettes = totalGeneral / 30

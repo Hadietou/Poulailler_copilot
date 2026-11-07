@@ -28,6 +28,9 @@
             android:name=".ui.DashboardActivity"
             android:exported="false" />
         <activity
+            android:name=".ui.StockInventoryActivity"
+            android:exported="false" />
+        <activity
             android:name=".ui.FinanceActivity"
             android:exported="false" />
         <activity

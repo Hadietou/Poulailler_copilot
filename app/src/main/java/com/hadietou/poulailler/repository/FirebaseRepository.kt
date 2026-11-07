@@ -1,5 +1,6 @@
 package com.hadietou.poulailler.repository
 
+import com.hadietou.poulailler.data.StockAdjustment
 import com.hadietou.poulailler.util.HealthReminderUtils
 import android.content.Context
 import android.content.Intent
@@ -789,6 +790,52 @@ class FirebaseRepository {
                 }
             awaitClose { sub.remove() }
         }
+    }
+
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    fun getStockAdjustmentsFlow(): Flow<List<StockAdjustment>> = if (DemoMode.enabled) flowOf(DemoData.stockAdjustments) else farmIdFlow.flatMapLatest { fId ->
+        val id = fId ?: getFarmId()
+        if (id == null) flowOf(emptyList())
+        else callbackFlow {
+            val sub = db.collection("stock_adjustments").whereEqualTo("farmId", id)
+                .addSnapshotListener { s, _ ->
+                    val list = s?.documents?.mapNotNull { doc ->
+                        StockAdjustment(
+                            firestoreId = doc.id,
+                            type = doc.getString("type") ?: return@mapNotNull null,
+                            date = doc.getLong("date") ?: 0L,
+                            theoretical = doc.getDouble("theoretical") ?: 0.0,
+                            counted = doc.getDouble("counted") ?: 0.0,
+                            reason = doc.getString("reason") ?: "",
+                            notes = doc.getString("notes"),
+                            batchId = doc.getString("batchId"),
+                            farmId = id
+                        )
+                    }?.sortedByDescending { it.date } ?: emptyList()
+                    trySend(list)
+                }
+            awaitClose { sub.remove() }
+        }
+    }
+
+    suspend fun addStockAdjustment(a: StockAdjustment) {
+        checkAndThrowIfBlocked()
+        val fId = requireFarmId()
+        db.collection("stock_adjustments").add(hashMapOf(
+            "type" to a.type,
+            "date" to a.date,
+            "theoretical" to a.theoretical,
+            "counted" to a.counted,
+            "reason" to a.reason,
+            "notes" to a.notes,
+            "batchId" to a.batchId,
+            "farmId" to fId
+        )).fireAndForget("addStockAdjustment")
+    }
+
+    suspend fun deleteStockAdjustment(id: String) {
+        checkAndThrowIfBlocked()
+        db.collection("stock_adjustments").document(id).delete().fireAndForget("deleteStockAdjustment")
     }
 
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)

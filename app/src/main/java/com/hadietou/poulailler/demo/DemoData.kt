@@ -1,5 +1,6 @@
 package com.hadietou.poulailler.demo
 
+import com.hadietou.poulailler.data.StockAdjustment
 import com.hadietou.poulailler.data.*
 
 /**
@@ -169,6 +170,17 @@ object DemoData {
                 )
             }
         }
+
+    /** Un inventaire d'exemple : un plateau d'alvéoles ajouté pour couvrir des ventes. */
+    val stockAdjustments: List<StockAdjustment>
+        get() = listOf(
+            StockAdjustment(
+                firestoreId = "demo-stock-1", type = "TRAYS", date = now() - 3 * DAY,
+                theoretical = 36.0, counted = 37.0,
+                reason = "Alvéole en plus pour couvrir les plateaux vendus",
+                farmId = FARM_ID
+            )
+        )
 
     val vaccines: List<VaccineEntry>
         get() {

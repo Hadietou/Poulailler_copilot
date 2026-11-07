@@ -1,5 +1,9 @@
 package com.hadietou.poulailler.ui
 
+import kotlin.math.roundToInt
+import com.hadietou.poulailler.util.StockType
+import com.hadietou.poulailler.util.StockAdjustments
+import com.hadietou.poulailler.data.StockAdjustment
 import android.app.Application
 import android.content.Context
 import android.util.Log
@@ -87,6 +91,8 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     val allMortalities = MutableLiveData<List<Mortality>?>(null)
     val allExpenses = MutableLiveData<List<Expense>?>(null)
     val allSales = MutableLiveData<List<EggSale>?>(null)
+    // Inventaires physiques : leurs écarts corrigent les stocks calculés (aliment, alvéoles, œufs).
+    val allStockAdjustments = MutableLiveData<List<StockAdjustment>>(emptyList())
     val allVaccines = MutableLiveData<List<VaccineEntry>?>(null)
     val allReminders = MutableLiveData<List<HealthReminder>?>(null)
 
@@ -183,6 +189,14 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
                     refreshAllStats()
                 }
             } catch (e: Exception) { Log.e("DashboardVM", "Error in expensesFlow", e) }
+        }
+        viewModelScope.launch {
+            try {
+                firebaseRepo.getStockAdjustmentsFlow().collectLatest { list ->
+                    allStockAdjustments.value = list
+                    refreshAllStats()
+                }
+            } catch (e: Exception) { Log.e("DashboardVM", "Error in stockAdjustmentsFlow", e) }
         }
         viewModelScope.launch {
             try {
@@ -524,7 +538,8 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
             val totalSoldQty = sales.sumOf { it.quantity }
             val totalBrk = entries.sumOf { it.brokenEggsCount }
             totalCollected.postValue(totalColl); totalSold.postValue(totalSoldQty); totalBroken.postValue(totalBrk)
-            totalRemaining.postValue(totalColl - totalSoldQty - totalBrk)
+            val eggsAdjustment = StockAdjustments.offset(allStockAdjustments.value, StockType.EGGS, batchId).toInt()
+            totalRemaining.postValue(totalColl - totalSoldQty - totalBrk + eggsAdjustment)
 
             // Monthly Stats
             val curMonthEntries = entries.filter { it.date >= currentMonthStart }
@@ -561,7 +576,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
                 .sumOf { it.quantityKg ?: 0.0 }.toInt()
             val totalEggsCollectedFarm = allE.sumOf { it.eggsCount - it.brokenEggsCount }
             val farmAlveolesStock = totalAlveolesPurchased - (totalEggsCollectedFarm / 30)
-            eggTraysStock.postValue(farmAlveolesStock)
+            eggTraysStock.postValue(farmAlveolesStock + StockAdjustments.offset(allStockAdjustments.value, StockType.TRAYS, null).roundToInt())
 
             // Tech KPI: IC and Gap vs Standard
             val ageInWeeks = if (batch.chickBirthDate > 0) ((System.currentTimeMillis() - batch.chickBirthDate) / (TimeUnit.DAYS.toMillis(1) * 7)).toInt() else 0
@@ -583,7 +598,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
             weeklyProduction.postValue(history)
         }
 
-        calculateFeedStats(batch, mortalities, feedPurchased)
+        calculateFeedStats(batch, mortalities, feedPurchased, StockAdjustments.offset(allStockAdjustments.value, StockType.FEED, batchId))
         updateActiveReminders()
     }
 
@@ -623,12 +638,12 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         }
     }
 
-    private fun calculateFeedStats(batch: Batch, mortalities: List<Mortality>, totalPurchased: Double) {
+    private fun calculateFeedStats(batch: Batch, mortalities: List<Mortality>, totalPurchased: Double, adjustmentKg: Double) {
         val initialHens = batch.hensCount
         val startDate = batch.arrivalDate
         val isChair = batch.typeLot == "CHAIR"
         if (startDate <= 0 || initialHens <= 0) {
-            currentStockKg.postValue(totalPurchased); feedAutonomyDays.postValue(0); dailyConsumptionTotalKg.postValue(0.0); return
+            currentStockKg.postValue((totalPurchased + adjustmentKg).coerceAtLeast(0.0)); feedAutonomyDays.postValue(0); dailyConsumptionTotalKg.postValue(0.0); return
         }
 
         val today = Calendar.getInstance().apply { set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0) }.timeInMillis
@@ -644,7 +659,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
             currentDay += dayMillis
         }
 
-        val stockRestant = (totalPurchased - totalConsumed).coerceAtLeast(0.0)
+        val stockRestant = (totalPurchased - totalConsumed + adjustmentKg).coerceAtLeast(0.0)
         currentStockKg.postValue(stockRestant)
         totalFeedConsumedKg.postValue(totalConsumed)
 

@@ -67,7 +67,7 @@ service cloud.firestore {
     function farmCollections() {
       return ['egg_entries', 'mortality', 'sales', 'expenses', 'vaccines', 'treatments',
               'disease_cases', 'health_observations', 'vet_visits', 'lab_analyses',
-              'biosecurity_tasks', 'health_reminders', 'health_reminder_logs'];
+              'biosecurity_tasks', 'health_reminders', 'health_reminder_logs', 'stock_adjustments'];
     }
 
     // ── Utilisateurs ─────────────────────────────────────────────────────────────────────

@@ -284,8 +284,8 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
         binding.cardLayingRate.setOnClickListener { navigateTo(AgentActivity::class.java) }
         
         binding.cardStockCircle.setOnClickListener { navigateTo(SalesActivity::class.java) }
-        binding.cardFeedStockCircle.setOnClickListener { navigateTo(ExpensesActivity::class.java) }
-        binding.cardEggTraysStock.setOnClickListener { navigateTo(ExpensesActivity::class.java) }
+        binding.cardFeedStockCircle.setOnClickListener { showFeedMenu(it) }
+        binding.cardEggTraysStock.setOnClickListener { showTraysMenu(it) }
         
         binding.cardEggProduction.setOnClickListener { showEggProductionMenu(it) }
         binding.cardEggSales.setOnClickListener { showSalesMenu(it) }
@@ -306,7 +306,8 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
 
     private fun showEggProductionMenu(anchor: View) = ActionMenuPopup.show(anchor, listOf(
         ActionMenuItem(R.drawable.ic_egg, "+ Saisir la ponte") { navigateTo(AgentActivity::class.java) },
-        ActionMenuItem(R.drawable.ic_chart_line, "Production et œufs cassés") { navigateToStats("COLLECTION") }
+        ActionMenuItem(R.drawable.ic_chart_line, "Production et œufs cassés") { navigateToStats("COLLECTION") },
+        ActionMenuItem(R.drawable.ic_batches, "Inventaire des stocks") { navigateTo(StockInventoryActivity::class.java) }
     ))
 
     private fun showSalesMenu(anchor: View) = ActionMenuPopup.show(anchor, listOf(
@@ -321,7 +322,13 @@ class DashboardActivity : AppCompatActivity(), NavigationView.OnNavigationItemSe
 
     private fun showFeedMenu(anchor: View) = ActionMenuPopup.show(anchor, listOf(
         ActionMenuItem(R.drawable.ic_finance, "Saisie des dépenses") { navigateTo(ExpensesActivity::class.java) },
-        ActionMenuItem(R.drawable.ic_feed, "Suivi de la consommation") { navigateTo(FeedConsumptionActivity::class.java) }
+        ActionMenuItem(R.drawable.ic_feed, "Suivi de la consommation") { navigateTo(FeedConsumptionActivity::class.java) },
+        ActionMenuItem(R.drawable.ic_batches, "Inventaire des stocks") { navigateTo(StockInventoryActivity::class.java) }
+    ))
+
+    private fun showTraysMenu(anchor: View) = ActionMenuPopup.show(anchor, listOf(
+        ActionMenuItem(R.drawable.ic_finance, "Saisir un achat d'alvéoles") { navigateTo(ExpensesActivity::class.java) },
+        ActionMenuItem(R.drawable.ic_batches, "Inventaire des stocks") { navigateTo(StockInventoryActivity::class.java) }
     ))
 
     private fun showHealthMenu(anchor: View) = ActionMenuPopup.show(anchor, listOf(
